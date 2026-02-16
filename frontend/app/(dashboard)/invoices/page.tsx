@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { useInvoices, useCreateInvoice, useSendInvoice, useDeleteInvoice } from '@/lib/hooks/useInvoices';
 import { useCustomers } from '@/lib/hooks/useCustomers';
 import InvoiceStatusBadge from '@/components/invoices/InvoiceStatusBadge';
+import AddPaymentModal from '@/components/payments/AddPaymentModal';
 import { InvoiceStatus } from '@/lib/types';
 
 export default function InvoicesPage() {
   const [showForm, setShowForm] = useState(false);
+  const [paymentModal, setPaymentModal] = useState<{ invoiceId: string; amount: number; totalPaid: number; customerName: string } | null>(null);
   const [formData, setFormData] = useState({
     customerId: '',
     amount: 0,
@@ -151,6 +153,19 @@ export default function InvoicesPage() {
                   <td className="px-6 py-4 text-sm">${inv.totalPaid}</td>
                   <td className="px-6 py-4 text-sm">{new Date(inv.dueDate).toLocaleDateString()}</td>
                   <td className="px-6 py-4 text-right text-sm space-x-2">
+                    {inv.status !== InvoiceStatus.PAID && inv.status !== InvoiceStatus.DRAFT && (
+                      <button
+                        onClick={() => setPaymentModal({
+                          invoiceId: inv.id,
+                          amount: inv.amount,
+                          totalPaid: inv.totalPaid,
+                          customerName: inv.customer?.name || 'Unknown',
+                        })}
+                        className="text-green-600 hover:text-green-900"
+                      >
+                        + Payment
+                      </button>
+                    )}
                     {inv.status === InvoiceStatus.DRAFT && (
                       <button
                         onClick={() => handleSend(inv.id)}
@@ -176,6 +191,16 @@ export default function InvoicesPage() {
           <div className="p-8 text-center text-gray-500">No invoices yet</div>
         )}
       </div>
+
+      {paymentModal && (
+        <AddPaymentModal
+          invoiceId={paymentModal.invoiceId}
+          invoiceAmount={paymentModal.amount}
+          totalPaid={paymentModal.totalPaid}
+          customerName={paymentModal.customerName}
+          onClose={() => setPaymentModal(null)}
+        />
+      )}
     </div>
   );
 }
