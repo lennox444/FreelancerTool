@@ -1,0 +1,16 @@
+<svg width="240" height="40" viewBox="0 0 240 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#800040" />
+      <stop offset="100%" style="stop-color:#C2185B" />
+    </linearGradient>
+  </defs>
+
+  <!-- Icon: Abstract hexagonal flow shape -->
+  <path d="M12 4C7.58 4 4 7.58 4 12V28C4 32.42 7.58 36 12 36H28C32.42 36 36 32.42 36 28V12C36 7.58 32.42 4 28 4H12ZM24.5 14L19.5 24H15.5L20.5 14H24.5ZM16.5 18H13V14H16.5V18ZM27 26H23.5V22H27V26Z" fill="url(#logoGradient)" />
+  
+  <!-- Text: FreelanceFlow (No visible gap, but color shift) -->
+  <text x="44" y="29" font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="700" font-size="24" letter-spacing="-0.5">
+    <tspan fill="#000000">Freelance</tspan><tspan fill="url(#logoGradient)">Flow</tspan>
+  </text>
+</svg>

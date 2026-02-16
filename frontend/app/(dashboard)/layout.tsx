@@ -14,7 +14,6 @@ export default function DashboardLayout({
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated());
   const [mounted, setMounted] = useState(false);
 
-  // Prevent hydration mismatch by only checking auth after mount
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -25,7 +24,6 @@ export default function DashboardLayout({
     }
   }, [mounted, isAuthenticated, router]);
 
-  // Show loading until client-side hydration is complete
   if (!mounted || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">

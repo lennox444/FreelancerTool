@@ -1,24 +1,27 @@
-'use client';
+import { Metadata } from 'next';
+import { Header } from '@/components/landing/Header';
+import { Hero } from '@/components/landing/Hero';
+import { Features } from '@/components/landing/Features';
+import { Testimonials } from '@/components/landing/Testimonials';
+import { CTA } from '@/components/landing/CTA';
+import { Footer } from '@/components/landing/Footer';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/lib/stores/authStore';
+export const metadata: Metadata = {
+  title: 'FreelanceFlow - All-in-One Tool für Freelancer',
+  description: 'Verwalte deine Angebote, Projekte und Zahlungen an einem Ort. Das ultimative Tool für Freelancer und Selbstständige.',
+};
 
-export default function HomePage() {
-  const router = useRouter();
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated());
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/dashboard');
-    } else {
-      router.push('/login');
-    }
-  }, [isAuthenticated, router]);
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-100 selection:text-blue-900">
+      <Header />
+      <main>
+        <Hero />
+        <Features />
+        <Testimonials />
+        <CTA />
+      </main>
+      <Footer />
     </div>
   );
 }
