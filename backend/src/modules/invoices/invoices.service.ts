@@ -248,11 +248,12 @@ export class InvoicesService {
   async markOverdueInvoices() {
     const now = new Date();
 
+    // Find all SENT invoices that are past due date
+    // Note: SENT status already implies totalPaid < amount
     const result = await this.prisma.invoice.updateMany({
       where: {
         status: InvoiceStatus.SENT,
         dueDate: { lt: now },
-        totalPaid: { lt: this.prisma.invoice.fields.amount },
       },
       data: {
         status: InvoiceStatus.OVERDUE,
