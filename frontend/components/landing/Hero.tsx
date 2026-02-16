@@ -122,53 +122,20 @@ export const Hero = () => {
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.7, delay: 0.5 }}
-                    className="mt-20 relative mx-auto max-w-6xl shadow-2xl rounded-xl border border-slate-200 bg-white p-2 md:p-4 rotate-x-12 perspective-1000"
+                    className="mt-20 relative mx-auto max-w-6xl shadow-2xl rounded-[2.5rem] border border-slate-200 bg-white/50 backdrop-blur-sm p-2 md:p-3 rotate-x-6 perspective-1000 group hover:rotate-x-3 transition-all duration-700 ease-out"
                 >
-                    <div className="rounded-lg overflow-hidden bg-slate-50 border border-slate-200 aspect-[16/9] relative group">
-                        {/* Mock Dashboard UI */}
-                        <div className="absolute top-0 left-0 w-64 h-full bg-slate-900 border-r border-slate-800 p-4 hidden md:block">
-                            <div className="h-8 w-8 bg-blue-600 rounded mb-8" />
-                            <div className="space-y-4">
-                                <div className="h-4 w-24 bg-slate-800 rounded" />
-                                <div className="h-4 w-32 bg-slate-800 rounded opacity-75" />
-                                <div className="h-4 w-20 bg-slate-800 rounded opacity-75" />
-                                <div className="h-4 w-28 bg-slate-800 rounded opacity-75" />
-                            </div>
-                        </div>
-                        <div className="absolute top-0 right-0 md:left-64 bottom-0 bg-slate-50 p-6 md:p-8">
-                            <div className="flex justify-between items-center mb-8">
-                                <div>
-                                    <div className="h-6 w-48 bg-slate-200 rounded mb-2" />
-                                    <div className="h-4 w-64 bg-slate-100 rounded" />
-                                </div>
-                                <div className="h-10 w-32 bg-blue-600 rounded shadow-sm" />
-                            </div>
+                    <div className="rounded-[2rem] overflow-hidden bg-slate-50 relative shadow-inner">
+                        <img
+                            src="/dashboard-hero.png"
+                            alt="FreelanceFlow Dashboard"
+                            className="w-full h-auto block transition-transform duration-1000 group-hover:scale-[1.02]"
+                        />
+                        {/* Overlay Gradient for depth */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent pointer-events-none" />
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                {[1, 2, 3].map((i) => (
-                                    <div key={i} className="p-4 bg-white rounded-xl shadow-sm border border-slate-100">
-                                        <div className="h-8 w-8 bg-blue-50 rounded-lg mb-4" />
-                                        <div className="h-6 w-16 bg-slate-100 rounded mb-2" />
-                                        <div className="h-8 w-24 bg-slate-200 rounded" />
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="p-6 bg-white rounded-xl shadow-sm border border-slate-100 h-64">
-                                <div className="h-6 w-32 bg-slate-100 rounded mb-6" />
-                                <div className="space-y-4">
-                                    <div className="h-12 w-full bg-slate-50 rounded" />
-                                    <div className="h-12 w-full bg-slate-50 rounded" />
-                                    <div className="h-12 w-full bg-slate-50 rounded" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Overlay Gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent pointer-events-none" />
+                        {/* Glossy Reflection Effect */}
+                        <div className="absolute -inset-full bg-gradient-to-tr from-transparent via-white/10 to-transparent transition-all duration-1000 group-hover:translate-x-full group-hover:translate-y-full pointer-events-none" />
                     </div>
-                    {/* Glossy Reflection */}
-                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-white to-transparent opacity-50 rounded-b-xl pointer-events-none" />
                 </motion.div>
             </div>
         </section>

@@ -5,13 +5,32 @@ import { useInvoices, useCreateInvoice, useSendInvoice, useDeleteInvoice } from 
 import { useCustomers } from '@/lib/hooks/useCustomers';
 import InvoiceStatusBadge from '@/components/invoices/InvoiceStatusBadge';
 import AddPaymentModal from '@/components/payments/AddPaymentModal';
-import LoadingPage from '@/components/ui/LoadingPage';
-import EmptyState from '@/components/ui/EmptyState';
+import SpotlightCard from '@/components/ui/SpotlightCard';
+import StarBorder from '@/components/ui/StarBorder';
+import PixelBlast from '@/components/landing/PixelBlast';
+import {
+  Plus,
+  Search,
+  FileText,
+  User,
+  Calendar,
+  DollarSign,
+  Send,
+  Trash2,
+  PlusCircle,
+  X,
+  Loader2,
+  ArrowUpRight,
+  ChevronRight,
+  Wallet
+} from 'lucide-react';
 import { InvoiceStatus } from '@/lib/types';
 import toast from 'react-hot-toast';
+import { cn } from '@/lib/utils';
 
 export default function InvoicesPage() {
   const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState('');
   const [paymentModal, setPaymentModal] = useState<{ invoiceId: string; amount: number; totalPaid: number; customerName: string } | null>(null);
   const [formData, setFormData] = useState({
     customerId: '',
@@ -32,184 +51,322 @@ export default function InvoicesPage() {
       await createInvoice.mutateAsync(formData);
       setShowForm(false);
       setFormData({ customerId: '', amount: 0, description: '', dueDate: '' });
-      toast.success('Invoice created successfully');
+      toast.success('Rechnung erfolgreich erstellt');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create invoice');
+      toast.error(error.response?.data?.message || 'Fehler beim Erstellen der Rechnung');
     }
   };
 
   const handleSend = async (id: string) => {
-    if (confirm('Send this invoice?')) {
+    if (confirm('Diese Rechnung wirklich senden?')) {
       try {
         await sendInvoice.mutateAsync(id);
-        toast.success('Invoice sent successfully');
+        toast.success('Rechnung erfolgreich gesendet');
       } catch (error: any) {
-        toast.error(error.response?.data?.message || 'Failed to send invoice');
+        toast.error(error.response?.data?.message || 'Fehler beim Senden der Rechnung');
       }
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Delete this invoice? (Only DRAFT can be deleted)')) {
+    if (confirm('Diese Rechnung löschen? (Nur Entwürfe können gelöscht werden)')) {
       try {
         await deleteInvoice.mutateAsync(id);
-        toast.success('Invoice deleted successfully');
+        toast.success('Rechnung erfolgreich gelöscht');
       } catch (error: any) {
-        toast.error(error.response?.data?.message || 'Failed to delete invoice');
+        toast.error(error.response?.data?.message || 'Fehler beim Löschen der Rechnung');
       }
     }
   };
 
-  if (isLoading) return <LoadingPage message="Loading invoices..." />;
+  const filteredInvoices = invoices?.filter(inv =>
+    inv.customer?.name.toLowerCase().includes(search.toLowerCase()) ||
+    inv.description.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const inputClasses = "mt-1 block w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] focus:bg-white transition-all text-slate-700 placeholder:text-slate-400";
+  const labelClasses = "flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1 ml-1";
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Invoices</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          {showForm ? 'Cancel' : '+ New Invoice'}
-        </button>
+    <div className="relative isolate min-h-full p-4 md:p-6">
+      {/* Background Elements */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none rounded-3xl">
+        <div className="absolute inset-0 w-full h-full opacity-30">
+          <PixelBlast
+            variant="square"
+            pixelSize={6}
+            color="#800040"
+            patternScale={4}
+            patternDensity={0.5}
+            pixelSizeJitter={0.5}
+            enableRipples
+            rippleSpeed={0.3}
+            rippleThickness={0.1}
+            speed={0.2}
+            transparent
+          />
+        </div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.8)_0%,rgba(248,250,252,0.95)_100%)]" />
+      </div>
+
+      <div className="mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Rechnungen</h1>
+          <div className="hidden md:block h-8 w-[2px] bg-slate-200 rounded-full"></div>
+          <p className="text-slate-500 font-medium">
+            Erstelle, verwalte und versende deine Rechnungen professionell.
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <StarBorder onClick={() => setShowForm(!showForm)} className="rounded-full group" color={showForm ? "#94a3b8" : "#ff3366"} speed="4s" thickness={3}>
+            <div className={cn(
+              "px-6 h-12 flex items-center justify-center rounded-full transition-all font-semibold text-sm shadow-lg gap-2",
+              showForm
+                ? "bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-slate-200/20"
+                : "bg-[#800040] hover:bg-[#600030] text-white shadow-pink-900/20"
+            )}>
+              {showForm ? <X className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+              <span>{showForm ? 'Abbrechen' : 'Neue Rechnung'}</span>
+            </div>
+          </StarBorder>
+        </div>
       </div>
 
       {showForm && (
-        <div className="bg-white rounded shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">New Invoice</h2>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Customer</label>
-              <select
-                required
-                value={formData.customerId}
-                onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                className="w-full px-3 py-2 border rounded"
-              >
-                <option value="">Select customer</option>
-                {customers?.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.company ? `(${c.company})` : ''}
-                  </option>
-                ))}
-              </select>
+        <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-300">
+          <SpotlightCard className="bg-white/95 backdrop-blur-md border border-[#800040]/20 shadow-xl p-8 rounded-3xl" spotlightColor="rgba(128, 0, 64, 0.05)">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-slate-900">Rechnung erstellen</h2>
+              <button onClick={() => setShowForm(false)} className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Amount</label>
-              <input
-                type="number"
-                required
-                step="0.01"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border rounded"
-              />
-            </div>
+            <form onSubmit={handleCreate} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Customer Select */}
+                <div>
+                  <label className={labelClasses}>
+                    <User className="w-4 h-4 text-slate-400" />
+                    Kunde *
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <select
+                      required
+                      value={formData.customerId}
+                      onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                      className={inputClasses}
+                    >
+                      <option value="">Wähle einen Kunden...</option>
+                      {customers?.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} {c.company ? `(${c.company})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
-              <textarea
-                required
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border rounded"
-                rows={3}
-              />
-            </div>
+                {/* Amount */}
+                <div>
+                  <label className={labelClasses}>
+                    <DollarSign className="w-4 h-4 text-slate-400" />
+                    Betrag (€) *
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+                      <DollarSign className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="number"
+                      required
+                      step="0.01"
+                      placeholder="0,00"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                      className={inputClasses}
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Due Date</label>
-              <input
-                type="date"
-                required
-                value={formData.dueDate}
-                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                className="w-full px-3 py-2 border rounded"
-              />
-            </div>
+                {/* Description */}
+                <div className="md:col-span-2">
+                  <label className={labelClasses}>
+                    <FileText className="w-4 h-4 text-slate-400" />
+                    Beschreibung *
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute top-3.5 left-3.5 text-slate-400 group-focus-within:text-[#800040] transition-colors">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <textarea
+                      required
+                      placeholder="z.B. Webdesign Projekt - Meilenstein 1"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className={cn(inputClasses, "pl-10 h-24")}
+                    />
+                  </div>
+                </div>
 
-            <button
-              type="submit"
-              disabled={createInvoice.isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {createInvoice.isPending ? 'Creating...' : 'Create Invoice'}
-            </button>
-          </form>
+                {/* Due Date */}
+                <div>
+                  <label className={labelClasses}>
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    Fälligkeitsdatum *
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="date"
+                      required
+                      value={formData.dueDate}
+                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                      className={inputClasses}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-8 py-3 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-full transition-all font-semibold text-sm"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={createInvoice.isPending}
+                  className="px-8 py-3 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-semibold text-sm shadow-lg shadow-pink-900/20 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {createInvoice.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  Rechnung erstellen
+                </button>
+              </div>
+            </form>
+          </SpotlightCard>
         </div>
       )}
 
-      <div className="bg-white rounded shadow overflow-hidden">
-        {invoices && invoices.length > 0 ? (
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {invoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium">{inv.customer?.name}</div>
-                    <div className="text-xs text-gray-500">{inv.description}</div>
-                  </td>
-                  <td className="px-6 py-4 text-sm">${inv.amount}</td>
-                  <td className="px-6 py-4">
-                    <InvoiceStatusBadge status={inv.status} />
-                  </td>
-                  <td className="px-6 py-4 text-sm">${inv.totalPaid}</td>
-                  <td className="px-6 py-4 text-sm">{new Date(inv.dueDate).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 text-right text-sm space-x-2">
-                    {inv.status !== InvoiceStatus.PAID && inv.status !== InvoiceStatus.DRAFT && (
-                      <button
-                        onClick={() => setPaymentModal({
-                          invoiceId: inv.id,
-                          amount: inv.amount,
-                          totalPaid: inv.totalPaid,
-                          customerName: inv.customer?.name || 'Unknown',
-                        })}
-                        className="text-green-600 hover:text-green-900"
-                      >
-                        + Payment
-                      </button>
-                    )}
-                    {inv.status === InvoiceStatus.DRAFT && (
-                      <button
-                        onClick={() => handleSend(inv.id)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        Send
-                      </button>
-                    )}
-                    {inv.status === InvoiceStatus.DRAFT && (
-                      <button
-                        onClick={() => handleDelete(inv.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Search & Filter */}
+      <div className="mb-8 relative flex-1 w-full group">
+        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+          <Search className="w-5 h-5" />
+        </div>
+        <input
+          type="text"
+          placeholder="Rechnungen suchen nach Kunde oder Beschreibung..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all text-slate-700 shadow-sm"
+        />
+      </div>
+
+      <div className="relative min-h-[400px]">
+        {isLoading ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
+            <Loader2 className="w-10 h-10 animate-spin text-[#800040] mb-3" />
+            <p className="font-medium">Lade Rechnungen...</p>
+          </div>
+        ) : filteredInvoices && filteredInvoices.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredInvoices.map((inv) => (
+              <SpotlightCard
+                key={inv.id}
+                className="bg-white/90 backdrop-blur-md border border-slate-100 shadow-sm p-6 rounded-2xl hover:shadow-md transition-shadow group flex flex-col h-full"
+                spotlightColor="rgba(128, 0, 64, 0.05)"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <InvoiceStatusBadge status={inv.status} />
+                  <div className="text-lg font-bold text-slate-900 group-hover:text-[#800040] transition-colors">
+                    {inv.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                  </div>
+                </div>
+
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 line-clamp-1">{inv.customer?.name}</h3>
+                    <p className="text-sm text-slate-500 line-clamp-1 mt-0.5">{inv.description}</p>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-50 space-y-2.5">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-slate-500">
+                        <Calendar className="w-4 h-4" />
+                        <span>Fällig am</span>
+                      </div>
+                      <span className="font-medium text-slate-700">{new Date(inv.dueDate).toLocaleDateString('de-DE')}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-slate-500">
+                        <Wallet className="w-4 h-4" />
+                        <span>Bezahlt</span>
+                      </div>
+                      <span className="font-bold text-emerald-600">
+                        {inv.totalPaid.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 flex gap-2 border-t border-slate-50">
+                  {inv.status !== InvoiceStatus.PAID && inv.status !== InvoiceStatus.DRAFT && (
+                    <button
+                      onClick={() => setPaymentModal({
+                        invoiceId: inv.id,
+                        amount: inv.amount,
+                        totalPaid: inv.totalPaid,
+                        customerName: inv.customer?.name || 'Unbekannt',
+                      })}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      Zahlung
+                    </button>
+                  )}
+                  {inv.status === InvoiceStatus.DRAFT && (
+                    <button
+                      onClick={() => handleSend(inv.id)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      Senden
+                    </button>
+                  )}
+                  {inv.status === InvoiceStatus.DRAFT && (
+                    <button
+                      onClick={() => handleDelete(inv.id)}
+                      className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all"
+                      title="Löschen"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 transition-all border border-slate-100">
+                    <ArrowUpRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </SpotlightCard>
+            ))}
+          </div>
         ) : (
-          <EmptyState
-            title="No invoices yet"
-            description="Create your first invoice to get started"
-            action={{
-              label: 'Create Invoice',
-              onClick: () => setShowForm(true),
-            }}
-          />
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100">
+              <FileText className="w-10 h-10 text-slate-300" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">Keine Rechnungen gefunden</h3>
+            <p className="text-slate-500 mt-2 max-w-sm mx-auto">
+              Erstelle deine erste professionelle Rechnung per Klick auf "Neue Rechnung".
+            </p>
+          </div>
         )}
       </div>
 

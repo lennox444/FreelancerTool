@@ -17,11 +17,10 @@ export function StepIndicator({ currentStep, totalSteps = 5 }: StepIndicatorProp
         {Array.from({ length: totalSteps }, (_, i) => (
           <div
             key={i}
-            className={`h-2 w-8 rounded-full transition-colors ${
-              i + 1 <= currentStep
-                ? 'bg-primary'
-                : 'bg-muted'
-            }`}
+            className={`h-2.5 w-10 rounded-full transition-all duration-300 ${i + 1 <= currentStep
+                ? 'bg-[#800040]'
+                : 'bg-slate-200'
+              }`}
           />
         ))}
       </div>

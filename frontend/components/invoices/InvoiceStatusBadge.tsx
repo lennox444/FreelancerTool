@@ -1,18 +1,22 @@
 import { InvoiceStatus } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 const statusConfig = {
-  [InvoiceStatus.DRAFT]: { label: 'Draft', color: 'bg-gray-100 text-gray-800' },
-  [InvoiceStatus.SENT]: { label: 'Sent', color: 'bg-blue-100 text-blue-800' },
-  [InvoiceStatus.PARTIALLY_PAID]: { label: 'Partially Paid', color: 'bg-yellow-100 text-yellow-800' },
-  [InvoiceStatus.PAID]: { label: 'Paid', color: 'bg-green-100 text-green-800' },
-  [InvoiceStatus.OVERDUE]: { label: 'Overdue', color: 'bg-red-100 text-red-800' },
+  [InvoiceStatus.DRAFT]: { label: 'Entwurf', color: 'bg-slate-100 text-slate-600 border-slate-200' },
+  [InvoiceStatus.SENT]: { label: 'Gesendet', color: 'bg-blue-50 text-blue-600 border-blue-100' },
+  [InvoiceStatus.PARTIALLY_PAID]: { label: 'Teilweise bezahlt', color: 'bg-amber-50 text-amber-600 border-amber-100' },
+  [InvoiceStatus.PAID]: { label: 'Bezahlt', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+  [InvoiceStatus.OVERDUE]: { label: 'Überfällig', color: 'bg-rose-50 text-rose-600 border-rose-100' },
 };
 
 export default function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
   const config = statusConfig[status];
 
   return (
-    <span className={`px-2 py-1 text-xs font-medium rounded ${config.color}`}>
+    <span className={cn(
+      "px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider rounded-full border shadow-sm",
+      config.color
+    )}>
       {config.label}
     </span>
   );

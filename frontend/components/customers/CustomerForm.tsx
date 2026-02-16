@@ -2,6 +2,17 @@
 
 import { useState } from 'react';
 import type { Customer } from '@/lib/types';
+import {
+  User,
+  Building2,
+  Mail,
+  Clock,
+  FileText,
+  Check,
+  X,
+  Loader2
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface CustomerFormProps {
   customer?: Customer;
@@ -38,20 +49,20 @@ export default function CustomerForm({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = 'Name ist erforderlich';
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'E-Mail ist erforderlich';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = 'Ungültiges E-Mail-Format';
     }
 
     if (
       formData.defaultPaymentTerms &&
       (formData.defaultPaymentTerms < 1 || formData.defaultPaymentTerms > 365)
     ) {
-      newErrors.defaultPaymentTerms = 'Payment terms must be between 1-365 days';
+      newErrors.defaultPaymentTerms = 'Zahlungsziel muss zwischen 1-365 Tagen liegen';
     }
 
     setErrors(newErrors);
@@ -66,103 +77,152 @@ export default function CustomerForm({
     try {
       await onSubmit(formData);
     } catch (error) {
-      console.error('Form submission error:', error);
+      console.error('Fehler beim Absenden des Formulars:', error);
     }
   };
 
+  const inputClasses = "mt-1 block w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] focus:bg-white transition-all text-slate-700 placeholder:text-slate-400";
+  const labelClasses = "flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1 ml-1";
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Name *
-        </label>
-        <input
-          id="name"
-          type="text"
-          required
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Name */}
+        <div className="relative">
+          <label htmlFor="name" className={labelClasses}>
+            <User className="w-4 h-4 text-slate-400" />
+            Vollständiger Name *
+          </label>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+              <User className="w-4 h-4" />
+            </div>
+            <input
+              id="name"
+              type="text"
+              required
+              placeholder="z.B. Max Mustermann"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className={cn(inputClasses, errors.name && "border-red-300 focus:ring-red-200 focus:border-red-500")}
+            />
+          </div>
+          {errors.name && <p className="mt-1.5 text-xs font-medium text-red-500 ml-1">{errors.name}</p>}
+        </div>
+
+        {/* Company */}
+        <div>
+          <label htmlFor="company" className={labelClasses}>
+            <Building2 className="w-4 h-4 text-slate-400" />
+            Unternehmen
+          </label>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <input
+              id="company"
+              type="text"
+              placeholder="z.B. Muster GmbH"
+              value={formData.company}
+              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+              className={inputClasses}
+            />
+          </div>
+        </div>
+
+        {/* Email */}
+        <div>
+          <label htmlFor="email" className={labelClasses}>
+            <Mail className="w-4 h-4 text-slate-400" />
+            E-Mail Adresse *
+          </label>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+              <Mail className="w-4 h-4" />
+            </div>
+            <input
+              id="email"
+              type="email"
+              required
+              placeholder="max@beispiel.de"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className={cn(inputClasses, errors.email && "border-red-300 focus:ring-red-200 focus:border-red-500")}
+            />
+          </div>
+          {errors.email && <p className="mt-1.5 text-xs font-medium text-red-500 ml-1">{errors.email}</p>}
+        </div>
+
+        {/* Payment Terms */}
+        <div>
+          <label htmlFor="defaultPaymentTerms" className={labelClasses}>
+            <Clock className="w-4 h-4 text-slate-400" />
+            Standard-Zahlungsziel (Tage)
+          </label>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+              <Clock className="w-4 h-4" />
+            </div>
+            <input
+              id="defaultPaymentTerms"
+              type="number"
+              min="1"
+              max="365"
+              value={formData.defaultPaymentTerms}
+              onChange={(e) =>
+                setFormData({ ...formData, defaultPaymentTerms: parseInt(e.target.value) || undefined })
+              }
+              className={cn(inputClasses, errors.defaultPaymentTerms && "border-red-300 focus:ring-red-200 focus:border-red-500")}
+            />
+          </div>
+          {errors.defaultPaymentTerms && (
+            <p className="mt-1.5 text-xs font-medium text-red-500 ml-1">{errors.defaultPaymentTerms}</p>
+          )}
+        </div>
       </div>
 
+      {/* Notes */}
       <div>
-        <label htmlFor="company" className="block text-sm font-medium text-gray-700">
-          Company
-        </label>
-        <input
-          id="company"
-          type="text"
-          value={formData.company}
-          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email *
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-      </div>
-
-      <div>
-        <label htmlFor="defaultPaymentTerms" className="block text-sm font-medium text-gray-700">
-          Default Payment Terms (days)
-        </label>
-        <input
-          id="defaultPaymentTerms"
-          type="number"
-          min="1"
-          max="365"
-          value={formData.defaultPaymentTerms}
-          onChange={(e) =>
-            setFormData({ ...formData, defaultPaymentTerms: parseInt(e.target.value) || undefined })
-          }
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errors.defaultPaymentTerms && (
-          <p className="mt-1 text-sm text-red-600">{errors.defaultPaymentTerms}</p>
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-          Notes
+        <label htmlFor="notes" className={labelClasses}>
+          <FileText className="w-4 h-4 text-slate-400" />
+          Notizen
         </label>
         <textarea
           id="notes"
           rows={3}
+          placeholder="Zusätzliche Informationen zum Kunden..."
           value={formData.notes}
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          className="mt-1 block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] focus:bg-white transition-all text-slate-700 placeholder:text-slate-400"
         />
       </div>
 
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
         <button
           type="button"
           onClick={onCancel}
           disabled={isLoading}
-          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          className="px-8 py-3 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-full transition-all font-semibold text-sm disabled:opacity-50"
         >
-          Cancel
+          Abbrechen
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          className="px-8 py-3 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-semibold text-sm shadow-lg shadow-pink-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {isLoading ? 'Saving...' : customer ? 'Update' : 'Create'} Customer
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Wird gespeichert...
+            </>
+          ) : (
+            <>
+              <Check className="w-4 h-4" />
+              {customer ? 'Kunde aktualisieren' : 'Kunde anlegen'}
+            </>
+          )}
         </button>
       </div>
     </form>

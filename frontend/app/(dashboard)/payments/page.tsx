@@ -3,16 +3,34 @@
 import { useState } from 'react';
 import { usePayments, useCreatePayment, useDeletePayment } from '@/lib/hooks/usePayments';
 import { useInvoices } from '@/lib/hooks/useInvoices';
-import LoadingPage from '@/components/ui/LoadingPage';
-import EmptyState from '@/components/ui/EmptyState';
+import SpotlightCard from '@/components/ui/SpotlightCard';
+import StarBorder from '@/components/ui/StarBorder';
+import PixelBlast from '@/components/landing/PixelBlast';
+import {
+  Plus,
+  Search,
+  Wallet,
+  User,
+  FileText,
+  Calendar,
+  Trash2,
+  Check,
+  X,
+  Loader2,
+  ArrowUpRight,
+  TrendingDown,
+  Info
+} from 'lucide-react';
 import toast from 'react-hot-toast';
+import { cn } from '@/lib/utils';
 
 export default function PaymentsPage() {
   const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState('');
   const [formData, setFormData] = useState({
     invoiceId: '',
     amount: 0,
-    paymentDate: '',
+    paymentDate: new Date().toISOString().split('T')[0],
     note: '',
   });
 
@@ -26,157 +44,296 @@ export default function PaymentsPage() {
     try {
       await createPayment.mutateAsync(formData);
       setShowForm(false);
-      setFormData({ invoiceId: '', amount: 0, paymentDate: '', note: '' });
-      toast.success('Payment added successfully');
+      setFormData({ invoiceId: '', amount: 0, paymentDate: new Date().toISOString().split('T')[0], note: '' });
+      toast.success('Zahlung erfolgreich erfasst');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to add payment');
+      toast.error(error.response?.data?.message || 'Fehler beim Erfassen der Zahlung');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Delete this payment? Invoice status will be recalculated.')) {
+    if (confirm('Diese Zahlung wirklich löschen? Der Rechnungsstatus wird neu berechnet.')) {
       try {
         await deletePayment.mutateAsync(id);
-        toast.success('Payment deleted successfully');
+        toast.success('Zahlung erfolgreich gelöscht');
       } catch (error: any) {
-        toast.error(error.response?.data?.message || 'Failed to delete payment');
+        toast.error(error.response?.data?.message || 'Fehler beim Löschen der Zahlung');
       }
     }
   };
+
+  const filteredPayments = payments?.filter(p =>
+    p.invoice?.customer?.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.invoice?.description.toLowerCase().includes(search.toLowerCase()) ||
+    p.note?.toLowerCase().includes(search.toLowerCase())
+  );
 
   // Filter invoices that are not fully paid
   const unpaidInvoices = invoices?.filter(
     (inv) => inv.totalPaid < inv.amount
   ) || [];
 
-  if (isLoading) return <LoadingPage message="Loading payments..." />;
+  const inputClasses = "mt-1 block w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] focus:bg-white transition-all text-slate-700 placeholder:text-slate-400";
+  const labelClasses = "flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1 ml-1";
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Payments</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          {showForm ? 'Cancel' : '+ New Payment'}
-        </button>
+    <div className="relative isolate min-h-full p-4 md:p-6">
+      {/* Background Elements */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none rounded-3xl">
+        <div className="absolute inset-0 w-full h-full opacity-30">
+          <PixelBlast
+            variant="square"
+            pixelSize={6}
+            color="#800040"
+            patternScale={4}
+            patternDensity={0.5}
+            pixelSizeJitter={0.5}
+            enableRipples
+            rippleSpeed={0.3}
+            rippleThickness={0.1}
+            speed={0.2}
+            transparent
+          />
+        </div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.8)_0%,rgba(248,250,252,0.95)_100%)]" />
+      </div>
+
+      <div className="mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Zahlungen</h1>
+          <div className="hidden md:block h-8 w-[2px] bg-slate-200 rounded-full"></div>
+          <p className="text-slate-500 font-medium">
+            Behalte deine Zahlungseingänge und Einnahmen im Überblick.
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <StarBorder onClick={() => setShowForm(!showForm)} className="rounded-full group" color={showForm ? "#94a3b8" : "#ff3366"} speed="4s" thickness={3}>
+            <div className={cn(
+              "px-6 h-12 flex items-center justify-center rounded-full transition-all font-semibold text-sm shadow-lg gap-2",
+              showForm
+                ? "bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-slate-200/20"
+                : "bg-[#800040] hover:bg-[#600030] text-white shadow-pink-900/20"
+            )}>
+              {showForm ? <X className="w-5 h-5" /> : <Wallet className="w-5 h-5" />}
+              <span>{showForm ? 'Abbrechen' : 'Zahlung erfassen'}</span>
+            </div>
+          </StarBorder>
+        </div>
       </div>
 
       {showForm && (
-        <div className="bg-white rounded shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">New Payment</h2>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Invoice</label>
-              <select
-                required
-                value={formData.invoiceId}
-                onChange={(e) => setFormData({ ...formData, invoiceId: e.target.value })}
-                className="w-full px-3 py-2 border rounded"
-              >
-                <option value="">Select invoice</option>
-                {unpaidInvoices?.map((inv) => (
-                  <option key={inv.id} value={inv.id}>
-                    {inv.customer?.name} - ${inv.amount} (Paid: ${inv.totalPaid}) - {inv.description}
-                  </option>
-                ))}
-              </select>
+        <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-300">
+          <SpotlightCard className="bg-white/95 backdrop-blur-md border border-[#800040]/20 shadow-xl p-8 rounded-3xl" spotlightColor="rgba(128, 0, 64, 0.05)">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-slate-900">Zahlung manuell erfassen</h2>
+              <button onClick={() => setShowForm(false)} className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Amount</label>
-              <input
-                type="number"
-                required
-                step="0.01"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border rounded"
-              />
-            </div>
+            <form onSubmit={handleCreate} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className={labelClasses}>
+                    <FileText className="w-4 h-4 text-slate-400" />
+                    Rechnung auswählen *
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <select
+                      required
+                      value={formData.invoiceId}
+                      onChange={(e) => setFormData({ ...formData, invoiceId: e.target.value })}
+                      className={inputClasses}
+                    >
+                      <option value="">Wähle eine offene Rechnung...</option>
+                      {unpaidInvoices?.map((inv) => (
+                        <option key={inv.id} value={inv.id}>
+                          {inv.customer?.name} - {inv.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })} (Offen: {(inv.amount - inv.totalPaid).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Payment Date</label>
-              <input
-                type="date"
-                required
-                value={formData.paymentDate}
-                onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
-                className="w-full px-3 py-2 border rounded"
-              />
-            </div>
+                <div>
+                  <label className={labelClasses}>
+                    <TrendingDown className="w-4 h-4 text-slate-400" />
+                    Zahlbetrag (€) *
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+                      <TrendingDown className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="number"
+                      required
+                      step="0.01"
+                      placeholder="0,00"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                      className={inputClasses}
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Note (optional)</label>
-              <textarea
-                value={formData.note}
-                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                className="w-full px-3 py-2 border rounded"
-                rows={2}
-              />
-            </div>
+                <div>
+                  <label className={labelClasses}>
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    Zahlungsdatum *
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="date"
+                      required
+                      value={formData.paymentDate}
+                      onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
+                      className={inputClasses}
+                    />
+                  </div>
+                </div>
 
-            <button
-              type="submit"
-              disabled={createPayment.isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {createPayment.isPending ? 'Creating...' : 'Create Payment'}
-            </button>
-          </form>
+                <div className="md:col-span-2">
+                  <label className={labelClasses}>
+                    <Info className="w-4 h-4 text-slate-400" />
+                    Notiz (optional)
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute top-3.5 left-3.5 text-slate-400 group-focus-within:text-[#800040] transition-colors">
+                      <Info className="w-4 h-4" />
+                    </div>
+                    <textarea
+                      value={formData.note}
+                      onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                      placeholder="Verwendungszweck, Provider, etc."
+                      className={cn(inputClasses, "pl-10 h-20")}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-8 py-3 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-full transition-all font-semibold text-sm"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={createPayment.isPending}
+                  className="px-8 py-3 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-semibold text-sm shadow-lg shadow-pink-900/20 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {createPayment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Zahlung buchen
+                </button>
+              </div>
+            </form>
+          </SpotlightCard>
         </div>
       )}
 
-      <div className="bg-white rounded shadow overflow-hidden">
-        {payments && payments.length > 0 ? (
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Note</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {payments.map((payment) => (
-                <tr key={payment.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium">{payment.invoice?.description || 'N/A'}</div>
-                    <div className="text-xs text-gray-500">
-                      Invoice: ${payment.invoice?.amount || 0} (Status: {payment.invoice?.status})
+      {/* Search Field */}
+      <div className="mb-8 relative flex-1 w-full group">
+        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+          <Search className="w-5 h-5" />
+        </div>
+        <input
+          type="text"
+          placeholder="Zahlungen durchsuchen..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all text-slate-700 shadow-sm"
+        />
+      </div>
+
+      <div className="relative min-h-[400px]">
+        {isLoading ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
+            <Loader2 className="w-10 h-10 animate-spin text-[#800040] mb-3" />
+            <p className="font-medium">Lade Zahlungen...</p>
+          </div>
+        ) : filteredPayments && filteredPayments.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredPayments.map((payment) => (
+              <SpotlightCard
+                key={payment.id}
+                className="bg-white/90 backdrop-blur-md border border-slate-100 shadow-sm p-6 rounded-2xl hover:shadow-md transition-shadow group flex flex-col"
+                spotlightColor="rgba(128, 0, 64, 0.05)"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-100/50 flex items-center justify-center text-emerald-600">
+                    <TrendingDown className="w-6 h-6" />
+                  </div>
+                  <button
+                    onClick={() => handleDelete(payment.id)}
+                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                    title="Löschen"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <div className="text-2xl font-bold text-emerald-600">
+                      +{payment.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
                     </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm">{payment.invoice?.customer?.name || 'N/A'}</td>
-                  <td className="px-6 py-4 text-sm font-bold text-green-600">${payment.amount}</td>
-                  <td className="px-6 py-4 text-sm">
-                    {new Date(payment.paymentDate).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{payment.note || '-'}</td>
-                  <td className="px-6 py-4 text-right text-sm">
-                    <button
-                      onClick={() => handleDelete(payment.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <div className="flex items-center gap-2 text-slate-500 mt-1">
+                      <User className="w-4 h-4" />
+                      <span className="text-sm font-medium">{payment.invoice?.customer?.name || 'Unbekannt'}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-50 space-y-2.5">
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <FileText className="w-4 h-4 text-slate-400" />
+                      <span className="text-sm truncate">{payment.invoice?.description || 'Rechnung'}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <Calendar className="w-4 h-4 text-slate-400" />
+                      <span className="text-sm">{new Date(payment.paymentDate).toLocaleDateString('de-DE')}</span>
+                    </div>
+                    {payment.note && (
+                      <div className="flex items-center gap-3 text-slate-500 italic">
+                        <Info className="w-4 h-4 text-slate-300" />
+                        <span className="text-xs">{payment.note}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4">
+                  <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Rechnungs-Info</div>
+                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center justify-between">
+                    <div className="text-xs font-semibold text-slate-600">
+                      Gesamt: {payment.invoice?.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                    </div>
+                    <div className="text-[10px] font-bold px-2 py-0.5 bg-slate-200 text-slate-600 rounded-full">
+                      {payment.invoice?.status}
+                    </div>
+                  </div>
+                </div>
+              </SpotlightCard>
+            ))}
+          </div>
         ) : (
-          <EmptyState
-            title="No payments yet"
-            description="Add your first payment to track income"
-            action={{
-              label: 'Add Payment',
-              onClick: () => setShowForm(true),
-            }}
-          />
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100">
+              <Wallet className="w-10 h-10 text-slate-300" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">Keine Zahlungen gefunden</h3>
+            <p className="text-slate-500 mt-2 max-w-sm mx-auto">
+              Erfasse deinen ersten Zahlungseingang, um deine Einnahmen zu verfolgen.
+            </p>
+          </div>
         )}
       </div>
     </div>

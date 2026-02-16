@@ -9,30 +9,31 @@ import { useOnboardingStore } from '@/lib/stores/onboardingStore';
 import { onboardingApi } from '@/lib/api/onboarding';
 import { BusinessStage } from '@/lib/types';
 import toast from 'react-hot-toast';
+import { Sprout, TrendingUp, Trophy, Zap } from 'lucide-react';
 
 const stageOptions = [
   {
     value: BusinessStage.JUST_STARTED,
     label: 'Gerade gestartet',
-    icon: '🌱',
+    icon: <Sprout className="w-6 h-6" />,
     description: '0-6 Monate selbstständig',
   },
   {
     value: BusinessStage.GROWING,
     label: 'Wachsend',
-    icon: '📈',
+    icon: <TrendingUp className="w-6 h-6" />,
     description: '6-24 Monate, erste Erfolge',
   },
   {
     value: BusinessStage.ESTABLISHED,
     label: 'Etabliert',
-    icon: '🏆',
+    icon: <Trophy className="w-6 h-6" />,
     description: '2+ Jahre, stabiles Geschäft',
   },
   {
     value: BusinessStage.SIDE_BUSINESS,
     label: 'Nebentätigkeit',
-    icon: '⚡',
+    icon: <Zap className="w-6 h-6" />,
     description: 'Neben Hauptberuf',
   },
 ];
@@ -41,7 +42,7 @@ export default function Step3Page() {
   const router = useRouter();
   const { profile, updateStep } = useOnboardingStore();
   const [selected, setSelected] = useState<BusinessStage | null>(
-    profile?.businessStage || null
+    profile?.businessStage as BusinessStage || null
   );
   const [loading, setLoading] = useState(false);
 
@@ -83,12 +84,12 @@ export default function Step3Page() {
 
   return (
     <OnboardingLayout currentStep={3}>
-      <div className="space-y-6">
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-2">
+          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 mb-3">
             Wie lange bist du schon selbstständig?
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-slate-500 text-lg">
             Hilft uns, passende Tipps und Features anzubieten
           </p>
         </div>
@@ -112,6 +113,7 @@ export default function Step3Page() {
           onNext={handleNext}
           nextDisabled={!selected}
           loading={loading}
+          nextLabel="Weiter zu Schritt 4"
         />
       </div>
     </OnboardingLayout>

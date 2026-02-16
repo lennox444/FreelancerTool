@@ -9,42 +9,43 @@ import { useOnboardingStore } from '@/lib/stores/onboardingStore';
 import { onboardingApi } from '@/lib/api/onboarding';
 import { FreelancerVertical } from '@/lib/types';
 import toast from 'react-hot-toast';
+import { Palette, Code2, LineChart, Megaphone, Camera, Sparkles } from 'lucide-react';
 
 const verticalOptions = [
   {
     value: FreelancerVertical.DESIGNER,
     label: 'Designer',
-    icon: '🎨',
+    icon: <Palette className="w-6 h-6" />,
     description: 'UI/UX, Grafik, Webdesign',
   },
   {
     value: FreelancerVertical.DEVELOPER,
     label: 'Developer',
-    icon: '💻',
+    icon: <Code2 className="w-6 h-6" />,
     description: 'Web, App, Software-Entwicklung',
   },
   {
     value: FreelancerVertical.CONSULTANT,
     label: 'Berater/Consultant',
-    icon: '📊',
+    icon: <LineChart className="w-6 h-6" />,
     description: 'Unternehmensberatung, Coaching',
   },
   {
     value: FreelancerVertical.MARKETING_CONTENT,
     label: 'Marketing/Content',
-    icon: '📝',
+    icon: <Megaphone className="w-6 h-6" />,
     description: 'Content Creation, Social Media',
   },
   {
     value: FreelancerVertical.PHOTOGRAPHER_VIDEOGRAPHER,
     label: 'Fotograf/Videograf',
-    icon: '📷',
+    icon: <Camera className="w-6 h-6" />,
     description: 'Fotografie, Videoproduktion',
   },
   {
     value: FreelancerVertical.OTHER,
     label: 'Andere',
-    icon: '✨',
+    icon: <Sparkles className="w-6 h-6" />,
     description: 'Andere freiberufliche Tätigkeit',
   },
 ];
@@ -53,7 +54,7 @@ export default function Step1Page() {
   const router = useRouter();
   const { profile, updateStep } = useOnboardingStore();
   const [selected, setSelected] = useState<FreelancerVertical | null>(
-    profile?.vertical || null
+    profile?.vertical as FreelancerVertical || null
   );
   const [loading, setLoading] = useState(false);
 
@@ -91,12 +92,12 @@ export default function Step1Page() {
 
   return (
     <OnboardingLayout currentStep={1}>
-      <div className="space-y-6">
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-2">
+          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 mb-3">
             Was ist deine Haupttätigkeit?
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-slate-500 text-lg">
             Hilf uns, dein Dashboard optimal anzupassen
           </p>
         </div>
@@ -120,6 +121,7 @@ export default function Step1Page() {
           onNext={handleNext}
           nextDisabled={!selected}
           loading={loading}
+          nextLabel="Weiter zu Schritt 2"
         />
       </div>
     </OnboardingLayout>

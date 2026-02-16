@@ -9,42 +9,43 @@ import { useOnboardingStore } from '@/lib/stores/onboardingStore';
 import { onboardingApi } from '@/lib/api/onboarding';
 import { AcquisitionChannel } from '@/lib/types';
 import toast from 'react-hot-toast';
+import { Linkedin, MessageCircle, Facebook, UserPlus, Search, Globe } from 'lucide-react';
 
 const channelOptions = [
   {
     value: AcquisitionChannel.LINKEDIN,
     label: 'LinkedIn',
-    icon: '💼',
+    icon: <Linkedin className="w-6 h-6" />,
     description: 'Über LinkedIn entdeckt',
   },
   {
     value: AcquisitionChannel.REDDIT,
     label: 'Reddit',
-    icon: '🤖',
+    icon: <MessageCircle className="w-6 h-6" />,
     description: 'Über Reddit-Community',
   },
   {
     value: AcquisitionChannel.FACEBOOK_GROUP,
     label: 'Facebook Gruppe',
-    icon: '👥',
+    icon: <Facebook className="w-6 h-6" />,
     description: 'In einer Facebook-Gruppe',
   },
   {
     value: AcquisitionChannel.REFERRAL,
     label: 'Empfehlung',
-    icon: '🤝',
+    icon: <UserPlus className="w-6 h-6" />,
     description: 'Von Freunden/Kollegen empfohlen',
   },
   {
     value: AcquisitionChannel.GOOGLE_SEARCH,
     label: 'Google Suche',
-    icon: '🔍',
+    icon: <Search className="w-6 h-6" />,
     description: 'Über Google gefunden',
   },
   {
     value: AcquisitionChannel.OTHER,
     label: 'Andere',
-    icon: '✨',
+    icon: <Globe className="w-6 h-6" />,
     description: 'Andere Quelle',
   },
 ];
@@ -53,7 +54,7 @@ export default function Step4Page() {
   const router = useRouter();
   const { profile, updateStep } = useOnboardingStore();
   const [selected, setSelected] = useState<AcquisitionChannel | null>(
-    profile?.acquisitionChannel || null
+    profile?.acquisitionChannel as AcquisitionChannel || null
   );
   const [loading, setLoading] = useState(false);
 
@@ -95,12 +96,12 @@ export default function Step4Page() {
 
   return (
     <OnboardingLayout currentStep={4}>
-      <div className="space-y-6">
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-2">
+          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 mb-3">
             Wie hast du von FreelanceFlow erfahren?
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-slate-500 text-lg">
             Hilf uns zu verstehen, wo wir dich erreicht haben
           </p>
         </div>
@@ -124,6 +125,7 @@ export default function Step4Page() {
           onNext={handleNext}
           nextDisabled={!selected}
           loading={loading}
+          nextLabel="Weiter zu Schritt 5"
         />
       </div>
     </OnboardingLayout>

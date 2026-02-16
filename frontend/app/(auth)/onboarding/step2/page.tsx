@@ -9,30 +9,31 @@ import { useOnboardingStore } from '@/lib/stores/onboardingStore';
 import { onboardingApi } from '@/lib/api/onboarding';
 import { CurrentWorkflow } from '@/lib/types';
 import toast from 'react-hot-toast';
+import { FileSpreadsheet, FileText, AppWindow, FileQuestion } from 'lucide-react';
 
 const workflowOptions = [
   {
     value: CurrentWorkflow.EXCEL_SHEETS,
     label: 'Excel/Google Sheets',
-    icon: '📊',
+    icon: <FileSpreadsheet className="w-6 h-6" />,
     description: 'Tabellen und Formeln',
   },
   {
     value: CurrentWorkflow.WORD_DOCUMENTS,
     label: 'Word/Google Docs',
-    icon: '📄',
+    icon: <FileText className="w-6 h-6" />,
     description: 'Textdokumente und Vorlagen',
   },
   {
     value: CurrentWorkflow.OTHER_SOFTWARE,
     label: 'Andere Software',
-    icon: '💼',
+    icon: <AppWindow className="w-6 h-6" />,
     description: 'Andere Tools oder Apps',
   },
   {
     value: CurrentWorkflow.UNORGANIZED,
     label: 'Unorganisiert',
-    icon: '🤷',
+    icon: <FileQuestion className="w-6 h-6" />,
     description: 'Noch kein festes System',
   },
 ];
@@ -41,7 +42,7 @@ export default function Step2Page() {
   const router = useRouter();
   const { profile, updateStep } = useOnboardingStore();
   const [selected, setSelected] = useState<CurrentWorkflow | null>(
-    profile?.currentWorkflow || null
+    profile?.currentWorkflow as CurrentWorkflow || null
   );
   const [loading, setLoading] = useState(false);
 
@@ -83,12 +84,12 @@ export default function Step2Page() {
 
   return (
     <OnboardingLayout currentStep={2}>
-      <div className="space-y-6">
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-2">
+          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 mb-3">
             Wie verwaltest du aktuell deine Rechnungen?
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-slate-500 text-lg">
             Wir helfen dir, von deinem bisherigen System zu migrieren
           </p>
         </div>
@@ -112,6 +113,7 @@ export default function Step2Page() {
           onNext={handleNext}
           nextDisabled={!selected}
           loading={loading}
+          nextLabel="Weiter zu Schritt 3"
         />
       </div>
     </OnboardingLayout>
