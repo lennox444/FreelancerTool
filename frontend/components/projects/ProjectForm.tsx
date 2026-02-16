@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { customersApi } from '@/lib/api/customers';
 import { ProjectStatus } from '@/lib/types';
@@ -12,7 +12,10 @@ import {
   Calendar,
   FileText,
   StickyNote,
+  Check,
+  Loader2
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ProjectFormProps {
   initialData?: any;
@@ -21,8 +24,8 @@ interface ProjectFormProps {
 }
 
 const inputClasses =
-  'w-full px-4 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all';
-const labelClasses = 'block text-sm font-medium text-gray-300 mb-2';
+  'w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all shadow-sm';
+const labelClasses = 'block text-sm font-semibold text-slate-700 mb-2 ml-1';
 
 export function ProjectForm({
   initialData,
@@ -68,13 +71,13 @@ export function ProjectForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
+    <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="grid md:grid-cols-2 gap-8">
         {/* Name */}
-        <div>
+        <div className="md:col-span-2 lg:col-span-1">
           <label htmlFor="name" className={labelClasses}>
             <div className="flex items-center gap-2">
-              <Folder className="w-4 h-4 text-purple-400" />
+              <Folder className="w-4 h-4 text-[#800040]" />
               Projektname *
             </div>
           </label>
@@ -94,7 +97,7 @@ export function ProjectForm({
         <div>
           <label htmlFor="customerId" className={labelClasses}>
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-purple-400" />
+              <Users className="w-4 h-4 text-[#800040]" />
               Kunde
             </div>
           </label>
@@ -103,7 +106,7 @@ export function ProjectForm({
             name="customerId"
             value={formData.customerId}
             onChange={handleChange}
-            className={inputClasses}
+            className={cn(inputClasses, "appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1rem_center] bg-no-repeat")}
           >
             <option value="">Kein Kunde zugeordnet</option>
             {customers?.map((customer) => (
@@ -119,7 +122,7 @@ export function ProjectForm({
         <div>
           <label htmlFor="status" className={labelClasses}>
             <div className="flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-purple-400" />
+              <Lightbulb className="w-4 h-4 text-[#800040]" />
               Status
             </div>
           </label>
@@ -128,7 +131,7 @@ export function ProjectForm({
             name="status"
             value={formData.status}
             onChange={handleChange}
-            className={inputClasses}
+            className={cn(inputClasses, "appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1rem_center] bg-no-repeat")}
           >
             <option value={ProjectStatus.PLANNING}>Planung</option>
             <option value={ProjectStatus.ACTIVE}>Aktiv</option>
@@ -142,7 +145,7 @@ export function ProjectForm({
         <div>
           <label htmlFor="budget" className={labelClasses}>
             <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-purple-400" />
+              <DollarSign className="w-4 h-4 text-[#800040]" />
               Budget (€)
             </div>
           </label>
@@ -163,7 +166,7 @@ export function ProjectForm({
         <div>
           <label htmlFor="startDate" className={labelClasses}>
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-purple-400" />
+              <Calendar className="w-4 h-4 text-[#800040]" />
               Startdatum
             </div>
           </label>
@@ -181,7 +184,7 @@ export function ProjectForm({
         <div>
           <label htmlFor="endDate" className={labelClasses}>
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-purple-400" />
+              <Calendar className="w-4 h-4 text-[#800040]" />
               Enddatum
             </div>
           </label>
@@ -201,7 +204,7 @@ export function ProjectForm({
       <div>
         <label htmlFor="description" className={labelClasses}>
           <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-purple-400" />
+            <FileText className="w-4 h-4 text-[#800040]" />
             Beschreibung
           </div>
         </label>
@@ -211,7 +214,7 @@ export function ProjectForm({
           value={formData.description}
           onChange={handleChange}
           rows={3}
-          className={inputClasses}
+          className={cn(inputClasses, "resize-none")}
           placeholder="Kurze Beschreibung des Projekts..."
         />
       </div>
@@ -220,7 +223,7 @@ export function ProjectForm({
       <div>
         <label htmlFor="notes" className={labelClasses}>
           <div className="flex items-center gap-2">
-            <StickyNote className="w-4 h-4 text-purple-400" />
+            <StickyNote className="w-4 h-4 text-[#800040]" />
             Notizen
           </div>
         </label>
@@ -230,23 +233,29 @@ export function ProjectForm({
           value={formData.notes}
           onChange={handleChange}
           rows={3}
-          className={inputClasses}
+          className={cn(inputClasses, "resize-none")}
           placeholder="Interne Notizen..."
         />
       </div>
 
       {/* Submit Button */}
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 mt-4 border-t border-slate-100">
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="px-10 py-3.5 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-semibold text-sm shadow-lg shadow-pink-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {loading
-            ? 'Speichert...'
-            : initialData
-            ? 'Projekt aktualisieren'
-            : 'Projekt erstellen'}
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Speichere...
+            </>
+          ) : (
+            <>
+              <Check className="w-4 h-4" />
+              {initialData ? 'Projekt aktualisieren' : 'Projekt erstellen'}
+            </>
+          )}
         </button>
       </div>
     </form>

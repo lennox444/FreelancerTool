@@ -17,10 +17,15 @@ import {
   DollarSign,
   FileText,
   Users,
+  Plus,
+  X,
+  ChevronRight,
+  TrendingUp
 } from 'lucide-react';
 import PixelBlast from '@/components/landing/PixelBlast';
 import StarBorder from '@/components/ui/StarBorder';
 import SpotlightCard from '@/components/ui/SpotlightCard';
+import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 export default function ProjectsPage() {
@@ -39,6 +44,7 @@ export default function ProjectsPage() {
     try {
       await createProject.mutateAsync(data);
       setShowForm(false);
+      toast.success('Projekt erfolgreich erstellt');
     } catch (error) {
       // Error handled by mutation
     }
@@ -46,48 +52,70 @@ export default function ProjectsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Möchten Sie dieses Projekt wirklich löschen?')) return;
-    await deleteProject.mutateAsync(id);
+    try {
+      await deleteProject.mutateAsync(id);
+      toast.success('Projekt gelöscht');
+    } catch (error) {
+      toast.error('Fehler beim Löschen');
+    }
   };
 
   return (
-    <div className="relative min-h-screen">
-      {/* Background Effects */}
-      <PixelBlast />
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 pointer-events-none" />
+    <div className="relative isolate min-h-full p-4 md:p-6">
+      {/* Background with specific wine-red theme */}
+      <div className="fixed inset-0 -z-10 bg-slate-50/50">
+        <div className="absolute inset-0 w-full h-full opacity-[0.03]">
+          <PixelBlast
+            variant="square"
+            pixelSize={6}
+            color="#800040"
+            patternScale={4}
+            patternDensity={0.5}
+            pixelSizeJitter={0.5}
+            speed={0.2}
+            transparent
+          />
+        </div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(128,0,64,0.05)_0%,transparent_50%)] pointer-events-none" />
+      </div>
 
-      <div className="relative z-10 space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Projekte
-            </h1>
-            <p className="text-gray-400 mt-2">
-              Verwalte deine Projekte und behalte den Überblick
-            </p>
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-100 items-center justify-center text-[#800040]">
+              <Folder className="w-7 h-7" />
+            </div>
+            <div className="h-12 w-px bg-slate-200 hidden sm:block mx-1"></div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Projekte</h1>
+              <p className="text-slate-500 font-medium">Behalte den Überblick über deine aktuellen Vorhaben</p>
+            </div>
           </div>
-          <StarBorder
-            onClick={() => setShowForm(!showForm)}
-            className="rounded-xl group"
-            color={showForm ? "#94a3b8" : "#a855f7"}
-            speed="4s"
-            thickness={2}
-          >
-            <div className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl transition-all shadow-lg hover:shadow-purple-500/20 font-medium">
-              Neues Projekt
+
+          <StarBorder onClick={() => setShowForm(!showForm)} className="rounded-full group" color={showForm ? "#94a3b8" : "#ff3366"} speed="4s" thickness={3}>
+            <div className={cn(
+              "px-6 h-12 flex items-center justify-center rounded-full transition-all font-semibold text-sm shadow-lg gap-2",
+              showForm
+                ? "bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-slate-200/20"
+                : "bg-[#800040] hover:bg-[#600030] text-white shadow-pink-900/20"
+            )}>
+              {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+              <span>{showForm ? 'Abbrechen' : 'Neues Projekt'}</span>
             </div>
           </StarBorder>
         </div>
 
-        {/* Create Form */}
+        {/* Form Section */}
         {showForm && (
-          <div className="relative group">
+          <div className="animate-in fade-in slide-in-from-top-4 duration-300">
             <SpotlightCard
-              className="p-6 bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-800"
-              spotlightColor="rgba(147, 51, 234, 0.2)"
+              className="p-8 bg-white/90 backdrop-blur-md border border-slate-100 shadow-xl rounded-[2rem]"
+              spotlightColor="rgba(128, 0, 64, 0.08)"
             >
-              <h2 className="text-2xl font-bold text-white mb-6">
-                Neues Projekt erstellen
+              <h2 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-3">
+                <TrendingUp className="w-6 h-6 text-[#800040]" />
+                Neues Projekt starten
               </h2>
               <ProjectForm
                 onSubmit={handleCreate}
@@ -97,25 +125,23 @@ export default function ProjectsPage() {
           </div>
         )}
 
-        {/* Filters */}
+        {/* Filters & Search */}
         <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className="relative flex-1 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#800040] transition-colors" />
             <input
               type="text"
-              placeholder="Projekte durchsuchen..."
+              placeholder="Projektname oder Beschreibung suchen..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-800 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              className="w-full pl-12 pr-4 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm"
             />
           </div>
 
-          {/* Status Filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-4 py-3 bg-gray-900/50 border border-gray-800 rounded-xl text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            className="px-6 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1rem_center] bg-no-repeat pr-12"
           >
             <option value="">Alle Status</option>
             <option value={ProjectStatus.PLANNING}>Planung</option>
@@ -126,120 +152,117 @@ export default function ProjectsPage() {
           </select>
         </div>
 
-        {/* Projects Grid */}
+        {/* Content Section */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 border-4 border-[#800040]/10 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-t-[#800040] rounded-full animate-spin"></div>
+            </div>
+            <p className="text-slate-500 font-medium animate-pulse">Projekte werden geladen...</p>
           </div>
         ) : projects && projects.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project) => (
-              <div key={project.id} className="relative group">
-                <SpotlightCard
-                  className="h-full p-6 bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-800 hover:border-purple-500/50 transition-all"
-                  spotlightColor="rgba(147, 51, 234, 0.15)"
-                >
-                  <div className="space-y-4">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Folder className="w-5 h-5 text-purple-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-white truncate">
-                            {project.name}
-                          </h3>
-                          <ProjectStatusBadge status={project.status} />
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDelete(project.id)}
-                        className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-400 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Description */}
-                    {project.description && (
-                      <p className="text-gray-400 text-sm line-clamp-2">
-                        {project.description}
-                      </p>
-                    )}
-
-                    {/* Info */}
-                    <div className="space-y-2 pt-2">
-                      {project.customer && (
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <Users className="w-4 h-4" />
-                          <span className="truncate">
-                            {project.customer.name}
-                          </span>
-                        </div>
-                      )}
-
-                      {project.budget && (
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <DollarSign className="w-4 h-4" />
-                          <span>€{project.budget.toLocaleString('de-DE')}</span>
-                        </div>
-                      )}
-
-                      {(project.startDate || project.endDate) && (
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <Calendar className="w-4 h-4" />
-                          <span>
-                            {project.startDate &&
-                              new Date(project.startDate).toLocaleDateString(
-                                'de-DE'
-                              )}
-                            {project.startDate && project.endDate && ' - '}
-                            {project.endDate &&
-                              new Date(project.endDate).toLocaleDateString(
-                                'de-DE'
-                              )}
-                          </span>
-                        </div>
-                      )}
-
-                      {project._count && project._count.invoices > 0 && (
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <FileText className="w-4 h-4" />
-                          <span>
-                            {project._count.invoices} Rechnung
-                            {project._count.invoices !== 1 ? 'en' : ''}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action */}
-                    <button className="w-full mt-4 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg transition-all font-medium text-sm">
-                      Details anzeigen
+              <SpotlightCard
+                key={project.id}
+                className="bg-white/90 backdrop-blur-md border border-slate-100 shadow-sm p-6 rounded-2xl hover:shadow-md transition-shadow group flex flex-col h-full"
+                spotlightColor="rgba(128, 0, 64, 0.05)"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 bg-slate-50 rounded-xl text-slate-400 group-hover:bg-[#800040]/5 group-hover:text-[#800040] transition-colors">
+                    <Folder className="w-6 h-6" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ProjectStatusBadge status={project.status} />
+                    <button
+                      onClick={() => handleDelete(project.id)}
+                      className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      title="Löschen"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                </SpotlightCard>
-              </div>
+                </div>
+
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#800040] transition-colors mb-2">
+                    {project.name}
+                  </h3>
+                  {project.description && (
+                    <p className="text-sm text-slate-500 line-clamp-2 mb-6">
+                      {project.description}
+                    </p>
+                  )}
+
+                  <div className="grid grid-cols-1 gap-3 mb-6">
+                    {project.customer && (
+                      <div className="flex items-center gap-3 text-slate-600">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                          <Users className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-medium truncate">{project.customer.name}</span>
+                      </div>
+                    )}
+                    {project.budget && (
+                      <div className="flex items-center gap-3 text-slate-600">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                          <DollarSign className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-bold text-slate-900">€{project.budget.toLocaleString('de-DE')}</span>
+                      </div>
+                    )}
+                    {(project.startDate || project.endDate) && (
+                      <div className="flex items-center gap-3 text-slate-600">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                          <Calendar className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-medium">
+                          {project.startDate && new Date(project.startDate).toLocaleDateString('de-DE')}
+                          {project.startDate && project.endDate && ' — '}
+                          {project.endDate && new Date(project.endDate).toLocaleDateString('de-DE')}
+                        </span>
+                      </div>
+                    )}
+                    {project._count && project._count.invoices > 0 && (
+                      <div className="flex items-center gap-3 text-slate-600">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-medium">
+                          {project._count.invoices} Rechnung{project._count.invoices !== 1 ? 'en' : ''}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <button className="w-full h-11 flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl transition-all font-semibold text-sm group/btn border border-slate-100 mt-2">
+                  <span>Details anzeigen</span>
+                  <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                </button>
+              </SpotlightCard>
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-900/50 rounded-full mb-4">
-              <Folder className="w-8 h-8 text-gray-600" />
+          <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-[2rem] border border-slate-100 border-dashed">
+            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+              <Folder className="w-10 h-10" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-400 mb-2">
-              Noch keine Projekte
-            </h3>
-            <p className="text-gray-500 mb-6">
-              Erstelle dein erstes Projekt, um loszulegen
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Keine Projekte gefunden</h3>
+            <p className="text-slate-500 mb-8 max-w-sm mx-auto">
+              {search || statusFilter
+                ? 'Passe deine Filter an oder suche nach einem anderen Projekt.'
+                : 'Erstelle dein erstes Projekt, um deine Arbeit professionell zu organisieren.'}
             </p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all font-medium"
-            >
-              Erstes Projekt erstellen
-            </button>
+            {!search && !statusFilter && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="px-8 h-12 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-semibold text-sm shadow-lg shadow-pink-900/20"
+              >
+                Erstes Projekt erstellen
+              </button>
+            )}
           </div>
         )}
       </div>
