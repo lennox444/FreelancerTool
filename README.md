@@ -15,52 +15,88 @@ A professional SaaS application for freelancers to manage projects, invoices, an
 - Docker & Docker Compose
 - npm or yarn
 
-### Development Setup
+### One-Command Setup (Recommended)
 
-1. **Clone the repository**
+**Linux/Mac:**
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+**Windows:**
+```cmd
+setup.bat
+```
+
+This will automatically:
+- ✅ Install all dependencies (Backend + Frontend)
+- ✅ Start PostgreSQL database
+- ✅ Run database migrations
+- ✅ Seed demo data
+
+**Demo Account:** `demo@freelancer.com` / `demo123`
+
+---
+
+### Start Development Servers
+
+**Option A: Automated (Opens 2 Terminal Windows)**
+
+Linux/Mac: `./start-dev.sh`
+Windows: `start-dev.bat`
+
+**Option B: Manual (2 Separate Terminals)**
+
+Terminal 1 - Backend:
+```bash
+cd backend && npm run start:dev
+```
+
+Terminal 2 - Frontend:
+```bash
+cd frontend && npm run dev
+```
+
+**Access:**
+- 🌐 Frontend: http://localhost:3000
+- 🔧 Backend API: http://localhost:3001/api
+
+---
+
+### Manual Setup (If Needed)
+
+<details>
+<summary>Click to expand manual setup steps</summary>
+
+1. **Clone & Environment Variables**
 ```bash
 git clone <your-repo-url>
 cd freelancer-tool
-```
-
-2. **Environment Variables**
-```bash
-# Copy .env.example to backend/.env
 cp .env.example backend/.env
-# Edit backend/.env and set your JWT secrets
-
-# Copy .env.example to frontend/.env.local
 cp .env.example frontend/.env.local
 ```
 
-3. **Start Database (Development)**
+2. **Start Database**
 ```bash
 docker-compose -f docker-compose.dev.yml up -d
 ```
 
-4. **Backend Setup**
+3. **Backend Setup**
 ```bash
 cd backend
 npm install
 npx prisma migrate dev
+npm run prisma:seed
 npm run start:dev
 ```
-Backend runs on: `http://localhost:3001/api`
 
-5. **Frontend Setup**
+4. **Frontend Setup**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Frontend runs on: `http://localhost:3000`
-
-6. **Seed Demo Data (Optional)**
-```bash
-cd backend
-npm run prisma:seed
-```
-Demo Account: `demo@freelancer.com` / `demo123`
+</details>
 
 ### Production Deployment with Docker
 
