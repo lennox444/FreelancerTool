@@ -1,18 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Get token from cookies (we're using localStorage, so this is for future SSR support)
-  // For now, we rely on client-side auth checks
-
-  // Public routes that don't require auth
-  const publicRoutes = ['/login', '/register', '/'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-
-  // For protected routes, redirect will be handled client-side
-  // This middleware is mainly for future SSR/SSG support
+export function middleware(_request: NextRequest) {
+  // Currently, authentication is handled client-side using localStorage
+  // This middleware is reserved for future SSR/SSG auth support
 
   return NextResponse.next();
 }
