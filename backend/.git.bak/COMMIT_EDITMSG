@@ -1,0 +1,21 @@
+Add Dashboard module with comprehensive KPIs and analytics
+
+- Implement DashboardService with all KPI calculations
+- Add getStats endpoint: open invoices, overdue, month/year revenue, totals
+- Add getOverdueInvoices: list of all overdue invoices with customer data
+- Add getCashflowForecast: 90-day forecast grouped by week
+- Add getRecentActivity: combined timeline of invoices and payments
+- Add getRevenueTrend: monthly revenue chart data (last 6 months)
+- Helper functions for week calculations (Monday-Sunday bounds)
+- All aggregations use Prisma for optimal performance
+
+Endpoints:
+- GET /api/dashboard/stats - Comprehensive dashboard statistics
+- GET /api/dashboard/overdue - Overdue invoices list
+- GET /api/dashboard/cashflow - 90-day cashflow forecast
+- GET /api/dashboard/activity?limit=10 - Recent activity timeline
+- GET /api/dashboard/revenue-trend?months=6 - Monthly revenue trend
+
+Financial Control Center complete! All backend logic finished!
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>

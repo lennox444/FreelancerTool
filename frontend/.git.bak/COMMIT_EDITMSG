@@ -1,0 +1,15 @@
+Add Customers UI with full CRUD functionality
+
+- Create ReactQueryProvider for TanStack Query setup
+- Add customers API client with CRUD operations
+- Implement useCustomers hooks (get, create, update, delete)
+- Build Sidebar navigation with logout
+- Create Dashboard layout with auth protection
+- Build CustomerForm component with validation
+- Create Customers page with list, search, and inline create
+- Add Dashboard placeholder page
+- All routes protected with auth checks
+
+Frontend Customers Module complete!
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>

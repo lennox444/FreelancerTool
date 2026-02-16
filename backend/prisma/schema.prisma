@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// USER & AUTH
+// ========================================
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  firstName     String?
+  lastName      String?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations (Multi-Tenant ready)
+  customers     Customer[]
+  invoices      Invoice[]
+  payments      Payment[]
+
+  @@map("users")
+}
+
+// ========================================
+// CUSTOMERS
+// ========================================
+model Customer {
+  id                  String    @id @default(cuid())
+  ownerId             String
+
+  name                String
+  company             String?
+  email               String
+  defaultPaymentTerms Int       @default(30)  // Tage
+  notes               String?   @db.Text
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relations
+  owner               User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  invoices            Invoice[]
+
+  // Indexes für Performance & Security
+  @@index([ownerId])
+  @@index([email, ownerId])
+  @@map("customers")
+}
+
+// ========================================
+// INVOICES
+// ========================================
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+}
+
+model Invoice {
+  id              String        @id @default(cuid())
+  ownerId         String
+  customerId      String
+
+  // Rechnungsdaten
+  invoiceNumber   String?       // Zukunft: Auto-generated, rechtssicher
+  amount          Decimal       @db.Decimal(10, 2)
+  description     String        @db.Text
+
+  // Statusberechnung
+  status          InvoiceStatus @default(DRAFT)
+  totalPaid       Decimal       @default(0) @db.Decimal(10, 2)  // Denormalisiert für Performance
+
+  // Daten
+  issueDate       DateTime      @default(now())
+  dueDate         DateTime
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  owner           User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  customer        Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  payments        Payment[]
+
+  // Indexes
+  @@index([ownerId])
+  @@index([customerId, ownerId])
+  @@index([status, ownerId])
+  @@index([dueDate, status, ownerId])  // Für Overdue-Queries
+  @@map("invoices")
+}
+
+// ========================================
+// PAYMENTS
+// ========================================
+model Payment {
+  id          String    @id @default(cuid())
+  ownerId     String
+  invoiceId   String
+
+  amount      Decimal   @db.Decimal(10, 2)
+  paymentDate DateTime  @default(now())
+  note        String?   @db.Text
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  invoice     Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([ownerId])
+  @@index([invoiceId, ownerId])
+  @@index([paymentDate, ownerId])  // Für Cashflow-Queries
+  @@map("payments")
+}

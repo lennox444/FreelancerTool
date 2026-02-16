@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx @nestjs/cli new backend --package-manager npm --skip-git)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git rm:*)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(npm run build:*)",
+      "Bash(curl:*)",
+      "Bash(npx create-next-app:*)",
+      "Bash(timeout 120 bash:*)"
+    ]
+  }
+}
