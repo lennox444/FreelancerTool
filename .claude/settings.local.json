@@ -12,7 +12,11 @@
       "Bash(npm run build:*)",
       "Bash(curl:*)",
       "Bash(npx create-next-app:*)",
-      "Bash(timeout 120 bash:*)"
+      "Bash(timeout 120 bash:*)",
+      "Bash(npm test:*)",
+      "Bash(git reset:*)",
+      "Bash(chmod:*)",
+      "Bash(npm run lint)"
     ]
   }
 }
