@@ -53,7 +53,7 @@ model Customer {
 
   // Indexes für Performance & Security
   @@index([ownerId])
-  @@index([email, ownerId])
+  @@unique([email, ownerId], name: "email_ownerId")
   @@map("customers")
 }
 
