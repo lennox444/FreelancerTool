@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { usePayments, useCreatePayment, useDeletePayment } from '@/lib/hooks/usePayments';
 import { useInvoices } from '@/lib/hooks/useInvoices';
+import LoadingPage from '@/components/ui/LoadingPage';
+import EmptyState from '@/components/ui/EmptyState';
+import toast from 'react-hot-toast';
 
 export default function PaymentsPage() {
   const [showForm, setShowForm] = useState(false);
@@ -20,17 +23,23 @@ export default function PaymentsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createPayment.mutateAsync(formData);
-    setShowForm(false);
-    setFormData({ invoiceId: '', amount: 0, paymentDate: '', note: '' });
+    try {
+      await createPayment.mutateAsync(formData);
+      setShowForm(false);
+      setFormData({ invoiceId: '', amount: 0, paymentDate: '', note: '' });
+      toast.success('Payment added successfully');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to add payment');
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (confirm('Delete this payment? Invoice status will be recalculated.')) {
       try {
         await deletePayment.mutateAsync(id);
+        toast.success('Payment deleted successfully');
       } catch (error: any) {
-        alert(error.response?.data?.message || 'Failed to delete');
+        toast.error(error.response?.data?.message || 'Failed to delete payment');
       }
     }
   };
@@ -40,7 +49,7 @@ export default function PaymentsPage() {
     (inv) => inv.totalPaid < inv.amount
   ) || [];
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <LoadingPage message="Loading payments..." />;
 
   return (
     <div>
@@ -160,7 +169,14 @@ export default function PaymentsPage() {
             </tbody>
           </table>
         ) : (
-          <div className="p-8 text-center text-gray-500">No payments yet</div>
+          <EmptyState
+            title="No payments yet"
+            description="Add your first payment to track income"
+            action={{
+              label: 'Add Payment',
+              onClick: () => setShowForm(true),
+            }}
+          />
         )}
       </div>
     </div>

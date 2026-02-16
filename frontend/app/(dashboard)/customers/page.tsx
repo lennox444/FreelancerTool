@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useCustomers, useCreateCustomer, useDeleteCustomer } from '@/lib/hooks/useCustomers';
 import CustomerForm, { type CustomerFormData } from '@/components/customers/CustomerForm';
+import toast from 'react-hot-toast';
 
 export default function CustomersPage() {
   const [showForm, setShowForm] = useState(false);
@@ -13,13 +14,23 @@ export default function CustomersPage() {
   const deleteCustomer = useDeleteCustomer();
 
   const handleCreate = async (data: CustomerFormData) => {
-    await createCustomer.mutateAsync(data);
-    setShowForm(false);
+    try {
+      await createCustomer.mutateAsync(data);
+      setShowForm(false);
+      toast.success('Customer created successfully');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to create customer');
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this customer?')) {
-      await deleteCustomer.mutateAsync(id);
+      try {
+        await deleteCustomer.mutateAsync(id);
+        toast.success('Customer deleted successfully');
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to delete customer');
+      }
     }
   };
 

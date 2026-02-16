@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useCreatePayment } from '@/lib/hooks/usePayments';
+import toast from 'react-hot-toast';
 
 interface AddPaymentModalProps {
   invoiceId: string;
@@ -34,9 +35,10 @@ export default function AddPaymentModal({
         invoiceId,
         ...formData,
       });
+      toast.success('Payment added successfully');
       onClose();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to add payment');
+      toast.error(error.response?.data?.message || 'Failed to add payment');
     }
   };
 

@@ -1,12 +1,13 @@
 'use client';
 
 import { useDashboardStats, useDashboardOverdue } from '@/lib/hooks/useDashboard';
+import LoadingPage from '@/components/ui/LoadingPage';
 
 export default function DashboardPage() {
   const { data: stats, isLoading } = useDashboardStats();
   const { data: overdue } = useDashboardOverdue();
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <LoadingPage message="Loading dashboard..." />;
 
   return (
     <div>

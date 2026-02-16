@@ -5,7 +5,10 @@ import { useInvoices, useCreateInvoice, useSendInvoice, useDeleteInvoice } from 
 import { useCustomers } from '@/lib/hooks/useCustomers';
 import InvoiceStatusBadge from '@/components/invoices/InvoiceStatusBadge';
 import AddPaymentModal from '@/components/payments/AddPaymentModal';
+import LoadingPage from '@/components/ui/LoadingPage';
+import EmptyState from '@/components/ui/EmptyState';
 import { InvoiceStatus } from '@/lib/types';
+import toast from 'react-hot-toast';
 
 export default function InvoicesPage() {
   const [showForm, setShowForm] = useState(false);
@@ -25,14 +28,24 @@ export default function InvoicesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createInvoice.mutateAsync(formData);
-    setShowForm(false);
-    setFormData({ customerId: '', amount: 0, description: '', dueDate: '' });
+    try {
+      await createInvoice.mutateAsync(formData);
+      setShowForm(false);
+      setFormData({ customerId: '', amount: 0, description: '', dueDate: '' });
+      toast.success('Invoice created successfully');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to create invoice');
+    }
   };
 
   const handleSend = async (id: string) => {
     if (confirm('Send this invoice?')) {
-      await sendInvoice.mutateAsync(id);
+      try {
+        await sendInvoice.mutateAsync(id);
+        toast.success('Invoice sent successfully');
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to send invoice');
+      }
     }
   };
 
@@ -40,13 +53,14 @@ export default function InvoicesPage() {
     if (confirm('Delete this invoice? (Only DRAFT can be deleted)')) {
       try {
         await deleteInvoice.mutateAsync(id);
+        toast.success('Invoice deleted successfully');
       } catch (error: any) {
-        alert(error.response?.data?.message || 'Failed to delete');
+        toast.error(error.response?.data?.message || 'Failed to delete invoice');
       }
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <LoadingPage message="Loading invoices..." />;
 
   return (
     <div>
@@ -188,7 +202,14 @@ export default function InvoicesPage() {
             </tbody>
           </table>
         ) : (
-          <div className="p-8 text-center text-gray-500">No invoices yet</div>
+          <EmptyState
+            title="No invoices yet"
+            description="Create your first invoice to get started"
+            action={{
+              label: 'Create Invoice',
+              onClick: () => setShowForm(true),
+            }}
+          />
         )}
       </div>
 
