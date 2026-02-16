@@ -1,151 +1,141 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../core/database/prisma.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateOnboardingStepDto } from './dto/update-onboarding-step.dto';
-import { OnboardingEventType } from '@prisma/client';
+import {
+  FreelancerVertical,
+  CurrentWorkflow,
+  BusinessStage,
+  AcquisitionChannel,
+  OnboardingEventType,
+} from '@prisma/client';
 
 @Injectable()
 export class OnboardingService {
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * Get or create onboarding profile for user
-   */
   async getOrCreateProfile(userId: string) {
     let profile = await this.prisma.onboardingProfile.findUnique({
       where: { userId },
+      include: { user: true },
     });
 
     if (!profile) {
-      // Create new profile
+      // Create new profile and track start event
       profile = await this.prisma.onboardingProfile.create({
-        data: {
-          userId,
-          currentStep: 1,
-          onboardingCompleted: false,
-        },
+        data: { userId },
+        include: { user: true },
       });
 
-      // Track ONBOARDING_STARTED event
-      await this.trackEvent(userId, OnboardingEventType.ONBOARDING_STARTED, null);
+      await this.trackEvent(userId, OnboardingEventType.ONBOARDING_STARTED);
     }
 
     return profile;
   }
 
-  /**
-   * Get onboarding status
-   */
   async getStatus(userId: string) {
-    return this.getOrCreateProfile(userId);
-  }
-
-  /**
-   * Get full onboarding profile
-   */
-  async getProfile(userId: string) {
-    const profile = await this.prisma.onboardingProfile.findUnique({
-      where: { userId },
-    });
-
-    if (!profile) {
-      throw new NotFoundException('Onboarding profile not found');
-    }
-
+    const profile = await this.getOrCreateProfile(userId);
     return profile;
   }
 
-  /**
-   * Update specific onboarding step
-   */
   async updateStep(userId: string, dto: UpdateOnboardingStepDto) {
     const { stepNumber, ...stepData } = dto;
 
-    // Validate step number
-    if (stepNumber < 1 || stepNumber > 5) {
-      throw new BadRequestException('Invalid step number. Must be between 1 and 5.');
+    // Verify profile exists
+    await this.getOrCreateProfile(userId);
+
+    // Build update data
+    const updateData: any = {};
+    
+    if (stepData.vertical !== undefined) {
+      updateData.vertical = stepData.vertical;
+    }
+    if (stepData.currentWorkflow !== undefined) {
+      updateData.currentWorkflow = stepData.currentWorkflow;
+    }
+    if (stepData.businessStage !== undefined) {
+      updateData.businessStage = stepData.businessStage;
+    }
+    if (stepData.acquisitionChannel !== undefined) {
+      updateData.acquisitionChannel = stepData.acquisitionChannel;
+    }
+    if (stepData.acquisitionChannelOther !== undefined) {
+      updateData.acquisitionChannelOther = stepData.acquisitionChannelOther;
     }
 
-    // Get or create profile
-    const profile = await this.getOrCreateProfile(userId);
-
-    // Prepare update data
-    const updateData: any = { ...stepData };
-
-    // Increment currentStep if completing the current or previous step
-    if (stepNumber >= profile.currentStep && stepNumber < 5) {
-      updateData.currentStep = stepNumber + 1;
-    }
+    // Update currentStep to next step
+    updateData.currentStep = Math.min(stepNumber + 1, 5);
 
     // Update profile
-    const updatedProfile = await this.prisma.onboardingProfile.update({
+    const profile = await this.prisma.onboardingProfile.update({
       where: { userId },
       data: updateData,
+      include: { user: true },
     });
 
-    // Track STEP_COMPLETED event
-    await this.trackEvent(userId, OnboardingEventType.STEP_COMPLETED, stepNumber, stepData);
+    // Track completion event
+    await this.trackEvent(
+      userId,
+      OnboardingEventType.STEP_COMPLETED,
+      stepNumber,
+      stepData,
+    );
 
-    return updatedProfile;
+    return profile;
   }
 
-  /**
-   * Skip a step
-   */
   async skipStep(userId: string, stepNumber: number) {
-    // Validate step number
-    if (stepNumber < 1 || stepNumber > 5) {
-      throw new BadRequestException('Invalid step number. Must be between 1 and 5.');
-    }
+    // Verify profile exists
+    await this.getOrCreateProfile(userId);
 
-    // Get or create profile
-    const profile = await this.getOrCreateProfile(userId);
-
-    // Increment currentStep if skipping current step
-    let updateData: any = {};
-    if (stepNumber >= profile.currentStep && stepNumber < 5) {
-      updateData.currentStep = stepNumber + 1;
-    }
-
-    // Update profile
-    const updatedProfile = await this.prisma.onboardingProfile.update({
+    // Update currentStep to next step
+    const profile = await this.prisma.onboardingProfile.update({
       where: { userId },
-      data: updateData,
+      data: {
+        currentStep: Math.min(stepNumber + 1, 5),
+      },
+      include: { user: true },
     });
 
-    // Track STEP_SKIPPED event
+    // Track skip event
     await this.trackEvent(userId, OnboardingEventType.STEP_SKIPPED, stepNumber);
 
-    return updatedProfile;
+    return profile;
   }
 
-  /**
-   * Mark onboarding as completed
-   */
   async completeOnboarding(userId: string) {
-    const profile = await this.getOrCreateProfile(userId);
+    // Verify profile exists
+    await this.getOrCreateProfile(userId);
 
-    const updatedProfile = await this.prisma.onboardingProfile.update({
+    // Mark as completed
+    const profile = await this.prisma.onboardingProfile.update({
       where: { userId },
       data: {
         onboardingCompleted: true,
         completedAt: new Date(),
         currentStep: 5,
       },
+      include: { user: true },
     });
 
-    // Track ONBOARDING_COMPLETED event
-    await this.trackEvent(userId, OnboardingEventType.ONBOARDING_COMPLETED, null);
+    // Track completion event
+    await this.trackEvent(userId, OnboardingEventType.ONBOARDING_COMPLETED);
 
-    return updatedProfile;
+    return profile;
   }
 
-  /**
-   * Track onboarding event for analytics
-   */
+  async getProfile(userId: string) {
+    const profile = await this.getOrCreateProfile(userId);
+    return profile;
+  }
+
   private async trackEvent(
     userId: string,
     eventType: OnboardingEventType,
-    stepNumber: number | null,
+    stepNumber?: number,
     metadata?: any,
   ) {
     await this.prisma.onboardingEvent.create({
@@ -153,7 +143,7 @@ export class OnboardingService {
         userId,
         eventType,
         stepNumber,
-        metadata: metadata || null,
+        metadata: metadata || undefined,
       },
     });
   }

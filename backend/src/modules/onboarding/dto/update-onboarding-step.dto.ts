@@ -1,10 +1,43 @@
-import { IsEnum, IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
 import {
-  FreelancerVertical,
-  CurrentWorkflow,
-  BusinessStage,
-  AcquisitionChannel,
-} from '@prisma/client';
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
+
+export enum FreelancerVertical {
+  DESIGNER = 'DESIGNER',
+  DEVELOPER = 'DEVELOPER',
+  CONSULTANT = 'CONSULTANT',
+  MARKETING_CONTENT = 'MARKETING_CONTENT',
+  PHOTOGRAPHER_VIDEOGRAPHER = 'PHOTOGRAPHER_VIDEOGRAPHER',
+  OTHER = 'OTHER',
+}
+
+export enum CurrentWorkflow {
+  EXCEL_SHEETS = 'EXCEL_SHEETS',
+  WORD_DOCUMENTS = 'WORD_DOCUMENTS',
+  OTHER_SOFTWARE = 'OTHER_SOFTWARE',
+  UNORGANIZED = 'UNORGANIZED',
+}
+
+export enum BusinessStage {
+  JUST_STARTED = 'JUST_STARTED',
+  GROWING = 'GROWING',
+  ESTABLISHED = 'ESTABLISHED',
+  SIDE_BUSINESS = 'SIDE_BUSINESS',
+}
+
+export enum AcquisitionChannel {
+  LINKEDIN = 'LINKEDIN',
+  REDDIT = 'REDDIT',
+  FACEBOOK_GROUP = 'FACEBOOK_GROUP',
+  REFERRAL = 'REFERRAL',
+  GOOGLE_SEARCH = 'GOOGLE_SEARCH',
+  OTHER = 'OTHER',
+}
 
 export class UpdateOnboardingStepDto {
   @IsInt()

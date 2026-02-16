@@ -9,52 +9,29 @@ import { useOnboardingStore } from '@/lib/stores/onboardingStore';
 import { onboardingApi } from '@/lib/api/onboarding';
 import { AcquisitionChannel } from '@/lib/types';
 import toast from 'react-hot-toast';
-import { Linkedin, MessageCircle, Facebook, UserPlus, Search, Globe } from 'lucide-react';
 
 const channelOptions = [
-  {
-    value: AcquisitionChannel.LINKEDIN,
-    label: 'LinkedIn',
-    icon: <Linkedin className="w-6 h-6" />,
-    description: 'Über LinkedIn entdeckt',
-  },
-  {
-    value: AcquisitionChannel.REDDIT,
-    label: 'Reddit',
-    icon: <MessageCircle className="w-6 h-6" />,
-    description: 'Über Reddit-Community',
-  },
+  { value: AcquisitionChannel.LINKEDIN, label: 'LinkedIn', icon: '💼' },
+  { value: AcquisitionChannel.REDDIT, label: 'Reddit', icon: '🤖' },
   {
     value: AcquisitionChannel.FACEBOOK_GROUP,
     label: 'Facebook Gruppe',
-    icon: <Facebook className="w-6 h-6" />,
-    description: 'In einer Facebook-Gruppe',
+    icon: '👥',
   },
-  {
-    value: AcquisitionChannel.REFERRAL,
-    label: 'Empfehlung',
-    icon: <UserPlus className="w-6 h-6" />,
-    description: 'Von Freunden/Kollegen empfohlen',
-  },
+  { value: AcquisitionChannel.REFERRAL, label: 'Empfehlung', icon: '🤝' },
   {
     value: AcquisitionChannel.GOOGLE_SEARCH,
     label: 'Google Suche',
-    icon: <Search className="w-6 h-6" />,
-    description: 'Über Google gefunden',
+    icon: '🔍',
   },
-  {
-    value: AcquisitionChannel.OTHER,
-    label: 'Andere',
-    icon: <Globe className="w-6 h-6" />,
-    description: 'Andere Quelle',
-  },
+  { value: AcquisitionChannel.OTHER, label: 'Andere', icon: '✨' },
 ];
 
 export default function Step4Page() {
   const router = useRouter();
   const { profile, updateStep } = useOnboardingStore();
   const [selected, setSelected] = useState<AcquisitionChannel | null>(
-    profile?.acquisitionChannel as AcquisitionChannel || null
+    profile?.acquisitionChannel || null
   );
   const [loading, setLoading] = useState(false);
 
@@ -66,11 +43,13 @@ export default function Step4Page() {
       const updatedProfile = await onboardingApi.updateStep(4, {
         acquisitionChannel: selected,
       });
-      updateStep(updatedProfile);
+      updateStep({
+        acquisitionChannel: selected,
+        currentStep: updatedProfile.currentStep,
+      });
       router.push('/onboarding/step5');
     } catch (error) {
-      console.error('Error updating step:', error);
-      toast.error('Fehler beim Speichern. Bitte versuche es erneut.');
+      toast.error('Fehler beim Speichern');
     } finally {
       setLoading(false);
     }
@@ -80,11 +59,10 @@ export default function Step4Page() {
     setLoading(true);
     try {
       const updatedProfile = await onboardingApi.skipStep(4);
-      updateStep(updatedProfile);
+      updateStep({ currentStep: updatedProfile.currentStep });
       router.push('/onboarding/step5');
     } catch (error) {
-      console.error('Error skipping step:', error);
-      toast.error('Fehler beim Überspringen. Bitte versuche es erneut.');
+      toast.error('Fehler beim Überspringen');
     } finally {
       setLoading(false);
     }
@@ -96,23 +74,22 @@ export default function Step4Page() {
 
   return (
     <OnboardingLayout currentStep={4}>
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 mb-3">
+      <div className="space-y-6">
+        <div className="text-center space-y-2">
+          <h2 className="text-3xl font-bold text-white">
             Wie hast du von FreelanceFlow erfahren?
           </h2>
-          <p className="text-slate-500 text-lg">
-            Hilf uns zu verstehen, wo wir dich erreicht haben
+          <p className="text-gray-400">
+            Hilf uns zu verstehen, wo unsere Community ist
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 pt-4">
           {channelOptions.map((option) => (
             <OptionCard
               key={option.value}
               icon={option.icon}
               label={option.label}
-              description={option.description}
               selected={selected === option.value}
               onClick={() => setSelected(option.value)}
             />
@@ -125,7 +102,6 @@ export default function Step4Page() {
           onNext={handleNext}
           nextDisabled={!selected}
           loading={loading}
-          nextLabel="Weiter zu Schritt 5"
         />
       </div>
     </OnboardingLayout>

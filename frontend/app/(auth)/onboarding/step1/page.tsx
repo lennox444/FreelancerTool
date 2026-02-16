@@ -9,52 +9,25 @@ import { useOnboardingStore } from '@/lib/stores/onboardingStore';
 import { onboardingApi } from '@/lib/api/onboarding';
 import { FreelancerVertical } from '@/lib/types';
 import toast from 'react-hot-toast';
-import { Palette, Code2, LineChart, Megaphone, Camera, Sparkles } from 'lucide-react';
 
 const verticalOptions = [
-  {
-    value: FreelancerVertical.DESIGNER,
-    label: 'Designer',
-    icon: <Palette className="w-6 h-6" />,
-    description: 'UI/UX, Grafik, Webdesign',
-  },
-  {
-    value: FreelancerVertical.DEVELOPER,
-    label: 'Developer',
-    icon: <Code2 className="w-6 h-6" />,
-    description: 'Web, App, Software-Entwicklung',
-  },
-  {
-    value: FreelancerVertical.CONSULTANT,
-    label: 'Berater/Consultant',
-    icon: <LineChart className="w-6 h-6" />,
-    description: 'Unternehmensberatung, Coaching',
-  },
-  {
-    value: FreelancerVertical.MARKETING_CONTENT,
-    label: 'Marketing/Content',
-    icon: <Megaphone className="w-6 h-6" />,
-    description: 'Content Creation, Social Media',
-  },
+  { value: FreelancerVertical.DESIGNER, label: 'Designer', icon: '🎨' },
+  { value: FreelancerVertical.DEVELOPER, label: 'Developer', icon: '💻' },
+  { value: FreelancerVertical.CONSULTANT, label: 'Berater/Consultant', icon: '📊' },
+  { value: FreelancerVertical.MARKETING_CONTENT, label: 'Marketing/Content', icon: '📝' },
   {
     value: FreelancerVertical.PHOTOGRAPHER_VIDEOGRAPHER,
     label: 'Fotograf/Videograf',
-    icon: <Camera className="w-6 h-6" />,
-    description: 'Fotografie, Videoproduktion',
+    icon: '📷',
   },
-  {
-    value: FreelancerVertical.OTHER,
-    label: 'Andere',
-    icon: <Sparkles className="w-6 h-6" />,
-    description: 'Andere freiberufliche Tätigkeit',
-  },
+  { value: FreelancerVertical.OTHER, label: 'Andere', icon: '✨' },
 ];
 
 export default function Step1Page() {
   const router = useRouter();
   const { profile, updateStep } = useOnboardingStore();
   const [selected, setSelected] = useState<FreelancerVertical | null>(
-    profile?.vertical as FreelancerVertical || null
+    profile?.vertical || null
   );
   const [loading, setLoading] = useState(false);
 
@@ -66,11 +39,10 @@ export default function Step1Page() {
       const updatedProfile = await onboardingApi.updateStep(1, {
         vertical: selected,
       });
-      updateStep(updatedProfile);
+      updateStep({ vertical: selected, currentStep: updatedProfile.currentStep });
       router.push('/onboarding/step2');
     } catch (error) {
-      console.error('Error updating step:', error);
-      toast.error('Fehler beim Speichern. Bitte versuche es erneut.');
+      toast.error('Fehler beim Speichern');
     } finally {
       setLoading(false);
     }
@@ -80,11 +52,10 @@ export default function Step1Page() {
     setLoading(true);
     try {
       const updatedProfile = await onboardingApi.skipStep(1);
-      updateStep(updatedProfile);
+      updateStep({ currentStep: updatedProfile.currentStep });
       router.push('/onboarding/step2');
     } catch (error) {
-      console.error('Error skipping step:', error);
-      toast.error('Fehler beim Überspringen. Bitte versuche es erneut.');
+      toast.error('Fehler beim Überspringen');
     } finally {
       setLoading(false);
     }
@@ -92,23 +63,22 @@ export default function Step1Page() {
 
   return (
     <OnboardingLayout currentStep={1}>
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 mb-3">
+      <div className="space-y-6">
+        <div className="text-center space-y-2">
+          <h2 className="text-3xl font-bold text-white">
             Was ist deine Haupttätigkeit?
           </h2>
-          <p className="text-slate-500 text-lg">
+          <p className="text-gray-400">
             Hilf uns, dein Dashboard optimal anzupassen
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 pt-4">
           {verticalOptions.map((option) => (
             <OptionCard
               key={option.value}
               icon={option.icon}
               label={option.label}
-              description={option.description}
               selected={selected === option.value}
               onClick={() => setSelected(option.value)}
             />
@@ -121,7 +91,6 @@ export default function Step1Page() {
           onNext={handleNext}
           nextDisabled={!selected}
           loading={loading}
-          nextLabel="Weiter zu Schritt 2"
         />
       </div>
     </OnboardingLayout>

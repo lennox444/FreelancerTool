@@ -1,11 +1,9 @@
-'use client';
-
-import React from 'react';
+import { ReactNode } from 'react';
 
 export default function OnboardingRootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return <>{children}</>;
 }

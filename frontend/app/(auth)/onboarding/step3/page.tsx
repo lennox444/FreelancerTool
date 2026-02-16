@@ -9,32 +9,27 @@ import { useOnboardingStore } from '@/lib/stores/onboardingStore';
 import { onboardingApi } from '@/lib/api/onboarding';
 import { BusinessStage } from '@/lib/types';
 import toast from 'react-hot-toast';
-import { Sprout, TrendingUp, Trophy, Zap } from 'lucide-react';
 
 const stageOptions = [
   {
     value: BusinessStage.JUST_STARTED,
-    label: 'Gerade gestartet',
-    icon: <Sprout className="w-6 h-6" />,
-    description: '0-6 Monate selbstständig',
+    label: 'Gerade gestartet (0-6 Monate)',
+    icon: '🌱',
   },
   {
     value: BusinessStage.GROWING,
-    label: 'Wachsend',
-    icon: <TrendingUp className="w-6 h-6" />,
-    description: '6-24 Monate, erste Erfolge',
+    label: 'Wachsend (6-24 Monate)',
+    icon: '🚀',
   },
   {
     value: BusinessStage.ESTABLISHED,
-    label: 'Etabliert',
-    icon: <Trophy className="w-6 h-6" />,
-    description: '2+ Jahre, stabiles Geschäft',
+    label: 'Etabliert (2+ Jahre)',
+    icon: '🏆',
   },
   {
     value: BusinessStage.SIDE_BUSINESS,
-    label: 'Nebentätigkeit',
-    icon: <Zap className="w-6 h-6" />,
-    description: 'Neben Hauptberuf',
+    label: 'Nebenberuflich',
+    icon: '⚡',
   },
 ];
 
@@ -42,7 +37,7 @@ export default function Step3Page() {
   const router = useRouter();
   const { profile, updateStep } = useOnboardingStore();
   const [selected, setSelected] = useState<BusinessStage | null>(
-    profile?.businessStage as BusinessStage || null
+    profile?.businessStage || null
   );
   const [loading, setLoading] = useState(false);
 
@@ -54,11 +49,13 @@ export default function Step3Page() {
       const updatedProfile = await onboardingApi.updateStep(3, {
         businessStage: selected,
       });
-      updateStep(updatedProfile);
+      updateStep({
+        businessStage: selected,
+        currentStep: updatedProfile.currentStep,
+      });
       router.push('/onboarding/step4');
     } catch (error) {
-      console.error('Error updating step:', error);
-      toast.error('Fehler beim Speichern. Bitte versuche es erneut.');
+      toast.error('Fehler beim Speichern');
     } finally {
       setLoading(false);
     }
@@ -68,11 +65,10 @@ export default function Step3Page() {
     setLoading(true);
     try {
       const updatedProfile = await onboardingApi.skipStep(3);
-      updateStep(updatedProfile);
+      updateStep({ currentStep: updatedProfile.currentStep });
       router.push('/onboarding/step4');
     } catch (error) {
-      console.error('Error skipping step:', error);
-      toast.error('Fehler beim Überspringen. Bitte versuche es erneut.');
+      toast.error('Fehler beim Überspringen');
     } finally {
       setLoading(false);
     }
@@ -84,23 +80,22 @@ export default function Step3Page() {
 
   return (
     <OnboardingLayout currentStep={3}>
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 mb-3">
-            Wie lange bist du schon selbstständig?
+      <div className="space-y-6">
+        <div className="text-center space-y-2">
+          <h2 className="text-3xl font-bold text-white">
+            In welcher Phase befindet sich dein Business?
           </h2>
-          <p className="text-slate-500 text-lg">
-            Hilft uns, passende Tipps und Features anzubieten
+          <p className="text-gray-400">
+            Wir passen unsere Empfehlungen an deine Erfahrung an
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 pt-4">
           {stageOptions.map((option) => (
             <OptionCard
               key={option.value}
               icon={option.icon}
               label={option.label}
-              description={option.description}
               selected={selected === option.value}
               onClick={() => setSelected(option.value)}
             />
@@ -113,7 +108,6 @@ export default function Step3Page() {
           onNext={handleNext}
           nextDisabled={!selected}
           loading={loading}
-          nextLabel="Weiter zu Schritt 4"
         />
       </div>
     </OnboardingLayout>

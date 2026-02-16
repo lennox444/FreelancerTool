@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { LayoutDashboard, Users, FileText, CreditCard, LogOut, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, Folder, FileText, CreditCard, LogOut, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -26,6 +26,7 @@ export default function Sidebar({ className, onLinkClick }: SidebarProps) {
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/customers', label: 'Kunden', icon: Users },
+    { href: '/projects', label: 'Projekte', icon: Folder },
     { href: '/invoices', label: 'Rechnungen', icon: FileText },
     { href: '/payments', label: 'Zahlungen', icon: CreditCard },
   ];

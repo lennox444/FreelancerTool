@@ -1,61 +1,54 @@
 'use client';
 
-import React from 'react';
-import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
-
 interface OptionCardProps {
-  icon: React.ReactNode;
+  icon: string;
   label: string;
-  description?: string;
   selected: boolean;
   onClick: () => void;
-  className?: string;
 }
 
-export function OptionCard({
-  icon,
-  label,
-  description,
-  selected,
-  onClick,
-  className,
-}: OptionCardProps) {
+export function OptionCard({ icon, label, selected, onClick }: OptionCardProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        'relative w-full p-4 lg:p-6 rounded-xl border text-left transition-all duration-200 group flex items-center gap-4 hover:shadow-lg',
-        'focus:outline-none focus:ring-2 focus:ring-[#800040] focus:ring-offset-2',
-        selected
-          ? 'border-[#800040] bg-[#800040]/5 shadow-md shadow-[#800040]/10'
-          : 'border-slate-200 bg-white hover:border-[#800040]/30 hover:bg-slate-50',
-        className
-      )}
+      className={`
+        relative p-6 rounded-xl border-2 transition-all duration-200
+        hover:scale-105 hover:shadow-lg
+        ${
+          selected
+            ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20'
+            : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+        }
+      `}
     >
-      <div className={cn(
-        "flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center transition-colors",
-        selected ? "bg-[#800040]/10 text-[#800040]" : "bg-slate-100 text-slate-500 group-hover:bg-[#800040]/5 group-hover:text-[#800040]"
-      )}>
-        {icon}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className={cn("font-semibold text-base mb-1", selected ? "text-[#800040]" : "text-slate-900")}>
+      <div className="flex flex-col items-center gap-3">
+        <span className="text-4xl">{icon}</span>
+        <span
+          className={`text-sm font-medium ${
+            selected ? 'text-purple-400' : 'text-gray-300'
+          }`}
+        >
           {label}
+        </span>
+      </div>
+      {selected && (
+        <div className="absolute -top-2 -right-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+          <svg
+            className="w-4 h-4 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
         </div>
-        {description && (
-          <div className="text-sm text-slate-500 line-clamp-2">{description}</div>
-        )}
-      </div>
-
-      <div className={cn(
-        "flex-shrink-0 w-6 h-6 rounded-full border flex items-center justify-center transition-all",
-        selected ? "bg-[#800040] border-[#800040]" : "border-slate-300 bg-transparent group-hover:border-[#800040]/50"
-      )}>
-        {selected && <Check className="w-4 h-4 text-white" strokeWidth={3} />}
-      </div>
+      )}
     </button>
   );
 }

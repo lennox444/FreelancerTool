@@ -23,7 +23,29 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(backend/src/modules/onboarding/dto/skip-onboarding-step.dto.ts:*)",
+      "Bash(backend/src/modules/onboarding/onboarding.service.ts:*)",
+      "Bash(backend/src/modules/onboarding/onboarding.controller.ts:*)",
+      "Bash(backend/src/modules/onboarding/onboarding.module.ts:*)",
+      "Bash(backend/src/modules/projects/dto/create-project.dto.ts:*)",
+      "Bash(backend/src/modules/projects/dto/update-project.dto.ts:*)",
+      "Bash(backend/src/modules/projects/projects.service.ts:*)",
+      "Bash(backend/src/modules/projects/projects.controller.ts:*)",
+      "Bash(backend/src/modules/projects/projects.module.ts:*)",
+      "Bash(frontend/lib/hooks/useProjects.ts:*)",
+      "Bash(frontend/components/onboarding/NavigationButtons.tsx:*)",
+      "Bash(frontend/components/onboarding/OnboardingLayout.tsx:*)",
+      "Bash('frontend/app/\\(auth\\)/onboarding/layout.tsx':*)",
+      "Bash('frontend/app/\\(auth\\)/onboarding/page.tsx':*)",
+      "Bash('frontend/app/\\(auth\\)/onboarding/step1/page.tsx':*)",
+      "Bash('frontend/app/\\(auth\\)/onboarding/step2/page.tsx':*)",
+      "Bash('frontend/app/\\(auth\\)/onboarding/step3/page.tsx':*)",
+      "Bash('frontend/app/\\(auth\\)/onboarding/step4/page.tsx':*)",
+      "Bash('frontend/app/\\(auth\\)/onboarding/step5/page.tsx':*)",
+      "Bash(frontend/components/projects/ProjectStatusBadge.tsx:*)",
+      "Bash(frontend/components/projects/ProjectForm.tsx:*)",
+      "Bash('frontend/app/\\(dashboard\\)/projects/page.tsx':*)"
     ]
   }
 }

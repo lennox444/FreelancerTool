@@ -132,3 +132,38 @@ export interface OnboardingProfile {
   createdAt: string;
   updatedAt: string;
 }
+
+// ========================================
+// PROJECTS
+// ========================================
+export enum ProjectStatus {
+  PLANNING = 'PLANNING',
+  ACTIVE = 'ACTIVE',
+  ON_HOLD = 'ON_HOLD',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export interface Project {
+  id: string;
+  ownerId: string;
+  customerId?: string;
+  name: string;
+  description?: string;
+  status: ProjectStatus;
+  budget?: number;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  customer?: {
+    id: string;
+    name: string;
+    company?: string;
+    email: string;
+  };
+  _count?: {
+    invoices: number;
+  };
+}
