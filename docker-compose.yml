@@ -17,6 +17,49 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - freelancer-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: freelancer-backend
+    environment:
+      DATABASE_URL: postgresql://dev:dev@postgres:5432/freelancer_dev
+      JWT_SECRET: ${JWT_SECRET:-development-secret-key-change-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-development-refresh-secret-change-in-production}
+      PORT: 3001
+      NODE_ENV: production
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - freelancer-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+    container_name: freelancer-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - freelancer-network
+    restart: unless-stopped
+
+networks:
+  freelancer-network:
+    driver: bridge
 
 volumes:
   postgres_data:

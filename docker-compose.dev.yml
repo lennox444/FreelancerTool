@@ -1,0 +1,25 @@
+version: '3.9'
+
+# Development compose file - only runs Postgres
+# Backend and Frontend should be run locally with npm run start:dev / npm run dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: freelancer-postgres-dev
+    environment:
+      POSTGRES_DB: freelancer_dev
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d freelancer_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_dev_data:

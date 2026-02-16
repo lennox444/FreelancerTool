@@ -15,7 +15,7 @@ A professional SaaS application for freelancers to manage projects, invoices, an
 - Docker & Docker Compose
 - npm or yarn
 
-### Setup
+### Development Setup
 
 1. **Clone the repository**
 ```bash
@@ -23,29 +23,76 @@ git clone <your-repo-url>
 cd freelancer-tool
 ```
 
-2. **Start Database**
+2. **Environment Variables**
 ```bash
-docker-compose up -d
+# Copy .env.example to backend/.env
+cp .env.example backend/.env
+# Edit backend/.env and set your JWT secrets
+
+# Copy .env.example to frontend/.env.local
+cp .env.example frontend/.env.local
 ```
 
-3. **Backend Setup**
+3. **Start Database (Development)**
+```bash
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+4. **Backend Setup**
 ```bash
 cd backend
 npm install
-cp .env.example .env
 npx prisma migrate dev
 npm run start:dev
 ```
 Backend runs on: `http://localhost:3001/api`
 
-4. **Frontend Setup**
+5. **Frontend Setup**
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local
 npm run dev
 ```
 Frontend runs on: `http://localhost:3000`
+
+6. **Seed Demo Data (Optional)**
+```bash
+cd backend
+npm run prisma:seed
+```
+Demo Account: `demo@freelancer.com` / `demo123`
+
+### Production Deployment with Docker
+
+**Option 1: Full Stack with Docker Compose**
+```bash
+# Build and start all services (PostgreSQL, Backend, Frontend)
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```
+
+**Option 2: Separate Deployment**
+```bash
+# Build Backend
+cd backend
+docker build -t freelancer-backend .
+
+# Build Frontend
+cd frontend
+docker build -t freelancer-frontend \
+  --build-arg NEXT_PUBLIC_API_URL=https://your-api-url.com/api .
+
+# Run with environment variables
+docker run -p 3001:3001 \
+  -e DATABASE_URL="postgresql://..." \
+  -e JWT_SECRET="your-secret" \
+  freelancer-backend
+```
 
 ## 📊 Features
 
@@ -134,10 +181,33 @@ freelancer-tool/
 
 ## 🚢 Deployment
 
-**Recommended:**
-- Backend: Railway or Render
-- Frontend: Vercel
-- Database: Neon (Serverless Postgres)
+### Docker Deployment (Recommended for Self-Hosting)
+
+The application includes production-ready Dockerfiles with multi-stage builds:
+
+- **Backend**: Optimized NestJS image with automatic Prisma migrations
+- **Frontend**: Next.js standalone build for minimal image size
+- **docker-compose.yml**: Complete stack setup with networking
+
+### Cloud Deployment Options
+
+**Option A: Platform-as-a-Service**
+- Backend: Railway, Render, or Fly.io
+- Frontend: Vercel or Netlify
+- Database: Neon, Supabase, or Railway Postgres
+
+**Option B: Container Orchestration**
+- Docker Compose on VPS (DigitalOcean, Hetzner)
+- Kubernetes (for larger scale)
+- AWS ECS / Google Cloud Run
+
+### Environment Variables for Production
+
+See `.env.example` for all required variables. Key settings:
+- Generate strong JWT secrets (32+ characters)
+- Use production-grade PostgreSQL
+- Set `NODE_ENV=production`
+- Configure `NEXT_PUBLIC_API_URL` to your API domain
 
 ## 📄 License
 
