@@ -24,9 +24,11 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations (Multi-Tenant ready)
-  customers     Customer[]
-  invoices      Invoice[]
-  payments      Payment[]
+  customers          Customer[]
+  invoices           Invoice[]
+  payments           Payment[]
+  onboardingProfile  OnboardingProfile?
+  onboardingEvents   OnboardingEvent[]
 
   @@map("users")
 }
@@ -126,4 +128,107 @@ model Payment {
   @@index([invoiceId, ownerId])
   @@index([paymentDate, ownerId])  // Für Cashflow-Queries
   @@map("payments")
+}
+
+// ========================================
+// ONBOARDING
+// ========================================
+enum FreelancerVertical {
+  DESIGNER
+  DEVELOPER
+  CONSULTANT
+  MARKETING_CONTENT
+  PHOTOGRAPHER_VIDEOGRAPHER
+  OTHER
+}
+
+enum CurrentWorkflow {
+  EXCEL_SHEETS
+  WORD_DOCUMENTS
+  OTHER_SOFTWARE
+  UNORGANIZED
+}
+
+enum BusinessStage {
+  JUST_STARTED      // 0-6 Monate
+  GROWING          // 6-24 Monate
+  ESTABLISHED      // 2+ Jahre
+  SIDE_BUSINESS
+}
+
+enum AcquisitionChannel {
+  LINKEDIN
+  REDDIT
+  FACEBOOK_GROUP
+  REFERRAL
+  GOOGLE_SEARCH
+  OTHER
+}
+
+model OnboardingProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+
+  // Step 1: Branchensegmentierung
+  vertical  FreelancerVertical?
+
+  // Step 2: Aktueller Workflow / Pain Point
+  currentWorkflow  CurrentWorkflow?
+
+  // Step 3: Business Stage
+  businessStage    BusinessStage?
+
+  // Step 4: Marketing Attribution
+  acquisitionChannel       AcquisitionChannel?
+  acquisitionChannelOther  String?  // Wenn "OTHER" gewählt
+
+  // Progress Tracking
+  onboardingCompleted   Boolean   @default(false)
+  currentStep          Int       @default(1)  // 1-5
+  completedAt          DateTime?
+
+  // Extensibility: JSON für zusätzliche Daten
+  additionalData       Json?     // Für zukünftige Fragen ohne Schema-Migration
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // Relations
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([vertical])  // Für Segmentierungs-Queries
+  @@index([acquisitionChannel])  // Für Attribution-Analytics
+  @@index([onboardingCompleted])
+  @@map("onboarding_profiles")
+}
+
+// ========================================
+// ONBOARDING EVENTS (Analytics)
+// ========================================
+enum OnboardingEventType {
+  STEP_VIEWED
+  STEP_COMPLETED
+  STEP_SKIPPED
+  ONBOARDING_STARTED
+  ONBOARDING_COMPLETED
+  ONBOARDING_ABANDONED
+}
+
+model OnboardingEvent {
+  id          String              @id @default(cuid())
+  userId      String
+
+  eventType   OnboardingEventType
+  stepNumber  Int?                // Welcher Schritt (1-5)
+  metadata    Json?               // Zusätzliche Event-Daten
+
+  createdAt   DateTime            @default(now())
+
+  // Relations
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, eventType])
+  @@index([eventType, createdAt])  // Für Analytics-Queries
+  @@map("onboarding_events")
 }

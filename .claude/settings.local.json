@@ -16,7 +16,13 @@
       "Bash(npm test:*)",
       "Bash(git reset:*)",
       "Bash(chmod:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(xargs:*)",
+      "Bash(npm run start:dev:*)",
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }
