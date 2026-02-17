@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { LayoutDashboard, Users, Folder, FileText, CreditCard, LogOut, Settings, Clock, ShieldCheck, Calendar, Zap, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Users, Folder, FileText, CreditCard, LogOut, Settings, Clock, ShieldCheck, Calendar, Zap, Sparkles, ClipboardList, Receipt, Calculator } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserRole } from '@/lib/types';
 
@@ -31,7 +31,10 @@ export default function Sidebar({ className, onLinkClick }: SidebarProps) {
     { href: '/projects', label: 'Projekte', icon: Folder },
     { href: '/time-tracking', label: 'Zeiterfassung', icon: Clock },
     { href: '/invoices', label: 'Rechnungen', icon: FileText },
+    { href: '/quotes', label: 'Angebote', icon: ClipboardList },
     { href: '/payments', label: 'Zahlungen', icon: CreditCard },
+    { href: '/expenses', label: 'Ausgaben', icon: Receipt },
+    { href: '/tax-assistant', label: 'Steuer-Assistent', icon: Calculator },
   ];
 
   const isAdmin = user?.role === UserRole.SUPER_ADMIN;

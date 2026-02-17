@@ -25,8 +25,12 @@ import {
   ArrowUpRight,
   ChevronRight,
   Wallet,
-  Folder
+  Folder,
+  Download,
+  Mail,
+  ExternalLink
 } from 'lucide-react';
+import { invoicesApi } from '@/lib/api/invoices';
 import { InvoiceStatus } from '@/lib/types';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
@@ -87,6 +91,29 @@ export default function InvoicesPage() {
       } catch (error: any) {
         toast.error(error.response?.data?.message || 'Fehler beim Senden der Rechnung');
       }
+    }
+  };
+
+  const handleDownloadPdf = async (inv: any) => {
+    try {
+      const response = await invoicesApi.downloadPdf(inv.id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Rechnung-${inv.invoiceNumber || inv.id}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('PDF-Download fehlgeschlagen');
+    }
+  };
+
+  const handleSendEmail = async (id: string) => {
+    try {
+      const result = await invoicesApi.sendEmail(id);
+      toast.success((result as any).message || 'E-Mail gesendet');
+    } catch {
+      toast.error('E-Mail-Versand fehlgeschlagen. SMTP konfiguriert?');
     }
   };
 
@@ -441,9 +468,31 @@ export default function InvoicesPage() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
-                  <button className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 transition-all border border-slate-100">
-                    <ArrowUpRight className="w-4 h-4" />
+                  <button
+                    onClick={() => handleDownloadPdf(inv)}
+                    className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-100"
+                    title="PDF herunterladen"
+                  >
+                    <Download className="w-4 h-4" />
                   </button>
+                  <button
+                    onClick={() => handleSendEmail(inv.id)}
+                    className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-100"
+                    title="Per E-Mail versenden"
+                  >
+                    <Mail className="w-4 h-4" />
+                  </button>
+                  {inv.publicToken && (
+                    <a
+                      href={`/invoice/${inv.publicToken}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-purple-50 hover:text-purple-600 transition-all border border-slate-100"
+                      title="Kunden-Portal öffnen"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
                 </div>
               </SpotlightCard>
             ))}

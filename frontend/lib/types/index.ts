@@ -55,6 +55,12 @@ export enum InvoiceStatus {
   OVERDUE = 'OVERDUE',
 }
 
+export enum RecurringInterval {
+  MONTHLY = 'MONTHLY',
+  QUARTERLY = 'QUARTERLY',
+  YEARLY = 'YEARLY',
+}
+
 export interface Invoice {
   id: string;
   ownerId: string;
@@ -67,6 +73,15 @@ export interface Invoice {
   totalPaid: number;
   issueDate: string;
   dueDate: string;
+  publicToken?: string;
+  dunningLevel: number;
+  lastDunningDate?: string;
+  isRecurring: boolean;
+  recurringInterval?: RecurringInterval;
+  recurringStartDate?: string;
+  recurringEndDate?: string;
+  nextInvoiceDate?: string;
+  parentInvoiceId?: string;
   createdAt: string;
   updatedAt: string;
   customer?: {
@@ -102,6 +117,127 @@ export interface ApiResponse<T> {
     perPage?: number;
     totalPages?: number;
   };
+}
+
+// ========================================
+// QUOTES / ANGEBOTE
+// ========================================
+export enum QuoteStatus {
+  DRAFT = 'DRAFT',
+  SENT = 'SENT',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  CONVERTED = 'CONVERTED',
+}
+
+export interface Quote {
+  id: string;
+  ownerId: string;
+  customerId: string;
+  projectId?: string;
+  quoteNumber?: string;
+  amount: number;
+  description: string;
+  status: QuoteStatus;
+  issueDate: string;
+  validUntil: string;
+  notes?: string;
+  convertedToInvoiceId?: string;
+  createdAt: string;
+  updatedAt: string;
+  customer?: {
+    id: string;
+    name: string;
+    company?: string;
+    email: string;
+  };
+  project?: {
+    id: string;
+    name: string;
+  };
+}
+
+// ========================================
+// EXPENSES / AUSGABEN
+// ========================================
+export enum ExpenseCategory {
+  SOFTWARE = 'SOFTWARE',
+  HARDWARE = 'HARDWARE',
+  TRAVEL = 'TRAVEL',
+  MARKETING = 'MARKETING',
+  OFFICE = 'OFFICE',
+  TRAINING = 'TRAINING',
+  OTHER = 'OTHER',
+}
+
+export interface Expense {
+  id: string;
+  ownerId: string;
+  amount: number;
+  description: string;
+  category: ExpenseCategory;
+  date: string;
+  receiptUrl?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExpenseSummary {
+  year: number;
+  totalRevenue: number;
+  totalExpenses: number;
+  netProfit: number;
+  byCategory: Record<string, number>;
+  monthlyData: {
+    month: number;
+    monthName: string;
+    revenue: number;
+    expenses: number;
+    profit: number;
+  }[];
+}
+
+// ========================================
+// TAX ASSISTANT
+// ========================================
+export interface TaxAssistantResult {
+  year: number;
+  disclaimer: string;
+  revenue: {
+    gross: number;
+    net: number;
+    vat: number;
+  };
+  expenses: {
+    total: number;
+  };
+  profit: {
+    gross: number;
+    net: number;
+    taxable: number;
+  };
+  taxes: {
+    incomeTax: number;
+    solidaritySurcharge: number;
+    vatCollected: number;
+    total: number;
+    effectiveRate: number;
+  };
+  prepayments: {
+    quarterlyVat: number;
+    quarterlyIncomeTax: number;
+  };
+  recommendations: {
+    monthlySavings: number;
+    setAsidePercentage: number;
+    conservative: number;
+    realistic: number;
+    optimistic: number;
+  };
+  invoiceCount: number;
+  expenseCount: number;
+  monthsElapsed: number;
 }
 
 // ========================================

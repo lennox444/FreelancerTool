@@ -9,7 +9,9 @@ import {
   UseGuards,
   Request,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
@@ -24,14 +26,8 @@ export class InvoicesController {
 
   @Post()
   async create(@Body() createInvoiceDto: CreateInvoiceDto, @Request() req) {
-    const invoice = await this.invoicesService.create(
-      createInvoiceDto,
-      req.ownerId,
-    );
-    return {
-      data: invoice,
-      meta: { timestamp: new Date().toISOString() },
-    };
+    const invoice = await this.invoicesService.create(createInvoiceDto, req.ownerId);
+    return { data: invoice, meta: { timestamp: new Date().toISOString() } };
   }
 
   @Get()
@@ -42,40 +38,20 @@ export class InvoicesController {
     @Query('from') from?: string,
     @Query('to') to?: string,
   ) {
-    const invoices = await this.invoicesService.findAll(req.ownerId, {
-      status,
-      customerId,
-      from,
-      to,
-    });
-    return {
-      data: invoices,
-      meta: {
-        total: invoices.length,
-        timestamp: new Date().toISOString(),
-      },
-    };
+    const invoices = await this.invoicesService.findAll(req.ownerId, { status, customerId, from, to });
+    return { data: invoices, meta: { total: invoices.length, timestamp: new Date().toISOString() } };
   }
 
   @Get('overdue')
   async getOverdue(@Request() req) {
     const invoices = await this.invoicesService.getOverdue(req.ownerId);
-    return {
-      data: invoices,
-      meta: {
-        total: invoices.length,
-        timestamp: new Date().toISOString(),
-      },
-    };
+    return { data: invoices, meta: { total: invoices.length, timestamp: new Date().toISOString() } };
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string, @Request() req) {
     const invoice = await this.invoicesService.findOne(id, req.ownerId);
-    return {
-      data: invoice,
-      meta: { timestamp: new Date().toISOString() },
-    };
+    return { data: invoice, meta: { timestamp: new Date().toISOString() } };
   }
 
   @Patch(':id')
@@ -84,32 +60,38 @@ export class InvoicesController {
     @Body() updateInvoiceDto: UpdateInvoiceDto,
     @Request() req,
   ) {
-    const invoice = await this.invoicesService.update(
-      id,
-      updateInvoiceDto,
-      req.ownerId,
-    );
-    return {
-      data: invoice,
-      meta: { timestamp: new Date().toISOString() },
-    };
+    const invoice = await this.invoicesService.update(id, updateInvoiceDto, req.ownerId);
+    return { data: invoice, meta: { timestamp: new Date().toISOString() } };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req) {
     const result = await this.invoicesService.remove(id, req.ownerId);
-    return {
-      data: result,
-      meta: { timestamp: new Date().toISOString() },
-    };
+    return { data: result, meta: { timestamp: new Date().toISOString() } };
   }
 
   @Post(':id/send')
   async send(@Param('id') id: string, @Request() req) {
     const invoice = await this.invoicesService.sendInvoice(id, req.ownerId);
-    return {
-      data: invoice,
-      meta: { timestamp: new Date().toISOString() },
-    };
+    return { data: invoice, meta: { timestamp: new Date().toISOString() } };
+  }
+
+  @Get(':id/pdf')
+  async downloadPdf(@Param('id') id: string, @Request() req, @Res() res: Response) {
+    const invoice = await this.invoicesService.findOne(id, req.ownerId);
+    const pdfBuffer = await this.invoicesService.downloadPdf(id, req.ownerId);
+    const filename = `Rechnung-${invoice.invoiceNumber || invoice.id}.pdf`;
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': pdfBuffer.length,
+    });
+    res.end(pdfBuffer);
+  }
+
+  @Post(':id/send-email')
+  async sendByEmail(@Param('id') id: string, @Request() req) {
+    const result = await this.invoicesService.sendInvoiceByEmail(id, req.ownerId);
+    return { data: result, meta: { timestamp: new Date().toISOString() } };
   }
 }

@@ -58,6 +58,8 @@ model User {
   onboardingEvents   OnboardingEvent[]
   timeEntries        TimeEntry[]
   appointments       Appointment[]
+  quotes             Quote[]
+  expenses           Expense[]
 
   @@map("users")
 }
@@ -83,6 +85,7 @@ model Customer {
   projects            Project[]
   invoices            Invoice[]
   appointments        Appointment[]
+  quotes              Quote[]
 
   // Indexes für Performance & Security
   @@index([ownerId])
@@ -99,6 +102,12 @@ enum InvoiceStatus {
   PARTIALLY_PAID
   PAID
   OVERDUE
+}
+
+enum RecurringInterval {
+  MONTHLY
+  QUARTERLY
+  YEARLY
 }
 
 model Invoice {
@@ -120,6 +129,21 @@ model Invoice {
   issueDate       DateTime      @default(now())
   dueDate         DateTime
 
+  // Public token for client portal
+  publicToken     String?       @unique @default(cuid())
+
+  // Dunning (Mahnwesen)
+  dunningLevel    Int           @default(0)  // 0=none, 1=reminder, 2=1st notice, 3=2nd notice, 4=final
+  lastDunningDate DateTime?
+
+  // Recurring invoices
+  isRecurring          Boolean           @default(false)
+  recurringInterval    RecurringInterval?
+  recurringStartDate   DateTime?
+  recurringEndDate     DateTime?
+  nextInvoiceDate      DateTime?
+  parentInvoiceId      String?           // Link recurring child invoices to template
+
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -135,6 +159,8 @@ model Invoice {
   @@index([projectId, ownerId])
   @@index([status, ownerId])
   @@index([dueDate, status, ownerId])  // Für Overdue-Queries
+  @@index([publicToken])
+  @@index([nextInvoiceDate])           // Für Recurring-Queries
   @@map("invoices")
 }
 
@@ -162,6 +188,90 @@ model Payment {
   @@index([invoiceId, ownerId])
   @@index([paymentDate, ownerId])  // Für Cashflow-Queries
   @@map("payments")
+}
+
+// ========================================
+// QUOTES / ANGEBOTE
+// ========================================
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  CONVERTED
+}
+
+model Quote {
+  id              String      @id @default(cuid())
+  ownerId         String
+  customerId      String
+  projectId       String?
+
+  quoteNumber     String?
+  amount          Decimal     @db.Decimal(10, 2)
+  description     String      @db.Text
+
+  status          QuoteStatus @default(DRAFT)
+
+  issueDate       DateTime    @default(now())
+  validUntil      DateTime
+
+  notes           String?     @db.Text
+
+  // Konvertierung zu Rechnung
+  convertedToInvoiceId String? @unique
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  owner           User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  project         Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  // Indexes
+  @@index([ownerId])
+  @@index([customerId, ownerId])
+  @@index([status, ownerId])
+  @@map("quotes")
+}
+
+// ========================================
+// EXPENSES / AUSGABEN
+// ========================================
+enum ExpenseCategory {
+  SOFTWARE
+  HARDWARE
+  TRAVEL
+  MARKETING
+  OFFICE
+  TRAINING
+  OTHER
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  ownerId     String
+
+  amount      Decimal         @db.Decimal(10, 2)
+  description String
+  category    ExpenseCategory @default(OTHER)
+  date        DateTime        @default(now())
+
+  receiptUrl  String?
+  notes       String?         @db.Text
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  owner       User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([ownerId])
+  @@index([category, ownerId])
+  @@index([date, ownerId])
+  @@map("expenses")
 }
 
 // ========================================
@@ -301,6 +411,7 @@ model Project {
   invoices        Invoice[]
   timeEntries     TimeEntry[]
   appointments    Appointment[]
+  quotes          Quote[]
 
   // Indexes
   @@index([ownerId])
@@ -328,7 +439,7 @@ model Appointment {
   contactName     String?
   contactEmail    String?
   contactPhone    String?
-  
+
   // Meeting details
   meetingLink     String?   // URL for Teams, Zoom, etc.
   meetingId       String?   // ID for the meeting

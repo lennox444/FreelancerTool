@@ -14,6 +14,9 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { TimeEntriesModule } from './modules/time-entries/time-entries.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { QuotesModule } from './modules/quotes/quotes.module';
+import { ExpensesModule } from './modules/expenses/expenses.module';
+import { TaxAssistantModule } from './modules/tax-assistant/tax-assistant.module';
 
 @Module({
   imports: [
@@ -30,8 +33,11 @@ import { AdminModule } from './modules/admin/admin.module';
     TimeEntriesModule,
     AppointmentsModule,
     AdminModule,
+    QuotesModule,
+    ExpensesModule,
+    TaxAssistantModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

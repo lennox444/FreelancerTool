@@ -1,5 +1,5 @@
-import { IsString, IsNumber, IsDateString, IsEnum, IsOptional, Min } from 'class-validator';
-import { InvoiceStatus } from '@prisma/client';
+import { IsString, IsNumber, IsDateString, IsEnum, IsOptional, Min, IsBoolean } from 'class-validator';
+import { InvoiceStatus, RecurringInterval } from '@prisma/client';
 
 export class CreateInvoiceDto {
   @IsString()
@@ -30,4 +30,21 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsString()
   invoiceNumber?: string;
+
+  // Recurring invoice fields
+  @IsOptional()
+  @IsBoolean()
+  isRecurring?: boolean;
+
+  @IsOptional()
+  @IsEnum(RecurringInterval)
+  recurringInterval?: string;
+
+  @IsOptional()
+  @IsDateString()
+  recurringStartDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  recurringEndDate?: string;
 }

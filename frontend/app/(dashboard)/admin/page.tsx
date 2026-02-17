@@ -2,10 +2,29 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, Users, TrendingUp, Activity, Server, Database, Search, ChevronLeft, ChevronRight, Trash2, Lock, Unlock, RefreshCw } from 'lucide-react';
+import {
+  ShieldCheck,
+  Users,
+  TrendingUp,
+  Activity,
+  Server,
+  Database,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+  Lock,
+  Unlock,
+  RefreshCw,
+  CreditCard,
+  UserCheck,
+  AlertCircle
+} from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { UserRole } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import PixelBlast from '@/components/landing/PixelBlast';
+import SpotlightCard from '@/components/ui/SpotlightCard';
 import {
   getAdminUsers,
   getAdminMetrics,
@@ -24,9 +43,10 @@ function PlanBadge({ plan }: { plan: string }) {
   const isPro = plan === 'PRO';
   return (
     <span
-      className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
-        isPro ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'
-      }`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${isPro
+          ? 'bg-blue-50 text-blue-700 border-blue-200'
+          : 'bg-slate-100 text-slate-600 border-slate-200'
+        }`}
     >
       {isPro ? 'PRO' : 'FREE'}
     </span>
@@ -36,39 +56,45 @@ function PlanBadge({ plan }: { plan: string }) {
 function StatusBadge({ suspended }: { suspended: boolean }) {
   return (
     <span
-      className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
-        suspended ? 'bg-red-700 text-red-100' : 'bg-emerald-800 text-emerald-200'
-      }`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${suspended
+          ? 'bg-red-50 text-red-700 border-red-200'
+          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        }`}
     >
       {suspended ? 'Gesperrt' : 'Aktiv'}
     </span>
   );
 }
 
-function StatCard({
+function AdminStatCard({
   label,
   value,
   sub,
   icon: Icon,
-  color,
+  colorClass,
 }: {
   label: string;
   value: string | number;
   sub?: string;
   icon: React.ElementType;
-  color: string;
+  colorClass: string;
 }) {
   return (
-    <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`p-2 rounded-lg bg-white/5 ${color}`}>
+    <SpotlightCard
+      className="bg-white/90 backdrop-blur-md border border-slate-200 shadow-sm p-6 rounded-3xl h-full flex flex-col justify-between group hover:shadow-md transition-all"
+      spotlightColor="rgba(128, 0, 64, 0.05)"
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div className={`p-2.5 rounded-xl transition-colors ${colorClass}`}>
           <Icon className="w-5 h-5" />
         </div>
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{label}</span>
       </div>
-      <div className="text-3xl font-black text-white">{value}</div>
-      {sub && <p className="text-xs text-slate-500 mt-1">{sub}</p>}
-    </div>
+      <div>
+        <div className="text-3xl font-bold text-slate-900 tracking-tight mb-1">{value}</div>
+        <p className="text-sm font-medium text-slate-500 mb-1">{label}</p>
+        {sub && <p className="text-xs text-slate-400 font-medium">{sub}</p>}
+      </div>
+    </SpotlightCard>
   );
 }
 
@@ -186,358 +212,418 @@ export default function AdminPage() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-full p-6 bg-slate-950">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="relative isolate min-h-full p-4 md:p-8 flex flex-col gap-8">
+      {/* Background Elements */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none rounded-3xl">
+        <div className="absolute inset-0 w-full h-full opacity-30">
+          <PixelBlast
+            variant="square"
+            pixelSize={6}
+            color="#800040"
+            patternScale={4}
+            patternDensity={0.5}
+            pixelSizeJitter={0.5}
+            enableRipples
+            rippleSpeed={0.3}
+            rippleThickness={0.1}
+            speed={0.2}
+            transparent
+          />
+        </div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.8)_0%,rgba(248,250,252,0.95)_100%)]" />
+      </div>
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center">
-            <ShieldCheck className="w-8 h-8 text-white" />
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[#800040]/10 rounded-xl">
+              <ShieldCheck className="w-8 h-8 text-[#800040]" />
+            </div>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Super Admin</h1>
           </div>
-          <div>
-            <h1 className="text-3xl font-black text-white">Super Admin</h1>
-            <p className="text-slate-400 text-sm">SaaS-Kontrolle & Metriken</p>
-          </div>
-          <button
-            onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ['admin-metrics'] });
-              queryClient.invalidateQueries({ queryKey: ['admin-revenue'] });
-              queryClient.invalidateQueries({ queryKey: ['admin-health'] });
-              queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-            }}
-            className="ml-auto p-2 text-slate-500 hover:text-white transition-colors"
-            title="Alle Daten neu laden"
+          <div className="hidden md:block w-px h-8 bg-slate-300"></div>
+          <p className="text-slate-500 font-medium">SaaS-Kontrolle & Metriken</p>
+        </div>
+        <button
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ['admin-metrics'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-revenue'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-health'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-full text-slate-600 font-medium hover:bg-slate-50 hover:text-[#800040] transition-colors shadow-sm"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>Refresh</span>
+        </button>
+      </div>
+
+      {/* ── KPI Grid ───────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <AdminStatCard
+          label="Gesamt-User"
+          value={m?.totalUsers ?? '…'}
+          sub={`+${m?.newUsersLast7 ?? '?'} neue (7 Tage)`}
+          icon={Users}
+          colorClass="text-blue-600 bg-blue-50"
+        />
+        <AdminStatCard
+          label="MRR"
+          value={r ? fmtEur(r.mrr) : '…'}
+          sub={r?.stripeError ? 'Stripe n.a.' : `ARR: ${fmtEur(r?.arr)}`}
+          icon={TrendingUp}
+          colorClass="text-emerald-600 bg-emerald-50"
+        />
+        <AdminStatCard
+          label="Conversion Rate"
+          value={m ? `${m.conversionRate}%` : '…'}
+          sub={`${m?.proUsers ?? '?'} PRO-User`}
+          icon={Activity}
+          colorClass="text-orange-600 bg-orange-50"
+        />
+        <AdminStatCard
+          label="Aktive Subs"
+          value={r?.activeSubscriptions ?? '…'}
+          sub="Stripe Live Metric"
+          icon={Server}
+          colorClass="text-[#800040] bg-pink-50"
+        />
+      </div>
+
+      {/* ── Middle: Metriken + Health ──────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Metriken */}
+        <div className="lg:col-span-2 h-full">
+          <SpotlightCard
+            className="bg-white/90 backdrop-blur-md border border-slate-200 shadow-sm p-6 rounded-3xl h-full"
+            spotlightColor="rgba(128, 0, 64, 0.05)"
           >
-            <RefreshCw className="w-5 h-5" />
-          </button>
-        </div>
+            <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-[#800040]" />
+              SaaS Growth Metriken
+            </h2>
 
-        {/* ── KPI Grid ───────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label="Gesamt-User"
-            value={m?.totalUsers ?? '…'}
-            sub={`+${m?.newUsersLast7 ?? '?'} letzte 7 Tage`}
-            icon={Users}
-            color="text-blue-400"
-          />
-          <StatCard
-            label="MRR"
-            value={r ? fmtEur(r.mrr) : '…'}
-            sub={r?.stripeError ? 'Stripe nicht konfiguriert' : `ARR: ${fmtEur(r?.arr)}`}
-            icon={TrendingUp}
-            color="text-emerald-400"
-          />
-          <StatCard
-            label="Conversion Trial→Pro"
-            value={m ? `${m.conversionRate}%` : '…'}
-            sub={`${m?.proUsers ?? '?'} PRO-User`}
-            icon={Activity}
-            color="text-orange-400"
-          />
-          <StatCard
-            label="Aktive Subs (Stripe)"
-            value={r?.activeSubscriptions ?? '…'}
-            sub="live von Stripe"
-            icon={Server}
-            color="text-purple-400"
-          />
-        </div>
-
-        {/* ── Middle: Metriken + Health ──────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* Metriken */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
-              <h2 className="text-lg font-bold text-white mb-4">SaaS-Metriken</h2>
-
+            <div className="grid md:grid-cols-2 gap-8">
               {/* Plan-Verteilung */}
-              <div className="mb-6">
-                <p className="text-xs text-slate-500 uppercase font-bold mb-2">Plan-Verteilung</p>
-                <div className="flex gap-6">
+              <div>
+                <p className="text-xs text-slate-500 uppercase font-bold mb-3 tracking-wider">Plan-Verteilung</p>
+                <div className="flex gap-8 items-end">
                   <div>
-                    <span className="text-2xl font-black text-white">{m?.freeTrialUsers ?? '…'}</span>
-                    <p className="text-xs text-slate-500">FREE TRIAL</p>
+                    <span className="text-4xl font-black text-slate-800 tracking-tight">{m?.freeTrialUsers ?? '…'}</span>
+                    <p className="text-xs font-semibold text-slate-400 mt-1">FREE TRIAL</p>
                   </div>
                   <div>
-                    <span className="text-2xl font-black text-blue-400">{m?.proUsers ?? '…'}</span>
-                    <p className="text-xs text-slate-500">PRO</p>
+                    <span className="text-4xl font-black text-[#800040] tracking-tight">{m?.proUsers ?? '…'}</span>
+                    <p className="text-xs font-semibold text-slate-400 mt-1">PRO</p>
                   </div>
                 </div>
-                {/* GRAPH_PLACEHOLDER: Recharts PieChart – FREE_TRIAL vs PRO Anteil. Daten: { name: 'FREE', value: m.freeTrialUsers }, { name: 'PRO', value: m.proUsers } */}
               </div>
 
               {/* Onboarding Rate */}
-              <div className="mb-6">
-                <div className="flex justify-between text-xs font-bold mb-1">
-                  <span className="text-slate-400 uppercase">Onboarding abgeschlossen</span>
-                  <span className="text-white">{m?.onboardingRate ?? '…'}%</span>
-                </div>
-                <progress
-                  className="w-full h-2 rounded-full overflow-hidden accent-blue-500"
-                  value={m?.onboardingRate ?? 0}
-                  max={100}
-                />
-              </div>
-
-              {/* Signup-Trend */}
               <div>
-                <p className="text-xs text-slate-500 uppercase font-bold mb-2">Signups letzte 14 Tage</p>
-                {/* GRAPH_PLACEHOLDER: Recharts BarChart – Signups pro Tag, letzte 14 Tage. X: Datum (entry.date), Y: count (entry.count). Daten kommen aus m.signupTrend[] */}
-                <div className="overflow-x-auto">
-                  <table className="text-xs text-slate-400 w-full">
-                    <tbody>
-                      {m?.signupTrend?.slice(-7).map((entry) => (
-                        <tr key={entry.date} className="border-t border-white/5">
-                          <td className="py-1 pr-4 text-slate-500">{entry.date}</td>
-                          <td className="py-1">
-                            <span className="text-white font-bold">{entry.count}</span>
-                            {entry.count > 0 && (
-                              <span className="ml-2 text-blue-400">{'█'.repeat(Math.min(entry.count, 10))}</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <p className="text-xs text-slate-500 uppercase font-bold mb-3 tracking-wider">Onboarding Completion</p>
+                <div className="mt-2">
+                  <div className="flex justify-between text-sm font-bold mb-2">
+                    <span className="text-slate-600">Rate</span>
+                    <span className="text-slate-900">{m?.onboardingRate ?? '…'}%</span>
+                  </div>
+                  <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-[#800040] rounded-full"
+                      style={{ width: `${m?.onboardingRate ?? 0}%` }}
+                    ></div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Health + Revenue Panel */}
-          <div className="space-y-4">
-
-            {/* Stripe Revenue */}
-            <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
-              <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                Letzte Stripe-Zahlungen
-              </h2>
-              {r?.stripeError ? (
-                <p className="text-xs text-red-400">{r.stripeError}</p>
-              ) : (
-                <ul className="space-y-2">
-                  {(r?.lastPayments ?? []).slice(0, 5).map((p) => (
-                    <li key={p.id} className="flex justify-between text-xs">
-                      <span className="text-slate-400">
-                        {new Date(p.date).toLocaleDateString('de-DE')}
-                      </span>
-                      <span className={`font-bold ${p.status === 'succeeded' ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {p.amount.toFixed(2)} {p.currency.toUpperCase()}
-                      </span>
-                    </li>
-                  ))}
-                  {(!r || r.lastPayments.length === 0) && (
-                    <li className="text-xs text-slate-600">Keine Zahlungen</li>
-                  )}
-                </ul>
-              )}
+            <div className="mt-8 pt-6 border-t border-slate-100">
+              <p className="text-xs text-slate-500 uppercase font-bold mb-4 tracking-wider">Signups (Letzte 14 Tage)</p>
+              <div className="flex items-end justify-between h-24 gap-2">
+                {m?.signupTrend?.slice(-14).map((entry, i) => {
+                  const heightPercent = Math.min((entry.count / 10) * 100, 100);
+                  return (
+                    <div key={i} className="flex flex-col items-center justify-end h-full w-full group">
+                      <div
+                        className="w-full bg-slate-200 rounded-t-md group-hover:bg-[#800040]/60 transition-colors relative"
+                        style={{ height: `${Math.max(heightPercent, 5)}%` }}
+                      >
+                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {entry.count}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="flex justify-between mt-2 text-[10px] text-slate-400 uppercase font-medium">
+                <span>Vor 14 Tagen</span>
+                <span>Heute</span>
+              </div>
             </div>
+          </SpotlightCard>
+        </div>
 
-            {/* System Health */}
-            <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
-              <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                <Database className="w-4 h-4 text-indigo-400" />
-                System Health
-              </h2>
-              {h ? (
-                <ul className="text-xs space-y-1 text-slate-400">
-                  <li>Users: <span className="text-white font-bold">{h.db.users}</span></li>
-                  <li>Kunden: <span className="text-white font-bold">{h.db.customers}</span></li>
-                  <li>Projekte: <span className="text-white font-bold">{h.db.projects}</span></li>
-                  <li>Rechnungen: <span className="text-white font-bold">{h.db.invoices}</span></li>
-                  <li>Zeiteinträge: <span className="text-white font-bold">{h.db.timeEntries}</span></li>
-                  <li className="pt-1 border-t border-white/10 mt-1">
-                    Uptime: <span className="text-emerald-400 font-bold">{h.uptimeFormatted}</span>
-                  </li>
-                  <li>RAM: <span className="text-white font-bold">{h.memoryUsageMB} MB</span></li>
-                  <li>Node: <span className="text-white font-bold">{h.nodeVersion}</span></li>
-                </ul>
-              ) : (
-                <p className="text-xs text-slate-600">Lade…</p>
-              )}
-            </div>
+        {/* Health + Revenue Panel */}
+        <div className="space-y-6">
+
+          {/* New Revenue Feed (replacing Stripe payments with more elegant list) */}
+          <SpotlightCard className="bg-white/90 backdrop-blur-md border border-slate-200 shadow-sm p-6 rounded-3xl" spotlightColor="rgba(128, 0, 64, 0.05)">
+            <h2 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-emerald-600" />
+              Letzte Transaktionen
+            </h2>
+            {r?.stripeError ? (
+              <p className="text-sm text-red-500 bg-red-50 p-3 rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" /> {r.stripeError}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {(r?.lastPayments ?? []).slice(0, 4).map((p) => (
+                  <div key={p.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${p.status === 'succeeded' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                        {p.status === 'succeeded' ? <TrendingUp className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">{p.amount.toFixed(2)} {p.currency.toUpperCase()}</p>
+                        <p className="text-[10px] text-slate-400">{new Date(p.date).toLocaleDateString('de-DE')}</p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.status === 'succeeded' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                      {p.status === 'succeeded' ? 'SUCCESS' : 'FAILED'}
+                    </span>
+                  </div>
+                ))}
+                {(!r || r.lastPayments.length === 0) && (
+                  <p className="text-sm text-slate-400 italic">Keine Transaktionen gefunden.</p>
+                )}
+              </div>
+            )}
+          </SpotlightCard>
+
+          {/* System Health */}
+          <SpotlightCard className="bg-white/90 backdrop-blur-md border border-slate-200 shadow-sm p-6 rounded-3xl" spotlightColor="rgba(128, 0, 64, 0.05)">
+            <h2 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Database className="w-4 h-4 text-indigo-500" />
+              System Status
+            </h2>
+            {h ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span className="block text-slate-400 mb-1">Users</span>
+                    <span className="text-slate-900 font-bold">{h.db.users}</span>
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span className="block text-slate-400 mb-1">Projects</span>
+                    <span className="text-slate-900 font-bold">{h.db.projects}</span>
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span className="block text-slate-400 mb-1">Invoices</span>
+                    <span className="text-slate-900 font-bold">{h.db.invoices}</span>
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span className="block text-slate-400 mb-1">DB Size</span>
+                    <span className="text-slate-900 font-bold">{h.memoryUsageMB} MB</span>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
+                  <span className="text-slate-500 font-medium">Uptime</span>
+                  <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-md">{h.uptimeFormatted}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 font-medium">Node Version</span>
+                  <span className="text-slate-700 font-bold">{h.nodeVersion}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400 animate-pulse">Lade Systemdaten...</p>
+            )}
+          </SpotlightCard>
+        </div>
+      </div>
+
+      {/* ── User-Management-Tabelle ────────────────────────────────────── */}
+      <SpotlightCard className="bg-white/90 backdrop-blur-md border border-slate-200 shadow-sm p-6 rounded-3xl" spotlightColor="rgba(128, 0, 64, 0.05)">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-[#800040]" />
+            User Management
+            {u && (
+              <span className="text-sm font-medium text-slate-400 ml-1">({u.total} total)</span>
+            )}
+          </h2>
+          <div className="relative w-full md:w-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Name oder E-Mail suchen…"
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-9 pr-4 h-10 w-full md:w-64 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all"
+            />
           </div>
         </div>
 
-        {/* ── User-Management-Tabelle ────────────────────────────────────── */}
-        <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
-          <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-400" />
-              User-Management
-              {u && (
-                <span className="text-sm font-normal text-slate-500 ml-1">({u.total} gesamt)</span>
-              )}
-            </h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <input
-                type="text"
-                placeholder="Name oder E-Mail suchen…"
-                value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-9 pr-4 h-10 w-64 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-              />
+        {/* Table */}
+        <div className="overflow-x-auto">
+          {usersQuery.isLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#800040]"></div>
             </div>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto">
-            {usersQuery.isLoading ? (
-              <p className="text-sm text-slate-500 py-8 text-center">Lade User…</p>
-            ) : usersQuery.isError ? (
-              <p className="text-sm text-red-400 py-8 text-center">Fehler beim Laden der User</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-slate-500 border-b border-white/10">
-                    <th className="pb-2 pr-4">User</th>
-                    <th className="pb-2 pr-4">Plan</th>
-                    <th className="pb-2 pr-4">Status</th>
-                    <th className="pb-2 pr-4">Registriert</th>
-                    <th className="pb-2">Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {u?.users.map((usr) => (
-                    <tr key={usr.id} className="hover:bg-white/5 transition-colors">
-                      {/* Avatar + Name */}
-                      <td className="py-3 pr-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-                            {usr.firstName[0]}{usr.lastName[0]}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-white text-xs">
-                              {usr.firstName} {usr.lastName}
-                            </p>
-                            <p className="text-slate-500 text-xs">{usr.email}</p>
-                          </div>
+          ) : usersQuery.isError ? (
+            <p className="text-sm text-red-500 py-8 text-center bg-red-50 rounded-xl">Fehler beim Laden der User</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-semibold text-slate-500 border-b border-slate-100 uppercase tracking-wider">
+                  <th className="pb-3 pl-2">User</th>
+                  <th className="pb-3">Plan</th>
+                  <th className="pb-3">Status</th>
+                  <th className="pb-3 hidden sm:table-cell">Registriert</th>
+                  <th className="pb-3 text-right pr-2">Aktionen</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {u?.users.map((usr) => (
+                  <tr key={usr.id} className="group hover:bg-slate-50/80 transition-colors">
+                    {/* Avatar + Name */}
+                    <td className="py-4 pl-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0 shadow-sm">
+                          {usr.firstName ? `${usr.firstName[0]}${usr.lastName[0]}` : <Users className="w-4 h-4 opacity-50" />}
                         </div>
-                      </td>
+                        <div>
+                          <p className="font-semibold text-slate-900 text-sm">
+                            {usr.firstName} {usr.lastName}
+                          </p>
+                          <p className="text-slate-500 text-xs">{usr.email}</p>
+                        </div>
+                      </div>
+                    </td>
 
-                      {/* Plan Badge */}
-                      <td className="py-3 pr-4">
-                        <PlanBadge plan={usr.subscriptionPlan} />
-                      </td>
+                    {/* Plan Badge */}
+                    <td className="py-4">
+                      <PlanBadge plan={usr.subscriptionPlan} />
+                    </td>
 
-                      {/* Status Badge */}
-                      <td className="py-3 pr-4">
-                        <StatusBadge suspended={usr.isSuspended} />
-                      </td>
+                    {/* Status Badge */}
+                    <td className="py-4">
+                      <StatusBadge suspended={usr.isSuspended} />
+                    </td>
 
-                      {/* Registriert */}
-                      <td className="py-3 pr-4 text-slate-500 text-xs">
-                        {new Date(usr.createdAt).toLocaleDateString('de-DE')}
-                      </td>
+                    {/* Registriert */}
+                    <td className="py-4 hidden sm:table-cell text-slate-500 text-xs">
+                      {new Date(usr.createdAt).toLocaleDateString('de-DE')}
+                    </td>
 
-                      {/* Aktionen */}
-                      <td className="py-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {/* Plan ändern */}
-                          <select
-                            className="text-xs bg-white/10 border border-white/10 text-white rounded px-2 py-1 cursor-pointer"
-                            defaultValue=""
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                handlePlanChange(usr, e.target.value);
-                                e.target.value = '';
-                              }
-                            }}
-                          >
-                            <option value="" disabled>Plan…</option>
-                            <option value="FREE_TRIAL">→ FREE</option>
-                            <option value="PRO">→ PRO</option>
-                          </select>
+                    {/* Aktionen */}
+                    <td className="py-4 text-right pr-2">
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Plan ändern */}
+                        <select
+                          className="text-xs bg-white border border-slate-200 text-slate-600 rounded-lg px-2 py-1.5 cursor-pointer hover:border-slate-300 focus:ring-2 focus:ring-[#800040]/10 outline-none"
+                          defaultValue=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              handlePlanChange(usr, e.target.value);
+                              e.target.value = '';
+                            }
+                          }}
+                        >
+                          <option value="" disabled>Plan</option>
+                          <option value="FREE_TRIAL">FREE</option>
+                          <option value="PRO">PRO</option>
+                        </select>
 
-                          {/* Trial verlängern */}
-                          <select
-                            className="text-xs bg-white/10 border border-white/10 text-white rounded px-2 py-1 cursor-pointer"
-                            defaultValue=""
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                handleTrialExtend(usr, parseInt(e.target.value));
-                                e.target.value = '';
-                              }
-                            }}
-                          >
-                            <option value="" disabled>Trial +…</option>
-                            <option value="7">+7 Tage</option>
-                            <option value="14">+14 Tage</option>
-                            <option value="30">+30 Tage</option>
-                          </select>
+                        {/* Trial verlängern */}
+                        <select
+                          className="text-xs bg-white border border-slate-200 text-slate-600 rounded-lg px-2 py-1.5 cursor-pointer hover:border-slate-300 focus:ring-2 focus:ring-[#800040]/10 outline-none w-20"
+                          defaultValue=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              handleTrialExtend(usr, parseInt(e.target.value));
+                              e.target.value = '';
+                            }
+                          }}
+                        >
+                          <option value="" disabled>Trial+</option>
+                          <option value="7">+7 d</option>
+                          <option value="14">+14 d</option>
+                          <option value="30">+30 d</option>
+                        </select>
 
-                          {/* Suspend toggle */}
-                          <button
-                            onClick={() => handleToggleSuspend(usr)}
-                            className={`p-1.5 rounded transition-colors ${
-                              usr.isSuspended
-                                ? 'text-emerald-400 hover:bg-emerald-900/30'
-                                : 'text-yellow-400 hover:bg-yellow-900/30'
+                        <div className="h-4 w-px bg-slate-200 mx-1"></div>
+
+                        {/* Suspend toggle */}
+                        <button
+                          onClick={() => handleToggleSuspend(usr)}
+                          className={`p-1.5 rounded-lg transition-all ${usr.isSuspended
+                              ? 'text-emerald-600 hover:bg-emerald-50'
+                              : 'text-amber-500 hover:bg-amber-50'
                             }`}
-                            title={usr.isSuspended ? 'Entsperren' : 'Sperren'}
-                          >
-                            {usr.isSuspended ? (
-                              <Unlock className="w-4 h-4" />
-                            ) : (
-                              <Lock className="w-4 h-4" />
-                            )}
-                          </button>
+                          title={usr.isSuspended ? 'Entsperren' : 'Sperren'}
+                        >
+                          {usr.isSuspended ? (
+                            <Unlock className="w-4 h-4" />
+                          ) : (
+                            <Lock className="w-4 h-4" />
+                          )}
+                        </button>
 
-                          {/* Löschen */}
-                          <button
-                            onClick={() => handleDelete(usr)}
-                            className="p-1.5 rounded text-red-500 hover:bg-red-900/30 transition-colors"
-                            title="Account löschen"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {u?.users.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-500 text-sm">
-                        Keine User gefunden
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Pagination */}
-          {u && u.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-              <p className="text-xs text-slate-500">
-                Seite {u.page} von {u.totalPages} ({u.total} User)
-              </p>
-              <div className="flex gap-2">
-                <button
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                  className="p-2 rounded bg-white/5 border border-white/10 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  disabled={page >= u.totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="p-2 rounded bg-white/5 border border-white/10 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+                        {/* Löschen */}
+                        <button
+                          onClick={() => handleDelete(usr)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                          title="Account löschen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {u?.users.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-slate-500 text-sm">
+                      <Users className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                      <p>Keine User gefunden.</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           )}
         </div>
 
-      </div>
+        {/* Pagination */}
+        {u && u.totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
+            <p className="text-xs text-slate-400 font-medium">
+              Seite {u.page} von {u.totalPages}
+            </p>
+            <div className="flex gap-2">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-[#800040] hover:border-[#800040] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                disabled={page >= u.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-[#800040] hover:border-[#800040] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </SpotlightCard>
     </div>
   );
 }
