@@ -63,7 +63,9 @@
       "Bash(cmd.exe /c \"netstat -ano | findstr :3001\")",
       "Bash(cmd.exe /c \"wmic process where \"\"name=''node.exe''\"\" get ProcessId,CommandLine 2>nul\")",
       "Bash(cmd.exe /c \"rename \"\"E:\\\\FreelancerTool\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node\"\" \"\"query_engine-windows.dll.node.bak\"\" 2>nul && echo renamed || echo rename failed\")",
-      "Bash(cmd.exe /c \"taskkill /F /IM node.exe 2>nul & echo done\")"
+      "Bash(cmd.exe /c \"taskkill /F /IM node.exe 2>nul & echo done\")",
+      "Bash(npx tsx:*)",
+      "Bash(wc:*)"
     ]
   }
 }

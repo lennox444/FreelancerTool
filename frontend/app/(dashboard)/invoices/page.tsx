@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useInvoices, useCreateInvoice, useSendInvoice, useDeleteInvoice } from '@/lib/hooks/useInvoices';
 import { useCustomers } from '@/lib/hooks/useCustomers';
 import { useProjects } from '@/lib/hooks/useProjects';
@@ -28,8 +29,14 @@ import {
   Folder,
   Download,
   Mail,
-  ExternalLink
+  ExternalLink,
+  Copy,
+  Check,
+  Clock,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
+import { bankAccountsApi } from '@/lib/api/bank-accounts';
 import { invoicesApi } from '@/lib/api/invoices';
 import { InvoiceStatus } from '@/lib/types';
 import toast from 'react-hot-toast';
@@ -43,12 +50,14 @@ export default function InvoicesPage() {
   const [projectFilter, setProjectFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | ''>('');
   const [paymentModal, setPaymentModal] = useState<{ invoiceId: string; amount: number; totalPaid: number; customerName: string } | null>(null);
+  const [timeEntriesModal, setTimeEntriesModal] = useState<{ invoiceId: string; projectId: string; invoiceNumber?: string } | null>(null);
   const [formData, setFormData] = useState({
     customerId: '',
     projectId: '',
     amount: 0,
     description: '',
     dueDate: '',
+    bankAccountId: '',
   });
 
   // Init filter from URL
@@ -67,6 +76,10 @@ export default function InvoicesPage() {
   const { data: projects } = useProjects({
     customerId: customerFilter || formData.customerId || undefined
   });
+  const { data: bankAccounts } = useQuery({
+    queryKey: ['bank-accounts'],
+    queryFn: bankAccountsApi.getAll
+  });
   const createInvoice = useCreateInvoice();
   const sendInvoice = useSendInvoice();
   const deleteInvoice = useDeleteInvoice();
@@ -76,7 +89,7 @@ export default function InvoicesPage() {
     try {
       await createInvoice.mutateAsync(formData);
       setShowForm(false);
-      setFormData({ customerId: '', projectId: '', amount: 0, description: '', dueDate: '' });
+      setFormData({ customerId: '', projectId: '', amount: 0, description: '', dueDate: '', bankAccountId: '' });
       toast.success('Rechnung erfolgreich erstellt');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Fehler beim Erstellen der Rechnung');
@@ -248,6 +261,33 @@ export default function InvoicesPage() {
                   </div>
                 </div>
 
+                {/* Bank Account Select */}
+                <div>
+                  <label className={labelClasses}>
+                    <Wallet className="w-4 h-4 text-slate-400" />
+                    Bankverbindung (optional)
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+                      <Wallet className="w-4 h-4" />
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={formData.bankAccountId}
+                        onChange={(e) => setFormData({ ...formData, bankAccountId: e.target.value })}
+                        className={inputClasses}
+                      >
+                        <option value="">Standard verwenden</option>
+                        {Array.isArray(bankAccounts) && bankAccounts.map((acc: any) => (
+                          <option key={acc.id} value={acc.id}>
+                            {acc.name} ({acc.bankName || (acc.isPaypal ? 'PayPal' : '')})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Amount */}
                 <div>
                   <label className={labelClasses}>
@@ -331,7 +371,8 @@ export default function InvoicesPage() {
             </form>
           </SpotlightCard>
         </div>
-      )}
+      )
+      }
 
       {/* Search & Filter */}
       <div className="mb-8 flex flex-col md:flex-row gap-4">
@@ -483,15 +524,16 @@ export default function InvoicesPage() {
                     <Mail className="w-4 h-4" />
                   </button>
                   {inv.publicToken && (
-                    <a
-                      href={`/invoice/${inv.publicToken}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-purple-50 hover:text-purple-600 transition-all border border-slate-100"
-                      title="Kunden-Portal öffnen"
+                    <ClientPortalButtons publicToken={inv.publicToken} />
+                  )}
+                  {inv.project?.id && (
+                    <button
+                      onClick={() => setTimeEntriesModal({ invoiceId: inv.id, projectId: inv.project!.id, invoiceNumber: inv.invoiceNumber || undefined })}
+                      className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-amber-50 hover:text-amber-600 transition-all border border-slate-100"
+                      title="Zeiteinträge verknüpfen"
                     >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
+                      <Clock className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
               </SpotlightCard>
@@ -510,15 +552,211 @@ export default function InvoicesPage() {
         )}
       </div>
 
-      {paymentModal && (
-        <AddPaymentModal
-          invoiceId={paymentModal.invoiceId}
-          invoiceAmount={paymentModal.amount}
-          totalPaid={paymentModal.totalPaid}
-          customerName={paymentModal.customerName}
-          onClose={() => setPaymentModal(null)}
-        />
-      )}
+      {
+        paymentModal && (
+          <AddPaymentModal
+            invoiceId={paymentModal.invoiceId}
+            invoiceAmount={paymentModal.amount}
+            totalPaid={paymentModal.totalPaid}
+            customerName={paymentModal.customerName}
+            onClose={() => setPaymentModal(null)}
+          />
+        )
+      }
+
+      {
+        timeEntriesModal && (
+          <TimeEntriesModal
+            invoiceId={timeEntriesModal.invoiceId}
+            invoiceNumber={timeEntriesModal.invoiceNumber}
+            onClose={() => setTimeEntriesModal(null)}
+          />
+        )
+      }
+    </div >
+  );
+}
+
+function ClientPortalButtons({ publicToken }: { publicToken: string }) {
+  const [copied, setCopied] = useState(false);
+  const portalUrl = `${window.location.origin}/invoice/${publicToken}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(portalUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <>
+      <a
+        href={`/invoice/${publicToken}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-purple-50 hover:text-purple-600 transition-all border border-slate-100"
+        title="Kunden-Portal öffnen"
+      >
+        <ExternalLink className="w-4 h-4" />
+      </a>
+      <button
+        onClick={handleCopy}
+        className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 transition-all border border-slate-100"
+        title="Portal-Link kopieren"
+      >
+        {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+      </button>
+    </>
+  );
+}
+
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h === 0) return `${m} Min.`;
+  if (m === 0) return `${h} Std.`;
+  return `${h} Std. ${m} Min.`;
+}
+
+
+
+function TimeEntriesModal({ invoiceId, invoiceNumber, onClose }: {
+  invoiceId: string;
+  invoiceNumber?: string;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [initialized, setInitialized] = useState(false);
+
+  const { data: entries = [], isLoading } = useQuery({
+    queryKey: ['invoice-time-entries', invoiceId],
+    queryFn: () => invoicesApi.getTimeEntries(invoiceId),
+  });
+
+  // Pre-select already linked entries
+  useEffect(() => {
+    if (!initialized && entries.length > 0) {
+      const alreadyLinked = new Set<string>(
+        entries.filter((e: any) => e.invoiceId === invoiceId).map((e: any) => e.id)
+      );
+      setSelected(alreadyLinked);
+      setInitialized(true);
+    }
+  }, [entries, invoiceId, initialized]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => invoicesApi.setTimeEntries(invoiceId, Array.from(selected)),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-time-entries', invoiceId] });
+      toast.success(`${result.linked} Zeiteinträge verknüpft`);
+      onClose();
+    },
+    onError: () => toast.error('Fehler beim Speichern'),
+  });
+
+  const toggle = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const totalSeconds = entries
+    .filter((e: any) => selected.has(e.id))
+    .reduce((sum: number, e: any) => sum + (e.duration || 0), 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl relative z-10 overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-slate-100">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Zeiteinträge verknüpfen</h2>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {invoiceNumber ? `Rechnung ${invoiceNumber}` : 'Rechnung'} · Wähle welche Einträge der Kunde sehen soll
+            </p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+
+        <div className="p-6 max-h-[400px] overflow-y-auto">
+          {isLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="w-6 h-6 animate-spin text-[#800040]" />
+            </div>
+          ) : entries.length === 0 ? (
+            <div className="text-center py-10 text-slate-500">
+              <Clock className="w-10 h-10 mx-auto mb-3 text-slate-300" />
+              <p className="font-medium">Keine Zeiteinträge für dieses Projekt</p>
+              <p className="text-sm mt-1">Buche Zeiten auf das Projekt im Zeiterfassungs-Modul.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {entries.map((entry: any) => {
+                const isSelected = selected.has(entry.id);
+                const date = new Date(entry.startTime).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                return (
+                  <label
+                    key={entry.id}
+                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected
+                      ? 'bg-amber-50 border-amber-200'
+                      : 'bg-slate-50 border-slate-100 hover:border-slate-200'
+                      }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggle(entry.id)}
+                      className="mt-0.5 accent-amber-500"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 line-clamp-1">
+                        {entry.description || 'Kein Titel'}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                        <span>{date}</span>
+                        <span className="font-semibold text-slate-700">{formatDuration(entry.duration)}</span>
+                        {entry.invoiceId && entry.invoiceId !== invoiceId && (
+                          <span className="text-amber-600 font-medium">Bereits verrechnet</span>
+                        )}
+                      </div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {entries.length > 0 && (
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <div className="text-sm">
+              <span className="text-slate-500">Ausgewählt: </span>
+              <span className="font-bold text-slate-800">{selected.size} Einträge</span>
+              {totalSeconds > 0 && (
+                <span className="text-slate-500 ml-2">· {formatDuration(totalSeconds)} gesamt</span>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
+                Abbrechen
+              </button>
+              <button
+                onClick={() => saveMutation.mutate()}
+                disabled={saveMutation.isPending}
+                className="px-4 py-2 text-sm bg-[#800040] hover:bg-[#600030] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+              >
+                {saveMutation.isPending ? 'Speichere...' : 'Speichern'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

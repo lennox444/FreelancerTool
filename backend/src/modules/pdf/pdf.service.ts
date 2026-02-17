@@ -17,6 +17,15 @@ export interface InvoiceData {
   description: string;
   amount: number;
   publicToken?: string;
+  bankDetails?: {
+    name: string;
+    bankName?: string;
+    iban?: string;
+    bic?: string;
+    accountHolder?: string;
+    isPaypal: boolean;
+    paypalEmail?: string;
+  };
 }
 
 export interface QuoteData {
@@ -40,8 +49,8 @@ export interface QuoteData {
 
 @Injectable()
 export class PdfService {
-  async generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
-    const pdfmake = require('pdfmake');
+  private getPrinter() {
+    const Printer = require('pdfmake/js/Printer').default;
     const fonts = {
       Helvetica: {
         normal: 'Helvetica',
@@ -50,8 +59,21 @@ export class PdfService {
         bolditalics: 'Helvetica-BoldOblique',
       },
     };
+    return new Printer(fonts);
+  }
 
-    const printer = new pdfmake(fonts);
+  private async renderToPdf(docDefinition: any): Promise<Buffer> {
+    const pdfDoc = await this.getPrinter().createPdfKitDocument(docDefinition);
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+      pdfDoc.on('error', reject);
+      pdfDoc.end();
+    });
+  }
+
+  async generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
 
     const vatAmount = data.amount * 0.19;
     const netAmount = data.amount / 1.19;
@@ -185,6 +207,16 @@ export class PdfService {
           italics: true,
           margin: [0, 0, 0, 10],
         },
+        // Bank Details
+        ...(data.bankDetails ? [{
+          text: data.bankDetails.isPaypal ?
+            `Zahlbar via PayPal an: ${data.bankDetails.paypalEmail}` :
+            `Bankverbindung: ${data.bankDetails.bankName || ''} · IBAN: ${data.bankDetails.iban} · BIC: ${data.bankDetails.bic} · Kontoinhaber: ${data.bankDetails.accountHolder}`,
+          fontSize: 8,
+          color: '#6b7280',
+          alignment: 'center',
+          margin: [0, 10, 0, 0],
+        }] : []),
       ],
       footer: (currentPage: number, pageCount: number) => ({
         text: `${data.freelancer.firstName} ${data.freelancer.lastName}  ·  ${data.freelancer.email}  ·  Seite ${currentPage} von ${pageCount}`,
@@ -195,28 +227,10 @@ export class PdfService {
       }),
     };
 
-    return new Promise((resolve, reject) => {
-      const pdfDoc = printer.createPdfKitDocument(docDefinition);
-      const chunks: Buffer[] = [];
-      pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
-      pdfDoc.on('error', reject);
-      pdfDoc.end();
-    });
+    return this.renderToPdf(docDefinition);
   }
 
   async generateQuotePdf(data: QuoteData): Promise<Buffer> {
-    const pdfmake = require('pdfmake');
-    const fonts = {
-      Helvetica: {
-        normal: 'Helvetica',
-        bold: 'Helvetica-Bold',
-        italics: 'Helvetica-Oblique',
-        bolditalics: 'Helvetica-BoldOblique',
-      },
-    };
-
-    const printer = new pdfmake(fonts);
 
     const docDefinition: any = {
       defaultStyle: { font: 'Helvetica', fontSize: 10, color: '#1a1a2e' },
@@ -326,14 +340,7 @@ export class PdfService {
       }),
     };
 
-    return new Promise((resolve, reject) => {
-      const pdfDoc = printer.createPdfKitDocument(docDefinition);
-      const chunks: Buffer[] = [];
-      pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
-      pdfDoc.on('error', reject);
-      pdfDoc.end();
-    });
+    return this.renderToPdf(docDefinition);
   }
 
   private formatDate(date: Date): string {

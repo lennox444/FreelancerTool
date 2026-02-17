@@ -47,4 +47,8 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsDateString()
   recurringEndDate?: string;
+
+  @IsOptional()
+  @IsString()
+  bankAccountId?: string;
 }

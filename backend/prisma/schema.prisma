@@ -60,6 +60,7 @@ model User {
   appointments       Appointment[]
   quotes             Quote[]
   expenses           Expense[]
+  bankAccounts       BankAccount[]
 
   @@map("users")
 }
@@ -91,6 +92,36 @@ model Customer {
   @@index([ownerId])
   @@unique([email, ownerId], name: "email_ownerId")
   @@map("customers")
+}
+
+// ========================================
+// BANK ACCOUNTS / PAYMENT METHODS
+// ========================================
+model BankAccount {
+  id              String    @id @default(cuid())
+  ownerId         String
+
+  name            String    // z.B. "Geschäftskonto Sparkasse"
+  bankName        String?   // z.B. "Sparkasse Berlin"
+  iban            String?
+  bic             String?
+  accountHolder   String?   // z.B. "Max Mustermann"
+  
+  // Für PayPal oder andere Methoden
+  isPaypal        Boolean   @default(false)
+  paypalEmail     String?
+
+  isDefault       Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  owner           User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  invoices        Invoice[]
+
+  @@index([ownerId])
+  @@map("bank_accounts")
 }
 
 // ========================================
@@ -144,6 +175,12 @@ model Invoice {
   nextInvoiceDate      DateTime?
   parentInvoiceId      String?           // Link recurring child invoices to template
 
+  // Payment Method Snapshot
+  bankAccountId        String?           // Link to the bank account used
+  
+  // Snapshot data in case bank account is deleted/changed later
+  paymentDetails       Json?             // Stores specific payment info (IBAN, etc.) at time of creation
+
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -151,7 +188,9 @@ model Invoice {
   owner           User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   customer        Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
   project         Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  bankAccount     BankAccount?  @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   payments        Payment[]
+  timeEntries     TimeEntry[]
 
   // Indexes
   @@index([ownerId])
@@ -467,6 +506,7 @@ model TimeEntry {
   id              String    @id @default(cuid())
   ownerId         String
   projectId       String?
+  invoiceId       String?   // Optional: linked to an invoice for billing
 
   description     String?   @db.Text
   duration        Int       @default(0) // In Sekunden
@@ -480,10 +520,12 @@ model TimeEntry {
   // Relations
   owner           User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   project         Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  invoice         Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
   // Indexes
   @@index([ownerId])
   @@index([projectId, ownerId])
   @@index([startTime, ownerId])
+  @@index([invoiceId])
   @@map("time_entries")
 }

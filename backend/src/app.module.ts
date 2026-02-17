@@ -17,6 +17,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { QuotesModule } from './modules/quotes/quotes.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { TaxAssistantModule } from './modules/tax-assistant/tax-assistant.module';
+import { BankAccountsModule } from './modules/bank-accounts/bank-accounts.module';
 
 @Module({
   imports: [
@@ -36,8 +37,9 @@ import { TaxAssistantModule } from './modules/tax-assistant/tax-assistant.module
     QuotesModule,
     ExpensesModule,
     TaxAssistantModule,
+    BankAccountsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

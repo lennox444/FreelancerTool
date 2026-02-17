@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { CreditCard, Trash2, AlertTriangle, X, Loader2, ShieldAlert } from 'lucide-react';
+import { CreditCard, Trash2, AlertTriangle, X, Loader2, ShieldAlert, Landmark } from 'lucide-react';
 import apiClient from '@/lib/api/client';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -70,6 +70,25 @@ export default function SettingsPage() {
                                                 {user?.subscriptionStatus === 'ACTIVE' ? 'Aktiv' : 'Trial'}
                                             </span>
                                         </div>
+                                    </div>
+                                    <div className="text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all">
+                                        →
+                                    </div>
+                                </div>
+                            </div>
+                        </Link>
+                        {/* Bank Accounts Card */}
+                        <Link href="/settings/bank-accounts">
+                            <div className="bg-white rounded-3xl shadow-lg border border-slate-200 p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-200 transition-colors">
+                                        <Landmark className="w-6 h-6 text-indigo-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="text-xl font-bold text-slate-900 mb-1">Bankverbindungen</h2>
+                                        <p className="text-slate-600 text-sm mb-3">
+                                            Hinterlege diene IBAN, BIC oder PayPal für deine Rechnungen
+                                        </p>
                                     </div>
                                     <div className="text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all">
                                         →

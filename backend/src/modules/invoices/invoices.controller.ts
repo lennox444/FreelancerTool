@@ -94,4 +94,20 @@ export class InvoicesController {
     const result = await this.invoicesService.sendInvoiceByEmail(id, req.ownerId);
     return { data: result, meta: { timestamp: new Date().toISOString() } };
   }
+
+  @Get(':id/time-entries')
+  async getTimeEntries(@Param('id') id: string, @Request() req) {
+    const entries = await this.invoicesService.getProjectTimeEntries(id, req.ownerId);
+    return { data: entries, meta: { total: entries.length, timestamp: new Date().toISOString() } };
+  }
+
+  @Patch(':id/time-entries')
+  async setTimeEntries(
+    @Param('id') id: string,
+    @Body('timeEntryIds') timeEntryIds: string[],
+    @Request() req,
+  ) {
+    const result = await this.invoicesService.setTimeEntries(id, req.ownerId, timeEntryIds || []);
+    return { data: result, meta: { timestamp: new Date().toISOString() } };
+  }
 }

@@ -90,6 +90,10 @@ export interface Invoice {
     company?: string;
     email: string;
   };
+  project?: {
+    id: string;
+    name: string;
+  };
   payments?: Payment[];
   _count?: {
     payments: number;

@@ -18,7 +18,7 @@ export class InvoicesService {
     private prisma: PrismaService,
     private pdfService: PdfService,
     private mailService: MailService,
-  ) {}
+  ) { }
 
   async create(createInvoiceDto: CreateInvoiceDto, ownerId: string) {
     const customer = await this.prisma.customer.findFirst({
@@ -35,6 +35,25 @@ export class InvoicesService {
       });
       if (!project) {
         throw new NotFoundException('Project not found or access denied');
+      }
+    }
+
+    let paymentDetails: any = undefined;
+    if (createInvoiceDto.bankAccountId) {
+      const bankAccount = await this.prisma.bankAccount.findFirst({
+        where: { id: createInvoiceDto.bankAccountId, ownerId },
+      });
+      if (bankAccount) {
+        paymentDetails = bankAccount;
+      }
+    } else {
+      // Auto-select default if not provided
+      const defaultAccount = await this.prisma.bankAccount.findFirst({
+        where: { ownerId, isDefault: true }
+      });
+      if (defaultAccount) {
+        createInvoiceDto.bankAccountId = defaultAccount.id;
+        paymentDetails = defaultAccount;
       }
     }
 
@@ -61,8 +80,9 @@ export class InvoicesService {
         recurringStartDate: createInvoiceDto.recurringStartDate ? new Date(createInvoiceDto.recurringStartDate) : undefined,
         recurringEndDate: createInvoiceDto.recurringEndDate ? new Date(createInvoiceDto.recurringEndDate) : undefined,
         nextInvoiceDate,
+        paymentDetails: paymentDetails ? (paymentDetails as any) : undefined,
       },
-      include: { customer: true, payments: true },
+      include: { customer: true, payments: true, bankAccount: true, project: true },
     });
   }
 
@@ -101,8 +121,10 @@ export class InvoicesService {
     const invoice = await this.prisma.invoice.findFirst({
       where: { id, ownerId },
       include: {
+        project: true,
         customer: true,
         payments: { orderBy: { paymentDate: 'desc' } },
+        timeEntries: { orderBy: { startTime: 'asc' } },
       },
     });
 
@@ -120,6 +142,7 @@ export class InvoicesService {
         customer: { select: { name: true, company: true, email: true } },
         owner: { select: { firstName: true, lastName: true, email: true } },
         payments: { orderBy: { paymentDate: 'desc' } },
+        timeEntries: { orderBy: { startTime: 'asc' } },
       },
     });
 
@@ -128,6 +151,49 @@ export class InvoicesService {
     }
 
     return invoice;
+  }
+
+  // Get available time entries for a project (unlinked or already on this invoice)
+  async getProjectTimeEntries(invoiceId: string, ownerId: string) {
+    const invoice = await this.findOne(invoiceId, ownerId);
+    if (!invoice.projectId) return [];
+
+    return this.prisma.timeEntry.findMany({
+      where: {
+        ownerId,
+        projectId: invoice.projectId,
+        OR: [
+          { invoiceId: null },
+          { invoiceId: invoiceId },
+        ],
+      },
+      orderBy: { startTime: 'asc' },
+    });
+  }
+
+  // Link/unlink time entries to an invoice
+  async setTimeEntries(invoiceId: string, ownerId: string, timeEntryIds: string[]) {
+    await this.findOne(invoiceId, ownerId); // verify ownership
+
+    // Unlink all currently linked entries for this invoice
+    await this.prisma.timeEntry.updateMany({
+      where: { invoiceId, ownerId },
+      data: { invoiceId: null },
+    });
+
+    if (timeEntryIds.length === 0) return { linked: 0 };
+
+    // Link selected entries (verify they belong to owner)
+    const result = await this.prisma.timeEntry.updateMany({
+      where: {
+        id: { in: timeEntryIds },
+        ownerId,
+        OR: [{ invoiceId: null }, { invoiceId: invoiceId }],
+      },
+      data: { invoiceId },
+    });
+
+    return { linked: result.count };
   }
 
   async update(id: string, updateInvoiceDto: UpdateInvoiceDto, ownerId: string) {
@@ -148,6 +214,16 @@ export class InvoicesService {
     }
 
     const updateData: any = { ...updateInvoiceDto };
+
+    // Update payment details snapshot if bank account changes
+    if (updateInvoiceDto.bankAccountId) {
+      const bankAccount = await this.prisma.bankAccount.findFirst({
+        where: { id: updateInvoiceDto.bankAccountId, ownerId },
+      });
+      if (bankAccount) {
+        updateData.paymentDetails = bankAccount as any;
+      }
+    }
     if (updateInvoiceDto.dueDate) updateData.dueDate = new Date(updateInvoiceDto.dueDate);
     if (updateInvoiceDto.issueDate) updateData.issueDate = new Date(updateInvoiceDto.issueDate);
     if (updateInvoiceDto.recurringStartDate) updateData.recurringStartDate = new Date(updateInvoiceDto.recurringStartDate);
@@ -156,7 +232,7 @@ export class InvoicesService {
     return this.prisma.invoice.update({
       where: { id },
       data: updateData,
-      include: { customer: true, payments: true },
+      include: { customer: true, payments: true, project: true },
     });
   }
 
@@ -208,6 +284,7 @@ export class InvoicesService {
       description: invoice.description,
       amount: Number(invoice.amount),
       publicToken: invoice.publicToken || undefined,
+      bankDetails: invoice.paymentDetails ? (invoice.paymentDetails as any) : undefined,
     });
   }
 
@@ -231,6 +308,7 @@ export class InvoicesService {
       },
       description: invoice.description,
       amount: Number(invoice.amount),
+      bankDetails: invoice.paymentDetails ? (invoice.paymentDetails as any) : undefined,
     });
 
     await this.mailService.sendInvoiceEmail({

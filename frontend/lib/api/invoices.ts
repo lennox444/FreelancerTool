@@ -77,4 +77,14 @@ export const invoicesApi = {
     const response = await apiClient.get<ApiResponse<Invoice[]>>('/invoices/overdue');
     return response.data.data;
   },
+
+  getTimeEntries: async (invoiceId: string): Promise<any[]> => {
+    const response = await apiClient.get<ApiResponse<any[]>>(`/invoices/${invoiceId}/time-entries`);
+    return response.data.data;
+  },
+
+  setTimeEntries: async (invoiceId: string, timeEntryIds: string[]): Promise<{ linked: number }> => {
+    const response = await apiClient.patch<ApiResponse<{ linked: number }>>(`/invoices/${invoiceId}/time-entries`, { timeEntryIds });
+    return response.data.data;
+  },
 };
