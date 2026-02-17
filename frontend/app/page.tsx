@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { Header } from '@/components/landing/Header';
 import { Hero } from '@/components/landing/Hero';
 import { Features } from '@/components/landing/Features';
+import { Pricing } from '@/components/landing/Pricing';
 import { Testimonials } from '@/components/landing/Testimonials';
 import { CTA } from '@/components/landing/CTA';
 import { Footer } from '@/components/landing/Footer';
@@ -18,6 +19,7 @@ export default function LandingPage() {
       <main>
         <Hero />
         <Features />
+        <Pricing />
         <Testimonials />
         <CTA />
       </main>

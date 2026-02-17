@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { LayoutDashboard, Users, Folder, FileText, CreditCard, LogOut, Settings, Clock, ShieldCheck, Calendar } from 'lucide-react';
+import { LayoutDashboard, Users, Folder, FileText, CreditCard, LogOut, Settings, Clock, ShieldCheck, Calendar, Zap, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserRole } from '@/lib/types';
 
@@ -114,8 +114,74 @@ export default function Sidebar({ className, onLinkClick }: SidebarProps) {
         )}
       </nav>
 
+      {/* Subscription Status */}
+      <div className="mx-4 mb-4 p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+            {(user?.subscriptionPlan === 'FREE_TRIAL' || !user?.subscriptionPlan) ? 'Testversion' : 'Dein Plan'}
+          </span>
+          <span className={cn(
+            "text-[10px] font-bold px-1.5 py-0.5 rounded",
+            user?.subscriptionStatus === 'ACTIVE' ? "bg-emerald-500/20 text-emerald-400" : "bg-blue-500/20 text-blue-400"
+          )}>
+            {user?.subscriptionStatus === 'ACTIVE' ? 'AKTIV' : 'TRIAL'}
+          </span>
+        </div>
+
+        {/* Show Trial/Upgrade UI if FREE_TRIAL or NO PLAN (Legacy User Fallback) */}
+        {(user?.subscriptionPlan === 'FREE_TRIAL' || !user?.subscriptionPlan) && (
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs text-slate-300">
+              <span>Verbleibend</span>
+              <span className="font-bold text-white">
+                {user?.trialEndsAt
+                  ? Math.max(0, Math.ceil((new Date(user.trialEndsAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
+                  : 14} Tage
+              </span>
+            </div>
+            <div className="h-1.5 w-full bg-slate-700/50 rounded-full overflow-hidden mb-4">
+              <div
+                className="h-full bg-gradient-to-r from-pink-500 to-rose-500 rounded-full"
+                style={{
+                  width: `${user?.trialEndsAt
+                    ? Math.min(100, Math.max(0, (Math.ceil((new Date(user.trialEndsAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) / 14) * 100))
+                    : 100}%`
+                }}
+              />
+            </div>
+
+            <Link href="/settings/billing" className="group relative flex items-center justify-center gap-2 w-full py-2.5 bg-gradient-to-r from-[#800040] to-[#600030] hover:from-[#900048] hover:to-[#700038] text-white rounded-xl font-bold text-xs transition-all shadow-lg shadow-pink-900/20 border border-white/10 overflow-hidden">
+              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              <Zap className="w-3.5 h-3.5 fill-current" />
+              <span className="relative">Upgrade auf Pro</span>
+            </Link>
+          </div>
+        )}
+
+        {user?.subscriptionPlan === 'PRO' && (
+          <div className="flex items-center gap-2 mt-1">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-semibold text-white">Pro Plan</span>
+          </div>
+        )}
+      </div>
+
       {/* Footer */}
-      <div className="p-4 border-t border-slate-800 bg-slate-900/50">
+      <div className="p-4 border-t border-slate-800 bg-slate-900/50 space-y-1">
+        <Link
+          href="/settings"
+          onClick={onLinkClick}
+          className={cn(
+            "flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 group",
+            pathname.startsWith('/settings')
+              ? "bg-slate-800 text-white"
+              : "text-slate-400 hover:bg-slate-800 hover:text-white"
+          )}
+        >
+          <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+          <span className="font-medium">Einstellungen</span>
+        </Link>
+
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 w-full px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all duration-200 group"

@@ -4,13 +4,14 @@ import { PrismaService } from '../../core/database/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
+import { SubscriptionStatus, SubscriptionPlan } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto) {
     // Check if user exists
@@ -25,6 +26,10 @@ export class AuthService {
     // Hash password
     const passwordHash = await bcrypt.hash(registerDto.password, 10);
 
+    // Calculate trial end date (14 days from now)
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
     // Create user
     const user = await this.prisma.user.create({
       data: {
@@ -32,6 +37,9 @@ export class AuthService {
         passwordHash,
         firstName: registerDto.firstName,
         lastName: registerDto.lastName,
+        subscriptionStatus: SubscriptionStatus.TRIAL,
+        subscriptionPlan: SubscriptionPlan.FREE_TRIAL,
+        trialEndsAt: trialEndsAt,
       },
     });
 
@@ -44,6 +52,10 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
+        subscriptionStatus: user.subscriptionStatus,
+        subscriptionPlan: user.subscriptionPlan,
+        trialEndsAt: user.trialEndsAt,
       },
       ...tokens,
     };
@@ -78,6 +90,10 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
+        subscriptionStatus: user.subscriptionStatus,
+        subscriptionPlan: user.subscriptionPlan,
+        trialEndsAt: user.trialEndsAt,
       },
       ...tokens,
     };
@@ -119,7 +135,56 @@ export class AuthService {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      role: user.role,
+      subscriptionStatus: user.subscriptionStatus,
+      subscriptionPlan: user.subscriptionPlan,
+      trialEndsAt: user.trialEndsAt,
     };
+  }
+
+
+  async deleteAccount(userId: string) {
+    // 1. Get user data (to check for Stripe subscription)
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        stripeSubscriptionId: true,
+        stripeCustomerId: true,
+      },
+    });
+
+    // 2. Cancel Stripe subscription if exists
+    if (user?.stripeSubscriptionId) {
+      try {
+        // Initialize Stripe (same as in BillingService)
+        const Stripe = require('stripe');
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_PLACEHOLDER', {
+          apiVersion: '2024-12-18.acacia',
+        });
+
+        // Cancel subscription immediately (no refund, just stop future billing)
+        await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+
+        console.log(`✅ Stripe subscription ${user.stripeSubscriptionId} cancelled for user ${userId}`);
+      } catch (error) {
+        // Log error but continue with account deletion
+        // We don't want a Stripe error to prevent account deletion
+        console.error('⚠️ Failed to cancel Stripe subscription:', error);
+      }
+    }
+
+    // 3. Delete user (cascade will handle all related data)
+    // This will delete:
+    // - All projects owned by the user
+    // - All customers
+    // - All invoices
+    // - All time entries
+    // - All other user-related data (due to onDelete: Cascade in schema)
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return { success: true };
   }
 
   private async generateTokens(userId: string, email: string) {

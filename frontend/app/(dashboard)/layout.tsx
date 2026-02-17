@@ -35,6 +35,25 @@ export default function DashboardLayout({
       return;
     }
 
+    // Trial expiration check (soft-lock)
+    // Allow access ONLY to billing page if trial expired
+    if (user && typeof window !== 'undefined') {
+      const isTrialExpired =
+        user.subscriptionPlan === 'FREE_TRIAL' &&
+        user.trialEndsAt &&
+        new Date(user.trialEndsAt) < new Date();
+
+      const currentPath = window.location.pathname;
+      const isBillingPage = currentPath.includes('/settings/billing');
+      const isExpiredPage = currentPath.includes('/subscription-expired');
+
+      if (isTrialExpired && !isBillingPage && !isExpiredPage) {
+        console.log('[Trial Check] Trial expired. Redirecting to /subscription-expired');
+        router.push('/subscription-expired');
+        return;
+      }
+    }
+
     // Onboarding check (Skip for SUPER_ADMIN)
     if (user?.role === UserRole.SUPER_ADMIN) {
       setChecking(false);
@@ -58,12 +77,29 @@ export default function DashboardLayout({
     };
 
     checkOnboarding();
-  }, [mounted, isAuthenticated, router, setProfile, user?.role]);
+  }, [mounted, isAuthenticated, router, setProfile, user?.role, user?.subscriptionPlan, user?.trialEndsAt]);
 
   if (!mounted || !isAuthenticated || checking) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Check if trial is expired
+  const isTrialExpired =
+    user?.subscriptionPlan === 'FREE_TRIAL' &&
+    user?.trialEndsAt &&
+    new Date(user.trialEndsAt) < new Date();
+
+  // If trial expired, render without sidebar (only billing page accessible)
+  if (isTrialExpired && typeof window !== 'undefined' && window.location.pathname.includes('/settings/billing')) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <main className="p-4 md:p-8">
+          {children}
+        </main>
       </div>
     );
   }

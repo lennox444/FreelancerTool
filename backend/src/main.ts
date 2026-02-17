@@ -14,9 +14,13 @@ async function bootstrap() {
     }),
   );
 
+  // Global exception filter
+  const { AllExceptionsFilter } = require('./core/filters/all-exceptions.filter');
+  app.useGlobalFilters(new AllExceptionsFilter());
+
   // CORS configuration
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: true, // Allow any origin temporarily for debugging
     credentials: true,
   });
 

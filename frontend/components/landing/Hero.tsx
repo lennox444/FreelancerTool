@@ -112,7 +112,7 @@ export const Hero = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <CheckCircle2 className="w-5 h-5 text-[#800040]" />
-                            <span>Kostenlos für Starter</span>
+                            <span>14 Tage kostenlos testen</span>
                         </div>
                     </motion.div>
                 </div>

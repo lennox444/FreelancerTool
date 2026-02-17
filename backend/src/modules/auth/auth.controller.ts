@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Delete, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -7,7 +7,7 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
@@ -41,6 +41,16 @@ export class AuthController {
   async getProfile(@Request() req) {
     return {
       data: req.user,
+      meta: { timestamp: new Date().toISOString() },
+    };
+  }
+
+  @Delete('account')
+  @UseGuards(JwtAuthGuard)
+  async deleteAccount(@Request() req) {
+    await this.authService.deleteAccount(req.user.id);
+    return {
+      data: { message: 'Account successfully deleted' },
       meta: { timestamp: new Date().toISOString() },
     };
   }
