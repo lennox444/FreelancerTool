@@ -12,7 +12,7 @@ import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class InvoicesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createInvoiceDto: CreateInvoiceDto, ownerId: string) {
     // Verify customer ownership
@@ -25,6 +25,20 @@ export class InvoicesService {
 
     if (!customer) {
       throw new NotFoundException('Customer not found or access denied');
+    }
+
+    // Verify project ownership if provided
+    if (createInvoiceDto.projectId) {
+      const project = await this.prisma.project.findFirst({
+        where: {
+          id: createInvoiceDto.projectId,
+          ownerId,
+        },
+      });
+
+      if (!project) {
+        throw new NotFoundException('Project not found or access denied');
+      }
     }
 
     return this.prisma.invoice.create({
@@ -85,6 +99,12 @@ export class InvoicesService {
             email: true,
           },
         },
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         payments: true,
         _count: {
           select: { payments: true },
@@ -131,6 +151,20 @@ export class InvoicesService {
 
       if (!customer) {
         throw new NotFoundException('Customer not found or access denied');
+      }
+    }
+
+    // If project is being changed, verify new project ownership
+    if (updateInvoiceDto.projectId) {
+      const project = await this.prisma.project.findFirst({
+        where: {
+          id: updateInvoiceDto.projectId,
+          ownerId,
+        },
+      });
+
+      if (!project) {
+        throw new NotFoundException('Project not found or access denied');
       }
     }
 

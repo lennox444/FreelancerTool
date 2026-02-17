@@ -4,67 +4,78 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../core/database/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectStatus } from '@prisma/client';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(dto: CreateProjectDto, ownerId: string) {
-    // Validate customer ownership if customerId provided
-    if (dto.customerId) {
-      const customer = await this.prisma.customer.findFirst({
-        where: { id: dto.customerId, ownerId },
-      });
+    console.log('Creating project for owner:', ownerId, 'with data:', dto);
 
-      if (!customer) {
-        throw new BadRequestException(
-          'Customer not found or access forbidden',
-        );
+    try {
+      // Validate customer ownership if customerId provided
+      if (dto.customerId) {
+        const customer = await this.prisma.customer.findFirst({
+          where: { id: dto.customerId, ownerId },
+        });
+
+        if (!customer) {
+          console.warn('Customer not found or access forbidden:', dto.customerId);
+          throw new BadRequestException(
+            'Kunde nicht gefunden oder Zugriff verweigert',
+          );
+        }
       }
-    }
 
-    // Validate dates if both provided
-    if (dto.startDate && dto.endDate) {
-      const start = new Date(dto.startDate);
-      const end = new Date(dto.endDate);
-      if (end < start) {
-        throw new BadRequestException('End date must be after start date');
+      // Validate dates if both provided
+      if (dto.startDate && dto.endDate) {
+        const start = new Date(dto.startDate);
+        const end = new Date(dto.endDate);
+        if (end < start) {
+          throw new BadRequestException('Das Enddatum muss nach dem Startdatum liegen');
+        }
       }
-    }
 
-    // Create project
-    const project = await this.prisma.project.create({
-      data: {
-        ownerId,
-        name: dto.name,
-        description: dto.description,
-        customerId: dto.customerId,
-        status: dto.status || ProjectStatus.PLANNING,
-        budget: dto.budget,
-        startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-        endDate: dto.endDate ? new Date(dto.endDate) : undefined,
-        notes: dto.notes,
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            company: true,
-            email: true,
+      // Create project
+      const project = await this.prisma.project.create({
+        data: {
+          ownerId,
+          name: dto.name,
+          description: dto.description,
+          customerId: dto.customerId,
+          status: dto.status || ProjectStatus.PLANNING,
+          budget: dto.budget,
+          startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+          endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+          notes: dto.notes,
+        },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              company: true,
+              email: true,
+            },
+          },
+          _count: {
+            select: { invoices: true },
           },
         },
-        _count: {
-          select: { invoices: true },
-        },
-      },
-    });
+      });
 
-    return project;
+      return project;
+    } catch (error) {
+      console.error('Error in project creation:', error);
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException(
+        'Projekt konnte nicht erstellt werden: ' + (error.message || 'Unbekannter Fehler'),
+      );
+    }
   }
 
   async findAll(

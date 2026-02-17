@@ -1,8 +1,14 @@
+export enum UserRole {
+  USER = 'USER',
+  SUPER_ADMIN = 'SUPER_ADMIN',
+}
+
 export interface User {
   id: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
 }
 
 export interface AuthResponse {
@@ -38,6 +44,7 @@ export interface Invoice {
   id: string;
   ownerId: string;
   customerId: string;
+  projectId?: string;
   invoiceNumber?: string;
   amount: number;
   description: string;
@@ -165,5 +172,57 @@ export interface Project {
   };
   _count?: {
     invoices: number;
+  };
+}
+
+// ========================================
+// TIME TRACKING
+// ========================================
+export interface TimeEntry {
+  id: string;
+  ownerId: string;
+  projectId?: string;
+  description?: string;
+  duration: number; // In Sekunden
+  pauseDuration: number; // In Sekunden
+  startTime: string;
+  endTime?: string;
+  createdAt: string;
+  updatedAt: string;
+  project?: Project;
+}
+
+// ========================================
+// APPOINTMENTS
+// ========================================
+export interface Appointment {
+  id: string;
+  ownerId: string;
+  customerId?: string;
+  projectId?: string;
+
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+
+  meetingLink?: string;
+  meetingId?: string;
+
+  createdAt: string;
+  updatedAt: string;
+
+  customer?: {
+    id: string;
+    name: string;
+    company?: string;
+  };
+  project?: {
+    id: string;
+    name: string;
   };
 }

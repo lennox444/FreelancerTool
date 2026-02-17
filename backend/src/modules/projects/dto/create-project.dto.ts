@@ -2,20 +2,10 @@ import {
   IsString,
   IsOptional,
   IsEnum,
-  IsDecimal,
   IsISO8601,
-  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Decimal } from '@prisma/client/runtime/library';
-
-export enum ProjectStatus {
-  PLANNING = 'PLANNING',
-  ACTIVE = 'ACTIVE',
-  ON_HOLD = 'ON_HOLD',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-}
+import { ProjectStatus } from '@prisma/client';
 
 export class CreateProjectDto {
   @IsString()
@@ -26,7 +16,7 @@ export class CreateProjectDto {
   description?: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   customerId?: string;
 
   @IsOptional()

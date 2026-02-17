@@ -25,6 +25,7 @@ export const invoicesApi = {
     description: string;
     dueDate: string;
     issueDate?: string;
+    projectId?: string;
   }): Promise<Invoice> => {
     const response = await apiClient.post<ApiResponse<Invoice>>('/invoices', data);
     return response.data.data;
@@ -36,6 +37,7 @@ export const invoicesApi = {
     description: string;
     dueDate: string;
     issueDate?: string;
+    projectId?: string;
   }>): Promise<Invoice> => {
     const response = await apiClient.patch<ApiResponse<Invoice>>(`/invoices/${id}`, data);
     return response.data.data;

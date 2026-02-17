@@ -5,6 +5,10 @@ export class CreateInvoiceDto {
   @IsString()
   customerId: string;
 
+  @IsOptional()
+  @IsString()
+  projectId?: string;
+
   @IsNumber()
   @Min(0.01)
   amount: number;

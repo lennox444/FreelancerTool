@@ -13,17 +13,17 @@ import {
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { ProjectStatus } from '@prisma/client';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(private readonly projectsService: ProjectsService) { }
 
   @Post()
   async create(@Request() req, @Body() dto: CreateProjectDto) {
-    const project = await this.projectsService.create(dto, req.user.userId);
+    const project = await this.projectsService.create(dto, req.user.id);
     return {
       data: project,
       meta: { timestamp: new Date().toISOString() },
@@ -40,7 +40,7 @@ export class ProjectsController {
     @Query('order') order?: 'asc' | 'desc',
   ) {
     const projects = await this.projectsService.findAll(
-      req.user.userId,
+      req.user.id,
       search,
       status,
       customerId,
@@ -58,7 +58,7 @@ export class ProjectsController {
 
   @Get(':id')
   async findOne(@Request() req, @Param('id') id: string) {
-    const project = await this.projectsService.findOne(id, req.user.userId);
+    const project = await this.projectsService.findOne(id, req.user.id);
     return {
       data: project,
       meta: { timestamp: new Date().toISOString() },
@@ -74,7 +74,7 @@ export class ProjectsController {
     const project = await this.projectsService.update(
       id,
       dto,
-      req.user.userId,
+      req.user.id,
     );
     return {
       data: project,
@@ -84,7 +84,7 @@ export class ProjectsController {
 
   @Delete(':id')
   async remove(@Request() req, @Param('id') id: string) {
-    const result = await this.projectsService.remove(id, req.user.userId);
+    const result = await this.projectsService.remove(id, req.user.id);
     return {
       data: result,
       meta: { timestamp: new Date().toISOString() },

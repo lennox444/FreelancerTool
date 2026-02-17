@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useInvoices, useCreateInvoice, useSendInvoice, useDeleteInvoice } from '@/lib/hooks/useInvoices';
 import { useCustomers } from '@/lib/hooks/useCustomers';
+import { useProjects } from '@/lib/hooks/useProjects';
 import InvoiceStatusBadge from '@/components/invoices/InvoiceStatusBadge';
 import AddPaymentModal from '@/components/payments/AddPaymentModal';
 import SpotlightCard from '@/components/ui/SpotlightCard';
@@ -22,25 +24,45 @@ import {
   Loader2,
   ArrowUpRight,
   ChevronRight,
-  Wallet
+  Wallet,
+  Folder
 } from 'lucide-react';
 import { InvoiceStatus } from '@/lib/types';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 
 export default function InvoicesPage() {
+  const searchParams = useSearchParams();
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
+  const [customerFilter, setCustomerFilter] = useState('');
+  const [projectFilter, setProjectFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<InvoiceStatus | ''>('');
   const [paymentModal, setPaymentModal] = useState<{ invoiceId: string; amount: number; totalPaid: number; customerName: string } | null>(null);
   const [formData, setFormData] = useState({
     customerId: '',
+    projectId: '',
     amount: 0,
     description: '',
     dueDate: '',
   });
 
-  const { data: invoices, isLoading } = useInvoices();
+  // Init filter from URL
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+    if (statusParam && Object.values(InvoiceStatus).includes(statusParam as InvoiceStatus)) {
+      setStatusFilter(statusParam as InvoiceStatus);
+    }
+  }, [searchParams]);
+
+  const { data: invoices, isLoading } = useInvoices({
+    customerId: customerFilter || undefined,
+    status: statusFilter || undefined,
+  });
   const { data: customers } = useCustomers();
+  const { data: projects } = useProjects({
+    customerId: customerFilter || formData.customerId || undefined
+  });
   const createInvoice = useCreateInvoice();
   const sendInvoice = useSendInvoice();
   const deleteInvoice = useDeleteInvoice();
@@ -50,7 +72,7 @@ export default function InvoicesPage() {
     try {
       await createInvoice.mutateAsync(formData);
       setShowForm(false);
-      setFormData({ customerId: '', amount: 0, description: '', dueDate: '' });
+      setFormData({ customerId: '', projectId: '', amount: 0, description: '', dueDate: '' });
       toast.success('Rechnung erfolgreich erstellt');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Fehler beim Erstellen der Rechnung');
@@ -79,10 +101,12 @@ export default function InvoicesPage() {
     }
   };
 
-  const filteredInvoices = invoices?.filter(inv =>
-    inv.customer?.name.toLowerCase().includes(search.toLowerCase()) ||
-    inv.description.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredInvoices = invoices?.filter(inv => {
+    const matchesSearch = inv.customer?.name.toLowerCase().includes(search.toLowerCase()) ||
+      inv.description.toLowerCase().includes(search.toLowerCase());
+    const matchesProject = !projectFilter || inv.projectId === projectFilter;
+    return matchesSearch && matchesProject;
+  });
 
   const inputClasses = "mt-1 block w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] focus:bg-white transition-all text-slate-700 placeholder:text-slate-400";
   const labelClasses = "flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1 ml-1";
@@ -165,6 +189,32 @@ export default function InvoicesPage() {
                       {customers?.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name} {c.company ? `(${c.company})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Project Select */}
+                <div>
+                  <label className={labelClasses}>
+                    <Folder className="w-4 h-4 text-slate-400" />
+                    Projekt (optional)
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+                      <Folder className="w-4 h-4" />
+                    </div>
+                    <select
+                      value={formData.projectId}
+                      onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+                      className={inputClasses}
+                      disabled={!formData.customerId}
+                    >
+                      <option value="">{formData.customerId ? 'Wähle ein Projekt...' : 'Zuerst Kunden wählen'}</option>
+                      {projects?.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
                         </option>
                       ))}
                     </select>
@@ -257,17 +307,58 @@ export default function InvoicesPage() {
       )}
 
       {/* Search & Filter */}
-      <div className="mb-8 relative flex-1 w-full group">
-        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
-          <Search className="w-5 h-5" />
+      <div className="mb-8 flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1 group">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+            <Search className="w-5 h-5" />
+          </div>
+          <input
+            type="text"
+            placeholder="Rechnungen suchen nach Kunde oder Beschreibung..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all text-slate-700 shadow-sm"
+          />
         </div>
-        <input
-          type="text"
-          placeholder="Rechnungen suchen nach Kunde oder Beschreibung..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all text-slate-700 shadow-sm"
-        />
+
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as InvoiceStatus | '')}
+          className="px-6 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1rem_center] bg-no-repeat pr-12 min-w-[200px]"
+        >
+          <option value="">Alle Status</option>
+          <option value={InvoiceStatus.DRAFT}>Entwurf</option>
+          <option value={InvoiceStatus.SENT}>Versendet</option>
+          <option value={InvoiceStatus.PARTIALLY_PAID}>Teilweise bezahlt</option>
+          <option value={InvoiceStatus.PAID}>Bezahlt</option>
+          <option value={InvoiceStatus.OVERDUE}>Überfällig</option>
+        </select>
+
+        <select
+          value={customerFilter}
+          onChange={(e) => {
+            setCustomerFilter(e.target.value);
+            setProjectFilter(''); // Reset project when customer changes
+          }}
+          className="px-6 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1rem_center] bg-no-repeat pr-12 min-w-[200px]"
+        >
+          <option value="">Alle Kunden</option>
+          {customers?.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={projectFilter}
+          onChange={(e) => setProjectFilter(e.target.value)}
+          disabled={!customerFilter}
+          className="px-6 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1rem_center] bg-no-repeat pr-12 min-w-[200px]"
+        >
+          <option value="">{customerFilter ? 'Alle Projekte' : 'Kunde wählen...'}</option>
+          {projects?.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="relative min-h-[400px]">

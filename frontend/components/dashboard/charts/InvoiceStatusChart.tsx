@@ -43,7 +43,7 @@ export default function InvoiceStatusChart({ data = mockData, className }: { dat
                         ))}
                     </Pie>
                     <Tooltip
-                        formatter={(value: number) => [`${value}`, 'Anzahl']}
+                        formatter={(value: any) => [`${value}`, 'Anzahl']}
                         contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0' }}
                     />
                     <Legend

@@ -7,6 +7,7 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import { useOnboardingStore } from '@/lib/stores/onboardingStore';
 import { onboardingApi } from '@/lib/api/onboarding';
 import Sidebar from '@/components/layout/Sidebar';
+import { UserRole } from '@/lib/types';
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const { user } = useAuthStore();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated());
   const { isCompleted, setProfile } = useOnboardingStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -33,7 +35,12 @@ export default function DashboardLayout({
       return;
     }
 
-    // Onboarding check
+    // Onboarding check (Skip for SUPER_ADMIN)
+    if (user?.role === UserRole.SUPER_ADMIN) {
+      setChecking(false);
+      return;
+    }
+
     const checkOnboarding = async () => {
       try {
         const profile = await onboardingApi.getStatus();
@@ -51,7 +58,7 @@ export default function DashboardLayout({
     };
 
     checkOnboarding();
-  }, [mounted, isAuthenticated, router, setProfile]);
+  }, [mounted, isAuthenticated, router, setProfile, user?.role]);
 
   if (!mounted || !isAuthenticated || checking) {
     return (

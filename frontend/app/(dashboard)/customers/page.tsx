@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useCustomers, useCreateCustomer, useDeleteCustomer } from '@/lib/hooks/useCustomers';
+import { useCustomers, useCreateCustomer, useDeleteCustomer, useUpdateCustomer } from '@/lib/hooks/useCustomers';
 import CustomerForm, { type CustomerFormData } from '@/components/customers/CustomerForm';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import StarBorder from '@/components/ui/StarBorder';
@@ -24,19 +24,27 @@ import { cn } from '@/lib/utils';
 
 export default function CustomersPage() {
   const [showForm, setShowForm] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const [search, setSearch] = useState('');
 
   const { data: customers, isLoading, error } = useCustomers({ search });
   const createCustomer = useCreateCustomer();
+  const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
 
   const handleCreate = async (data: CustomerFormData) => {
     try {
-      await createCustomer.mutateAsync(data);
-      setShowForm(false);
-      toast.success('Kunde erfolgreich angelegt');
+      if (editingCustomer) {
+        await updateCustomer.mutateAsync({ id: editingCustomer.id, data });
+        setEditingCustomer(null);
+        toast.success('Kunde erfolgreich aktualisiert');
+      } else {
+        await createCustomer.mutateAsync(data);
+        setShowForm(false);
+        toast.success('Kunde erfolgreich angelegt');
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Fehler beim Erstellen des Kunden');
+      toast.error(error.response?.data?.message || 'Fehler beim Speichern des Kunden');
     }
   };
 
@@ -122,6 +130,20 @@ export default function CustomersPage() {
         </SpotableCardContainer>
       )}
 
+      {editingCustomer && (
+        <SpotableCardContainer
+          title="Kunden-Details bearbeiten"
+          onClose={() => setEditingCustomer(null)}
+        >
+          <CustomerForm
+            customer={editingCustomer}
+            onSubmit={handleCreate}
+            onCancel={() => setEditingCustomer(null)}
+            isLoading={updateCustomer.isPending}
+          />
+        </SpotableCardContainer>
+      )}
+
       {/* Search & Stats */}
       <div className="mb-8 flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 w-full group">
@@ -203,7 +225,10 @@ export default function CustomersPage() {
                 </div>
 
                 <div className="mt-6 pt-4">
-                  <button className="w-full py-2.5 rounded-xl bg-slate-50 text-slate-600 font-semibold text-sm hover:bg-[#800040] hover:text-white transition-all border border-slate-100 flex items-center justify-center gap-2 group/btn">
+                  <button
+                    onClick={() => setEditingCustomer(customer)}
+                    className="w-full py-2.5 rounded-xl bg-slate-50 text-slate-600 font-semibold text-sm hover:bg-[#800040] hover:text-white transition-all border border-slate-100 flex items-center justify-center gap-2 group/btn"
+                  >
                     Details anzeigen
                     <ArrowUpRight className="w-4 h-4 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
                   </button>

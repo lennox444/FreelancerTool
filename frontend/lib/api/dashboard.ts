@@ -16,4 +16,9 @@ export const dashboardApi = {
     const response = await apiClient.get<ApiResponse<any[]>>('/dashboard/overdue');
     return response.data.data;
   },
+
+  getRevenueTrend: async (months: number = 6) => {
+    const response = await apiClient.get<ApiResponse<any[]>>('/dashboard/revenue-trend', { params: { months } });
+    return response.data.data;
+  },
 };

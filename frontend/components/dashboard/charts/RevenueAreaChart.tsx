@@ -56,12 +56,12 @@ export default function RevenueAreaChart({ data = mockData, className }: { data?
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#64748B', fontSize: 12 }}
-                        tickFormatter={(value) => `$${value}`}
+                        tickFormatter={(value: any) => `$${value}`}
                     />
                     <Tooltip
                         contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         itemStyle={{ color: '#800040', fontWeight: 600 }}
-                        formatter={(value: number) => [`$${value}`, 'Umsatz']}
+                        formatter={(value: any) => [`$${value}`, 'Umsatz']}
                     />
                     <Area
                         type="monotone"

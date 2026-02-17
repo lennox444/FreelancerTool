@@ -10,6 +10,8 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { TimeEntriesModule } from './modules/time-entries/time-entries.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
 
 @Module({
   imports: [
@@ -22,8 +24,10 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
     InvoicesModule,
     PaymentsModule,
     DashboardModule,
+    TimeEntriesModule,
+    AppointmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

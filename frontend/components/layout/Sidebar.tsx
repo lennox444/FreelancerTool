@@ -4,8 +4,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { LayoutDashboard, Users, Folder, FileText, CreditCard, LogOut, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, Folder, FileText, CreditCard, LogOut, Settings, Clock, ShieldCheck, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UserRole } from '@/lib/types';
 
 interface SidebarProps {
   className?: string; // Allow overriding classes for mobile
@@ -25,11 +26,15 @@ export default function Sidebar({ className, onLinkClick }: SidebarProps) {
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/appointments', label: 'Termine', icon: Calendar },
     { href: '/customers', label: 'Kunden', icon: Users },
     { href: '/projects', label: 'Projekte', icon: Folder },
+    { href: '/time-tracking', label: 'Zeiterfassung', icon: Clock },
     { href: '/invoices', label: 'Rechnungen', icon: FileText },
     { href: '/payments', label: 'Zahlungen', icon: CreditCard },
   ];
+
+  const isAdmin = user?.role === UserRole.SUPER_ADMIN;
 
   return (
     <aside className={cn("w-64 bg-slate-900 text-white min-h-screen flex-col border-r border-slate-800 shadow-xl z-20 sticky top-0 h-screen transition-all duration-300 hidden md:flex", className)}>
@@ -88,6 +93,25 @@ export default function Sidebar({ className, onLinkClick }: SidebarProps) {
             );
           })}
         </ul>
+
+        {isAdmin && (
+          <div className="mt-8">
+            <p className="px-4 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Platform Admin</p>
+            <Link
+              href="/admin"
+              onClick={onLinkClick}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden mx-4",
+                pathname.startsWith('/admin')
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
+                  : "text-blue-400 hover:bg-blue-900/20 hover:text-blue-300 border border-blue-900/30"
+              )}
+            >
+              <ShieldCheck className="w-5 h-5" />
+              <span className="font-bold">Admin Portal</span>
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* Footer */}

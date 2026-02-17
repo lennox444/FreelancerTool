@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { usePayments, useCreatePayment, useDeletePayment } from '@/lib/hooks/usePayments';
 import { useInvoices } from '@/lib/hooks/useInvoices';
+import { useCustomers } from '@/lib/hooks/useCustomers';
+import { useProjects } from '@/lib/hooks/useProjects';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import StarBorder from '@/components/ui/StarBorder';
 import PixelBlast from '@/components/landing/PixelBlast';
@@ -34,8 +36,15 @@ export default function PaymentsPage() {
     note: '',
   });
 
+  const [customerFilter, setCustomerFilter] = useState('');
+  const [projectFilter, setProjectFilter] = useState('');
+
   const { data: payments, isLoading } = usePayments();
   const { data: invoices } = useInvoices();
+  const { data: customers } = useCustomers();
+  const { data: projects } = useProjects({
+    customerId: customerFilter || undefined
+  });
   const createPayment = useCreatePayment();
   const deletePayment = useDeletePayment();
 
@@ -62,11 +71,16 @@ export default function PaymentsPage() {
     }
   };
 
-  const filteredPayments = payments?.filter(p =>
-    p.invoice?.customer?.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.invoice?.description.toLowerCase().includes(search.toLowerCase()) ||
-    p.note?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredPayments = payments?.filter(p => {
+    const matchesSearch = p.invoice?.customer?.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.invoice?.description.toLowerCase().includes(search.toLowerCase()) ||
+      p.note?.toLowerCase().includes(search.toLowerCase());
+
+    const matchesCustomer = !customerFilter || p.invoice?.customerId === customerFilter;
+    const matchesProject = !projectFilter || p.invoice?.projectId === projectFilter;
+
+    return matchesSearch && matchesCustomer && matchesProject;
+  });
 
   // Filter invoices that are not fully paid
   const unpaidInvoices = invoices?.filter(
@@ -240,18 +254,46 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* Search Field */}
-      <div className="mb-8 relative flex-1 w-full group">
-        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
-          <Search className="w-5 h-5" />
+      {/* Search & Filter */}
+      <div className="mb-8 flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1 group">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
+            <Search className="w-5 h-5" />
+          </div>
+          <input
+            type="text"
+            placeholder="Zahlungen durchsuchen..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all text-slate-700 shadow-sm"
+          />
         </div>
-        <input
-          type="text"
-          placeholder="Zahlungen durchsuchen..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all text-slate-700 shadow-sm"
-        />
+
+        <select
+          value={customerFilter}
+          onChange={(e) => {
+            setCustomerFilter(e.target.value);
+            setProjectFilter(''); // Reset project when customer changes
+          }}
+          className="px-6 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1rem_center] bg-no-repeat pr-12 min-w-[200px]"
+        >
+          <option value="">Alle Kunden</option>
+          {customers?.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={projectFilter}
+          onChange={(e) => setProjectFilter(e.target.value)}
+          disabled={!customerFilter}
+          className="px-6 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1rem_center] bg-no-repeat pr-12 min-w-[200px]"
+        >
+          <option value="">{customerFilter ? 'Alle Projekte' : 'Kunde wählen...'}</option>
+          {projects?.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="relative min-h-[400px]">

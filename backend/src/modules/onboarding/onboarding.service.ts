@@ -3,7 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../core/database/prisma.service';
 import { UpdateOnboardingStepDto } from './dto/update-onboarding-step.dto';
 import {
   FreelancerVertical,
@@ -15,7 +15,7 @@ import {
 
 @Injectable()
 export class OnboardingService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async getOrCreateProfile(userId: string) {
     let profile = await this.prisma.onboardingProfile.findUnique({
@@ -49,7 +49,7 @@ export class OnboardingService {
 
     // Build update data
     const updateData: any = {};
-    
+
     if (stepData.vertical !== undefined) {
       updateData.vertical = stepData.vertical;
     }

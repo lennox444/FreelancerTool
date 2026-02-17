@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   useProjects,
   useCreateProject,
   useDeleteProject,
 } from '@/lib/hooks/useProjects';
+import { useCustomers } from '@/lib/hooks/useCustomers';
 import { ProjectStatus } from '@/lib/types';
 import { ProjectStatusBadge } from '@/components/projects/ProjectStatusBadge';
 import { ProjectForm } from '@/components/projects/ProjectForm';
@@ -29,13 +31,26 @@ import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 export default function ProjectsPage() {
+  const searchParams = useSearchParams();
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | ''>('');
+  const [customerFilter, setCustomerFilter] = useState<string>('');
+
+  // Init filter from URL
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+    if (statusParam && Object.values(ProjectStatus).includes(statusParam as ProjectStatus)) {
+      setStatusFilter(statusParam as ProjectStatus);
+    }
+  }, [searchParams]);
+
+  const { data: customers } = useCustomers();
 
   const { data: projects, isLoading } = useProjects({
     search,
     status: statusFilter || undefined,
+    customerId: customerFilter || undefined,
   });
   const createProject = useCreateProject();
   const deleteProject = useDeleteProject();
@@ -149,6 +164,19 @@ export default function ProjectsPage() {
             <option value={ProjectStatus.ON_HOLD}>Pausiert</option>
             <option value={ProjectStatus.COMPLETED}>Abgeschlossen</option>
             <option value={ProjectStatus.CANCELLED}>Abgebrochen</option>
+          </select>
+
+          <select
+            value={customerFilter}
+            onChange={(e) => setCustomerFilter(e.target.value)}
+            className="px-6 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1rem_center] bg-no-repeat pr-12 min-w-[200px]"
+          >
+            <option value="">Alle Kunden</option>
+            {customers?.map((customer) => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name}
+              </option>
+            ))}
           </select>
         </div>
 

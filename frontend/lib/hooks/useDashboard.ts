@@ -16,6 +16,13 @@ export function useDashboardCashflow() {
   });
 }
 
+export function useDashboardRevenueTrend(months: number = 6) {
+  return useQuery({
+    queryKey: ['dashboard', 'revenue-trend', months],
+    queryFn: () => dashboardApi.getRevenueTrend(months),
+  });
+}
+
 export function useDashboardOverdue() {
   return useQuery({
     queryKey: ['dashboard', 'overdue'],

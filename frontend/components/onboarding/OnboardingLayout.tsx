@@ -2,6 +2,8 @@
 
 import { ReactNode } from 'react';
 import { StepIndicator } from './StepIndicator';
+import PixelBlast from '@/components/landing/PixelBlast';
+import SpotlightCard from '@/components/ui/SpotlightCard';
 
 interface OnboardingLayoutProps {
   children: ReactNode;
@@ -15,19 +17,37 @@ export function OnboardingLayout({
   totalSteps = 5,
 }: OnboardingLayoutProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 flex items-center justify-center p-4">
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl" />
+    <div className="min-h-screen relative isolate flex items-center justify-center p-4">
+      {/* Premium Background with PixelBlast */}
+      <div className="fixed inset-0 -z-10 bg-slate-950">
+        <div className="absolute inset-0 w-full h-full opacity-20">
+          <PixelBlast
+            variant="square"
+            pixelSize={6}
+            color="#800040"
+            patternScale={4}
+            patternDensity={0.5}
+            speed={0.2}
+            enableRipples
+            transparent
+          />
+        </div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(128,0,64,0.1)_0%,transparent_70%)] pointer-events-none" />
       </div>
 
-      {/* Content */}
-      <div className="relative w-full max-w-2xl">
-        <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700 rounded-2xl p-8 shadow-2xl">
-          <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
-          {children}
-        </div>
+      {/* Content Container */}
+      <div className="relative w-full max-w-2xl animate-in fade-in zoom-in duration-500">
+        <SpotlightCard
+          className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden"
+          spotlightColor="rgba(128, 0, 64, 0.15)"
+        >
+          <div className="relative z-10">
+            <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
+            <div className="mt-8 text-white">
+              {children}
+            </div>
+          </div>
+        </SpotlightCard>
       </div>
     </div>
   );
