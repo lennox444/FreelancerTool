@@ -248,7 +248,7 @@ export default function RegisterPage() {
 
           <p className="text-center text-sm text-slate-500 mt-8">
             Bereits registriert?{' '}
-            <Link href="/login" className="font-semibold text-[#800040] hover:text-[#600030] transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 hover:after:w-full after:bg-[#800040] after:transition-all after:duration-300">
+            <Link href="/login" className="font-semibold text-[#800040] hover:text-[#600030] transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 hover:after:w-full after:bg-[#800040] after:transition-all after:duration-300">
               Zum Login
             </Link>
           </p>

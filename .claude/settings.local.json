@@ -45,7 +45,18 @@
       "Bash('frontend/app/\\(auth\\)/onboarding/step5/page.tsx':*)",
       "Bash(frontend/components/projects/ProjectStatusBadge.tsx:*)",
       "Bash(frontend/components/projects/ProjectForm.tsx:*)",
-      "Bash('frontend/app/\\(dashboard\\)/projects/page.tsx':*)"
+      "Bash('frontend/app/\\(dashboard\\)/projects/page.tsx':*)",
+      "Bash(cat:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker ps:*)",
+      "Bash(npx tsc:*)",
+      "Bash(Get-Process -Name \"node\" -ErrorAction SilentlyContinue)",
+      "Bash(Where-Object { $_CommandLine -like \"*FreelancerTool*\" -or $_Path -like \"*node*\" })",
+      "Bash(Format-Table Id, Name, CPU -AutoSize)",
+      "Bash(tasklist:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(node -e:*)",
+      "Bash(node:*)"
     ]
   }
 }

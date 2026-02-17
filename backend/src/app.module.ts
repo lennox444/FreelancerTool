@@ -13,6 +13,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { TimeEntriesModule } from './modules/time-entries/time-entries.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
     DashboardModule,
     TimeEntriesModule,
     AppointmentsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

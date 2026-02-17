@@ -4,7 +4,7 @@ import { PrismaService } from '../../core/database/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
-import { SubscriptionStatus, SubscriptionPlan } from '@prisma/client';
+import { SubscriptionStatus, SubscriptionPlan, UserRole } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -44,7 +44,7 @@ export class AuthService {
     });
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
 
     return {
       user: {
@@ -82,7 +82,7 @@ export class AuthService {
     }
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
 
     return {
       user: {
@@ -148,13 +148,12 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
-        stripeSubscriptionId: true,
         stripeCustomerId: true,
       },
     });
 
     // 2. Cancel Stripe subscription if exists
-    if (user?.stripeSubscriptionId) {
+    if (user?.stripeCustomerId) {
       try {
         // Initialize Stripe (same as in BillingService)
         const Stripe = require('stripe');
@@ -162,10 +161,16 @@ export class AuthService {
           apiVersion: '2024-12-18.acacia',
         });
 
-        // Cancel subscription immediately (no refund, just stop future billing)
-        await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+        // Retrieve active subscriptions for this customer and cancel them
+        const subscriptions = await stripe.subscriptions.list({
+          customer: user.stripeCustomerId,
+          status: 'active',
+        });
 
-        console.log(`✅ Stripe subscription ${user.stripeSubscriptionId} cancelled for user ${userId}`);
+        for (const subscription of subscriptions.data) {
+          await stripe.subscriptions.cancel(subscription.id);
+          console.log(`✅ Stripe subscription ${subscription.id} cancelled for user ${userId}`);
+        }
       } catch (error) {
         // Log error but continue with account deletion
         // We don't want a Stripe error to prevent account deletion
@@ -187,8 +192,8 @@ export class AuthService {
     return { success: true };
   }
 
-  private async generateTokens(userId: string, email: string) {
-    const payload = { sub: userId, email };
+  private async generateTokens(userId: string, email: string, role: UserRole) {
+    const payload = { sub: userId, email, role };
 
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
