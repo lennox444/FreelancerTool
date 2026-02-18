@@ -65,7 +65,22 @@
       "Bash(cmd.exe /c \"rename \"\"E:\\\\FreelancerTool\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node\"\" \"\"query_engine-windows.dll.node.bak\"\" 2>nul && echo renamed || echo rename failed\")",
       "Bash(cmd.exe /c \"taskkill /F /IM node.exe 2>nul & echo done\")",
       "Bash(npx tsx:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(net start postgresql*)",
+      "Bash(sc query:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(powershell.exe -Command \"Get-Service | Where-Object { $_.DisplayName -match ''postgres'' } | Select-Object Name, DisplayName, Status\")",
+      "Bash(cmd /c \"sc query type= all state= all | findstr /i postgres\")",
+      "Bash(cmd /c \"sc query type= all state= all\")",
+      "Bash(cmd /c \"pg_ctl --version\")",
+      "Bash(cmd /c:*)",
+      "Bash(tr:*)",
+      "Bash(echo:*)",
+      "Bash(printenv:*)",
+      "Bash(npm --version:*)",
+      "Bash(psql:*)",
+      "Bash(docker compose:*)",
+      "Bash(npm run prisma:seed:*)"
     ]
   }
 }
