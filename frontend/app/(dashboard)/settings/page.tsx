@@ -3,17 +3,39 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { CreditCard, Trash2, AlertTriangle, X, Loader2, ShieldAlert, Landmark } from 'lucide-react';
+import { CreditCard, Trash2, AlertTriangle, X, Loader2, ShieldAlert, Landmark, Target, Euro } from 'lucide-react';
 import apiClient from '@/lib/api/client';
+import { authApi } from '@/lib/api/auth';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
 export default function SettingsPage() {
     const router = useRouter();
-    const { user } = useAuthStore();
+    const { user, updateUser } = useAuthStore();
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
+
+    // ── Freelancer settings ──────────────────────────────────────────────────
+    const [targetRate, setTargetRate] = useState<string>(
+        user?.targetHourlyRate != null ? String(user.targetHourlyRate) : '',
+    );
+    const [savingRate, setSavingRate] = useState(false);
+
+    const handleSaveTargetRate = async () => {
+        const val = parseFloat(targetRate);
+        if (isNaN(val) || val < 0) { toast.error('Bitte einen gültigen Stundensatz eingeben.'); return; }
+        setSavingRate(true);
+        try {
+            const updated = await authApi.updateProfile({ targetHourlyRate: val });
+            updateUser({ targetHourlyRate: updated.targetHourlyRate });
+            toast.success('Ziel-Stundensatz gespeichert!');
+        } catch {
+            toast.error('Fehler beim Speichern.');
+        } finally {
+            setSavingRate(false);
+        }
+    };
 
     const handleDeleteAccount = async () => {
         try {
@@ -43,6 +65,56 @@ export default function SettingsPage() {
 
                     {/* Settings Cards */}
                     <div className="grid gap-6">
+
+                        {/* Freelancer Settings */}
+                        <div className="bg-white rounded-3xl shadow-lg border border-slate-200 p-6">
+                            <div className="flex items-start gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                    <Target className="w-6 h-6 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900 mb-1">Freelancer-Einstellungen</h2>
+                                    <p className="text-slate-600 text-sm">Persönliche Zielwerte für die Profit-Analyse</p>
+                                </div>
+                            </div>
+                            <div className="pl-16 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Ziel-Stundensatz (€/Std)
+                                    </label>
+                                    <p className="text-xs text-slate-500 mb-3">
+                                        Wird für die Profit-Analyse und den Profitability-Score deiner Projekte verwendet.
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative">
+                                            <Euro className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="10000"
+                                                step="5"
+                                                value={targetRate}
+                                                onChange={(e) => setTargetRate(e.target.value)}
+                                                placeholder="80"
+                                                className="pl-9 pr-4 h-11 w-36 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleSaveTargetRate}
+                                            disabled={savingRate}
+                                            className="h-11 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                                        >
+                                            {savingRate ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Speichern'}
+                                        </button>
+                                        {user?.targetHourlyRate != null && (
+                                            <span className="text-sm text-slate-500">
+                                                Aktuell: <span className="font-bold text-slate-700">{user.targetHourlyRate} €/Std</span>
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         {/* Billing Card */}
                         <Link href="/settings/billing">

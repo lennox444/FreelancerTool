@@ -24,6 +24,7 @@ export interface User {
   subscriptionPlan?: SubscriptionPlan;
   subscriptionStatus?: SubscriptionStatus;
   trialEndsAt?: string;
+  targetHourlyRate?: number | null;
 }
 
 export interface AuthResponse {
@@ -177,12 +178,19 @@ export enum ExpenseCategory {
 export interface Expense {
   id: string;
   ownerId: string;
+  projectId?: string | null;
   amount: number;
   description: string;
   category: ExpenseCategory;
   date: string;
   receiptUrl?: string;
   notes?: string;
+  isRecurring?: boolean;
+  recurringInterval?: RecurringInterval;
+  recurringStartDate?: string;
+  recurringEndDate?: string;
+  nextExpenseDate?: string;
+  parentExpenseId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -325,8 +333,46 @@ export interface Project {
     company?: string;
     email: string;
   };
+  invoices?: {
+    id: string;
+    invoiceNumber?: string;
+    amount: number;
+    totalPaid?: number;
+    status: InvoiceStatus;
+    issueDate: string;
+    dueDate: string;
+  }[];
+  quotes?: {
+    id: string;
+    quoteNumber?: string;
+    amount: number;
+    status: QuoteStatus;
+    issueDate: string;
+    validUntil: string;
+    description: string;
+  }[];
+  appointments?: {
+    id: string;
+    title: string;
+    startTime: string;
+    endTime: string;
+    contactName?: string;
+    meetingLink?: string;
+  }[];
+  stats?: {
+    totalSeconds: number;
+    totalHours: number;
+    totalInvoiced: number;
+    totalPaid: number;
+    effectiveHourlyRate: number | null;
+    billedHourlyRate: number | null;
+    budgetUsedPct: number | null;
+  };
   _count?: {
     invoices: number;
+    quotes?: number;
+    timeEntries?: number;
+    appointments?: number;
   };
 }
 
@@ -342,9 +388,40 @@ export interface TimeEntry {
   pauseDuration: number; // In Sekunden
   startTime: string;
   endTime?: string;
+  isActive: boolean;
+  pauseStartedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   project?: Project;
+}
+
+// ========================================
+// PROJECT PROFITABILITY
+// ========================================
+export type RiskLevel = 'GREEN' | 'YELLOW' | 'RED';
+
+export interface ProjectProfitability {
+  targetHourlyRate: number;
+  effectiveTaxRate: number; // as percentage, e.g. 27
+  totalRevenue: number;
+  totalPaid: number;
+  totalHours: number;
+  billableHours: number;
+  unbilledHours: number;
+  projectExpenses: number;
+  estimatedTax: number;
+  hourlyRateReal: number;
+  profitabilityScore: number;
+  riskLevel: RiskLevel;
+}
+
+export interface ProjectProfitabilityHistoryItem {
+  year: number;
+  month: number;
+  label: string;
+  revenue: number;
+  hours: number;
+  hourlyRate: number;
 }
 
 // ========================================

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '../api/projects';
-import type { Project, ProjectStatus } from '../types';
+import type { Project, ProjectProfitability, ProjectProfitabilityHistoryItem, ProjectStatus } from '../types';
 import toast from 'react-hot-toast';
 
 interface ProjectFilters {
@@ -72,6 +72,31 @@ export function useUpdateProject() {
           'Fehler beim Aktualisieren des Projekts'
       );
     },
+  });
+}
+
+/**
+ * Fetch profitability analysis for a single project.
+ * Only fires when `id` is non-empty and `enabled` is true (i.e. tab is visible).
+ */
+export function useProjectProfitability(id: string, enabled = true) {
+  return useQuery<ProjectProfitability>({
+    queryKey: ['projects', id, 'profitability'],
+    queryFn: () => projectsApi.getProfitability(id),
+    enabled: !!id && enabled,
+    staleTime: 60_000, // re-fetch at most once per minute
+  });
+}
+
+/**
+ * Fetch monthly profitability history for a project.
+ */
+export function useProjectProfitabilityHistory(id: string, months = 6, enabled = true) {
+  return useQuery<ProjectProfitabilityHistoryItem[]>({
+    queryKey: ['projects', id, 'profitability', 'history', months],
+    queryFn: () => projectsApi.getProfitabilityHistory(id, months),
+    enabled: !!id && enabled,
+    staleTime: 120_000,
   });
 }
 

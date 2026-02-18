@@ -122,6 +122,25 @@ export class TaxAssistantService {
   }
 
   /**
+   * Returns the effective income-tax rate (ESt + Soli) as a decimal fraction (e.g. 0.27).
+   * Falls back to 0.30 when there is insufficient data for the requested year.
+   * Designed to be called by other services (e.g. ProjectProfitabilityService).
+   */
+  async getEffectiveRate(ownerId: string, year?: number): Promise<number> {
+    const FALLBACK = 0.3;
+    try {
+      const result = await this.calculate(ownerId, year);
+      // effectiveRate is stored as integer percentage (e.g. 27)
+      const rate = result.taxes.effectiveRate / 100;
+      // Guard against degenerate values
+      if (!isFinite(rate) || rate <= 0 || rate > 0.6) return FALLBACK;
+      return rate;
+    } catch {
+      return FALLBACK;
+    }
+  }
+
+  /**
    * Simplified German income tax (Einkommensteuer) calculation for 2024
    * Grundtarif (single, no splitting)
    */

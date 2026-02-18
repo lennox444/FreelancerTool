@@ -34,18 +34,30 @@ export class ExpensesController {
     @Query('category') category?: ExpenseCategory,
     @Query('from') from?: string,
     @Query('to') to?: string,
+    @Query('projectId') projectId?: string,
   ) {
-    const expenses = await this.expensesService.findAll(req.ownerId, { category, from, to });
+    const expenses = await this.expensesService.findAll(req.ownerId, { category, from, to, projectId });
     return { data: expenses, meta: { total: expenses.length, timestamp: new Date().toISOString() } };
   }
 
   @Get('summary')
-  async getSummary(@Request() req, @Query('year') year?: string) {
+  async getSummary(
+    @Request() req,
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+  ) {
     const summary = await this.expensesService.getSummary(
       req.ownerId,
       year ? parseInt(year) : undefined,
+      month ? parseInt(month) : undefined,
     );
     return { data: summary, meta: { timestamp: new Date().toISOString() } };
+  }
+
+  @Get('subscriptions')
+  async getSubscriptions(@Request() req) {
+    const subscriptions = await this.expensesService.getSubscriptions(req.ownerId);
+    return { data: subscriptions, meta: { total: subscriptions.length, timestamp: new Date().toISOString() } };
   }
 
   @Get(':id')

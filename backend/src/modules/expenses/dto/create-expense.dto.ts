@@ -1,5 +1,5 @@
-import { IsString, IsNumber, IsDateString, IsEnum, IsOptional, Min } from 'class-validator';
-import { ExpenseCategory } from '@prisma/client';
+import { IsString, IsNumber, IsDateString, IsEnum, IsOptional, Min, IsBoolean, IsUUID } from 'class-validator';
+import { ExpenseCategory, RecurringInterval } from '@prisma/client';
 
 export class CreateExpenseDto {
   @IsNumber()
@@ -23,4 +23,24 @@ export class CreateExpenseDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  projectId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isRecurring?: boolean;
+
+  @IsOptional()
+  @IsEnum(RecurringInterval)
+  recurringInterval?: RecurringInterval;
+
+  @IsOptional()
+  @IsDateString()
+  recurringStartDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  recurringEndDate?: string;
 }

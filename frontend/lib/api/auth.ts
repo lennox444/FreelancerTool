@@ -37,4 +37,16 @@ export const authApi = {
     >('/auth/refresh', { refreshToken });
     return response.data.data;
   },
+
+  updateProfile: async (data: {
+    firstName?: string;
+    lastName?: string;
+    targetHourlyRate?: number;
+  }): Promise<User> => {
+    const response = await apiClient.patch<ApiResponse<User>>(
+      '/auth/profile',
+      data,
+    );
+    return response.data.data;
+  },
 };

@@ -139,6 +139,39 @@ export class AuthService {
       subscriptionStatus: user.subscriptionStatus,
       subscriptionPlan: user.subscriptionPlan,
       trialEndsAt: user.trialEndsAt,
+      targetHourlyRate: user.targetHourlyRate
+        ? Number(user.targetHourlyRate)
+        : null,
+    };
+  }
+
+  async updateProfile(
+    userId: string,
+    data: { firstName?: string; lastName?: string; targetHourlyRate?: number },
+  ) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.firstName !== undefined && { firstName: data.firstName }),
+        ...(data.lastName !== undefined && { lastName: data.lastName }),
+        ...(data.targetHourlyRate !== undefined && {
+          targetHourlyRate: data.targetHourlyRate,
+        }),
+      },
+    });
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      subscriptionStatus: user.subscriptionStatus,
+      subscriptionPlan: user.subscriptionPlan,
+      trialEndsAt: user.trialEndsAt,
+      targetHourlyRate: user.targetHourlyRate
+        ? Number(user.targetHourlyRate)
+        : null,
     };
   }
 

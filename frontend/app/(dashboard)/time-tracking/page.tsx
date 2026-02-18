@@ -18,81 +18,104 @@ import StarBorder from '@/components/ui/StarBorder';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import {
     useTimeEntries,
+    useActiveTimeEntry,
+    useStartTimer,
+    usePauseTimer,
+    useResumeTimer,
+    useStopTimer,
     useCreateTimeEntry,
     useUpdateTimeEntry,
-    useDeleteTimeEntry
+    useDeleteTimeEntry,
 } from '@/lib/hooks/useTimeEntries';
 import { TimeEntry } from '@/lib/types';
 import TimeEntryModal from '@/components/time-tracking/TimeEntryModal';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
-export default function TimeTrackingPage() {
-    // Timer States
-    const [seconds, setSeconds] = useState(0);
-    const [pauseSeconds, setPauseSeconds] = useState(0);
-    const [isActive, setIsActive] = useState(false);
-    const [isPaused, setIsPaused] = useState(false);
-    const [startTime, setStartTime] = useState<Date | null>(null);
+/**
+ * Compute display seconds from a server-side active entry.
+ * Time is always derived from server timestamps — never from local counters.
+ */
+function computeDisplayTime(entry: TimeEntry): { workSeconds: number; pauseSeconds: number } {
+    const now = Date.now();
+    const startMs = new Date(entry.startTime).getTime();
+    const totalElapsed = Math.floor((now - startMs) / 1000);
 
-    // UI States
+    const currentPause = entry.pauseStartedAt
+        ? Math.floor((now - new Date(entry.pauseStartedAt).getTime()) / 1000)
+        : 0;
+
+    const workSeconds = Math.max(0, totalElapsed - entry.pauseDuration - currentPause);
+    return { workSeconds, pauseSeconds: currentPause };
+}
+
+export default function TimeTrackingPage() {
+    // Display state (derived from server entry every second — never incremented locally)
+    const [displayWork, setDisplayWork] = useState(0);
+    const [displayPause, setDisplayPause] = useState(0);
+
+    // UI state
     const [showModal, setShowModal] = useState(false);
     const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
 
-    // Queries & Mutations
-    const { data: entries, isLoading } = useTimeEntries();
+    // Server data
+    const { data: activeEntry, isLoading: activeLoading } = useActiveTimeEntry();
+    const { data: entries, isLoading: entriesLoading } = useTimeEntries();
+
+    // Timer mutations
+    const startTimer = useStartTimer();
+    const pauseTimer = usePauseTimer();
+    const resumeTimer = useResumeTimer();
+    const stopTimer = useStopTimer();
+
+    // Entry mutations
     const createMutation = useCreateTimeEntry();
     const updateMutation = useUpdateTimeEntry();
     const deleteMutation = useDeleteTimeEntry();
 
-    // Timer Interval
+    // ─── Recalculate display every second from server timestamps ──────
     useEffect(() => {
-        let interval: any = null;
-        if (isActive) {
-            interval = setInterval(() => {
-                if (isPaused) {
-                    setPauseSeconds((prev) => prev + 1);
-                } else {
-                    setSeconds((prev) => prev + 1);
-                }
-            }, 1000);
-        } else {
-            clearInterval(interval);
+        if (!activeEntry) {
+            setDisplayWork(0);
+            setDisplayPause(0);
+            return;
         }
-        return () => clearInterval(interval);
-    }, [isActive, isPaused]);
 
-    const handleStartTimer = () => {
-        setIsActive(true);
-        setIsPaused(false);
-        setStartTime(new Date());
+        const tick = () => {
+            const { workSeconds, pauseSeconds } = computeDisplayTime(activeEntry);
+            setDisplayWork(workSeconds);
+            setDisplayPause(pauseSeconds);
+        };
+
+        tick(); // immediate update
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [activeEntry]);
+
+    const isActive = !!activeEntry;
+    const isPaused = !!(activeEntry?.pauseStartedAt);
+
+    // ─── Timer controls ────────────────────────────────────────────────
+
+    const handleStartTimer = async () => {
+        await startTimer.mutateAsync({});
     };
 
-    const handleTogglePause = () => {
-        setIsPaused(!isPaused);
+    const handleTogglePause = async () => {
+        if (!activeEntry) return;
+        if (isPaused) {
+            await resumeTimer.mutateAsync(activeEntry.id);
+        } else {
+            await pauseTimer.mutateAsync(activeEntry.id);
+        }
     };
 
     const handleStopTimer = async () => {
-        if (!startTime) return;
-
-        const duration = seconds;
-        const pDuration = pauseSeconds;
-
-        await createMutation.mutateAsync({
-            duration,
-            pauseDuration: pDuration,
-            startTime: startTime.toISOString(),
-            endTime: new Date().toISOString(),
-            description: 'Timer-Sitzung',
-        });
-
-        // Reset Timer
-        setIsActive(false);
-        setIsPaused(false);
-        setSeconds(0);
-        setPauseSeconds(0);
-        setStartTime(null);
+        if (!activeEntry) return;
+        await stopTimer.mutateAsync(activeEntry.id);
     };
+
+    // ─── Formatting helpers ────────────────────────────────────────────
 
     const formatTime = (totalSeconds: number) => {
         const hours = Math.floor(totalSeconds / 3600);
@@ -107,6 +130,8 @@ export default function TimeTrackingPage() {
         if (hours > 0) return `${hours}h ${minutes}m`;
         return `${minutes}m`;
     };
+
+    // ─── Manual entry modal ────────────────────────────────────────────
 
     const handleModalSubmit = async (data: any) => {
         if (editingEntry) {
@@ -129,7 +154,8 @@ export default function TimeTrackingPage() {
         }
     };
 
-    // Stats
+    // ─── Stats (only from finished entries) ───────────────────────────
+
     const todayEntries = entries?.filter(e => {
         const today = new Date();
         const entryDate = new Date(e.startTime);
@@ -138,9 +164,8 @@ export default function TimeTrackingPage() {
 
     const todayWorkSeconds = todayEntries.reduce((acc, curr) => acc + curr.duration, 0);
     const weekWorkSeconds = entries?.reduce((acc, curr) => {
-        const now = new Date();
         const entryDate = new Date(curr.startTime);
-        const diff = now.getTime() - entryDate.getTime();
+        const diff = Date.now() - entryDate.getTime();
         if (diff < 7 * 24 * 60 * 60 * 1000) return acc + curr.duration;
         return acc;
     }, 0) || 0;
@@ -162,7 +187,7 @@ export default function TimeTrackingPage() {
             </div>
 
             <div className="max-w-7xl mx-auto space-y-8">
-                {/* Header Section */}
+                {/* Header */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
                         <div className="hidden sm:flex w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-100 items-center justify-center text-[#800040]">
@@ -195,7 +220,7 @@ export default function TimeTrackingPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-8 sm:gap-12">
                             <div className="flex flex-col items-center">
                                 <div className="text-6xl sm:text-7xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
-                                    {formatTime(seconds)}
+                                    {formatTime(displayWork)}
                                 </div>
                                 <p className="text-[#800040] font-bold text-xs sm:text-sm tracking-widest uppercase mt-4">Arbeitszeit</p>
                             </div>
@@ -207,7 +232,7 @@ export default function TimeTrackingPage() {
                             {isActive && (
                                 <div className={`transition-all duration-300 flex flex-col items-center ${isPaused ? "opacity-100 scale-110" : "opacity-30 scale-90"}`}>
                                     <div className="text-4xl sm:text-5xl font-black text-slate-400 tracking-tight tabular-nums leading-none">
-                                        {formatTime(pauseSeconds)}
+                                        {formatTime(displayPause)}
                                     </div>
                                     <p className="text-slate-400 font-bold text-[10px] sm:text-xs tracking-widest uppercase mt-4">Pause</p>
                                 </div>
@@ -215,10 +240,15 @@ export default function TimeTrackingPage() {
                         </div>
 
                         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-                            {!isActive ? (
+                            {activeLoading ? (
+                                <div className="px-12 py-5 bg-slate-100 rounded-full text-slate-400 font-bold text-xl animate-pulse">
+                                    Lädt...
+                                </div>
+                            ) : !isActive ? (
                                 <button
                                     onClick={handleStartTimer}
-                                    className="px-12 py-5 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-bold text-xl shadow-xl shadow-pink-900/40 flex items-center gap-3 group"
+                                    disabled={startTimer.isPending}
+                                    className="px-12 py-5 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-bold text-xl shadow-xl shadow-pink-900/40 flex items-center gap-3 disabled:opacity-60"
                                 >
                                     <Play className="w-7 h-7 fill-current" />
                                     Timer starten
@@ -227,7 +257,8 @@ export default function TimeTrackingPage() {
                                 <>
                                     <button
                                         onClick={handleTogglePause}
-                                        className={`px-10 py-5 rounded-full transition-all shadow-lg flex items-center gap-3 font-bold text-lg ${isPaused
+                                        disabled={pauseTimer.isPending || resumeTimer.isPending}
+                                        className={`px-10 py-5 rounded-full transition-all shadow-lg flex items-center gap-3 font-bold text-lg disabled:opacity-60 ${isPaused
                                             ? "bg-[#800040] text-white hover:bg-[#600030]"
                                             : "bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200"
                                             }`}
@@ -237,7 +268,8 @@ export default function TimeTrackingPage() {
                                     </button>
                                     <button
                                         onClick={handleStopTimer}
-                                        className="px-10 py-5 bg-slate-900 text-white rounded-full transition-all font-bold text-lg shadow-xl hover:bg-black border border-slate-700 flex items-center gap-3"
+                                        disabled={stopTimer.isPending}
+                                        className="px-10 py-5 bg-slate-900 text-white rounded-full transition-all font-bold text-lg shadow-xl hover:bg-black border border-slate-700 flex items-center gap-3 disabled:opacity-60"
                                     >
                                         <Square className="w-5 h-5 fill-current" />
                                         Stoppen
@@ -297,7 +329,7 @@ export default function TimeTrackingPage() {
                     </h2>
 
                     <div className="space-y-3">
-                        {isLoading ? (
+                        {entriesLoading ? (
                             <div className="py-20 text-center text-slate-400">Lädt Einträge...</div>
                         ) : entries && entries.length > 0 ? (
                             entries.map((entry) => (

@@ -12,10 +12,50 @@ export interface CreateTimeEntryData {
 
 export interface UpdateTimeEntryData extends Partial<CreateTimeEntryData> { }
 
+export interface StartTimerData {
+    projectId?: string;
+    description?: string;
+}
+
 export const timeEntriesApi = {
-    /**
-     * Get all time entries
-     */
+    // ─── Active Timer ──────────────────────────────────────────────
+    startTimer: async (data: StartTimerData = {}): Promise<TimeEntry> => {
+        const response = await apiClient.post<ApiResponse<TimeEntry>>(
+            '/time-entries/start',
+            data,
+        );
+        return response.data.data;
+    },
+
+    getActive: async (): Promise<TimeEntry | null> => {
+        const response = await apiClient.get<ApiResponse<TimeEntry | null>>(
+            '/time-entries/active',
+        );
+        return response.data.data;
+    },
+
+    pauseTimer: async (id: string): Promise<TimeEntry> => {
+        const response = await apiClient.post<ApiResponse<TimeEntry>>(
+            `/time-entries/${id}/pause`,
+        );
+        return response.data.data;
+    },
+
+    resumeTimer: async (id: string): Promise<TimeEntry> => {
+        const response = await apiClient.post<ApiResponse<TimeEntry>>(
+            `/time-entries/${id}/resume`,
+        );
+        return response.data.data;
+    },
+
+    stopTimer: async (id: string): Promise<TimeEntry> => {
+        const response = await apiClient.post<ApiResponse<TimeEntry>>(
+            `/time-entries/${id}/stop`,
+        );
+        return response.data.data;
+    },
+
+    // ─── Standard CRUD ─────────────────────────────────────────────
     getAll: async (projectId?: string): Promise<TimeEntry[]> => {
         const response = await apiClient.get<ApiResponse<TimeEntry[]>>(
             '/time-entries',
@@ -24,9 +64,6 @@ export const timeEntriesApi = {
         return response.data.data;
     },
 
-    /**
-     * Get single time entry by ID
-     */
     getOne: async (id: string): Promise<TimeEntry> => {
         const response = await apiClient.get<ApiResponse<TimeEntry>>(
             `/time-entries/${id}`
@@ -34,9 +71,6 @@ export const timeEntriesApi = {
         return response.data.data;
     },
 
-    /**
-     * Create new time entry
-     */
     create: async (data: CreateTimeEntryData): Promise<TimeEntry> => {
         const response = await apiClient.post<ApiResponse<TimeEntry>>(
             '/time-entries',
@@ -45,9 +79,6 @@ export const timeEntriesApi = {
         return response.data.data;
     },
 
-    /**
-     * Update existing time entry
-     */
     update: async (id: string, data: UpdateTimeEntryData): Promise<TimeEntry> => {
         const response = await apiClient.patch<ApiResponse<TimeEntry>>(
             `/time-entries/${id}`,
@@ -56,9 +87,6 @@ export const timeEntriesApi = {
         return response.data.data;
     },
 
-    /**
-     * Delete time entry
-     */
     delete: async (id: string): Promise<void> => {
         await apiClient.delete(`/time-entries/${id}`);
     },

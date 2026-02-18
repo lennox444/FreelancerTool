@@ -132,36 +132,76 @@ export class ProjectsService {
       where: { id, ownerId },
       include: {
         customer: {
-          select: {
-            id: true,
-            name: true,
-            company: true,
-            email: true,
-          },
+          select: { id: true, name: true, company: true, email: true },
         },
         invoices: {
           take: 10,
           orderBy: { createdAt: 'desc' },
           select: {
-            id: true,
-            invoiceNumber: true,
-            amount: true,
-            status: true,
-            issueDate: true,
-            dueDate: true,
+            id: true, invoiceNumber: true, amount: true,
+            status: true, issueDate: true, dueDate: true, totalPaid: true,
           },
         },
+        quotes: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          select: {
+            id: true, quoteNumber: true, amount: true,
+            status: true, issueDate: true, validUntil: true, description: true,
+          },
+        },
+        appointments: {
+          where: { startTime: { gte: new Date() } },
+          orderBy: { startTime: 'asc' },
+          take: 5,
+          select: {
+            id: true, title: true, startTime: true, endTime: true,
+            contactName: true, meetingLink: true,
+          },
+        },
+        timeEntries: {
+          select: { duration: true, pauseDuration: true, startTime: true, endTime: true },
+        },
         _count: {
-          select: { invoices: true },
+          select: { invoices: true, quotes: true, timeEntries: true, appointments: true },
         },
       },
     });
 
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
+    if (!project) throw new NotFoundException('Project not found');
 
-    return project;
+    // Compute stats
+    const totalSeconds = project.timeEntries.reduce(
+      (sum, t) => sum + Math.max(0, t.duration - t.pauseDuration), 0,
+    );
+    const totalHours = Math.round((totalSeconds / 3600) * 100) / 100;
+    const totalInvoiced = project.invoices.reduce((sum, i) => sum + Number(i.amount), 0);
+    const totalPaid = project.invoices.reduce((sum, i) => sum + Number((i as any).totalPaid ?? 0), 0);
+    const effectiveHourlyRate =
+      project.budget && totalSeconds > 0
+        ? Math.round((Number(project.budget) / (totalSeconds / 3600)) * 100) / 100
+        : null;
+    const billedHourlyRate =
+      totalInvoiced > 0 && totalSeconds > 0
+        ? Math.round((totalInvoiced / (totalSeconds / 3600)) * 100) / 100
+        : null;
+
+    const { timeEntries, ...rest } = project;
+
+    return {
+      ...rest,
+      stats: {
+        totalSeconds,
+        totalHours,
+        totalInvoiced,
+        totalPaid,
+        effectiveHourlyRate,   // budget ÷ hours
+        billedHourlyRate,      // invoiced ÷ hours
+        budgetUsedPct: project.budget && totalInvoiced > 0
+          ? Math.min(100, Math.round((totalInvoiced / Number(project.budget)) * 100))
+          : null,
+      },
+    };
   }
 
   async update(id: string, dto: UpdateProjectDto, ownerId: string) {

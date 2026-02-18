@@ -1,5 +1,12 @@
 import apiClient from './client';
-import { Expense, ExpenseCategory, ExpenseSummary, ApiResponse } from '../types';
+import { Expense, ExpenseCategory, ExpenseSummary, RecurringInterval, ApiResponse } from '../types';
+
+type RecurringFields = {
+  isRecurring?: boolean;
+  recurringInterval?: RecurringInterval;
+  recurringStartDate?: string;
+  recurringEndDate?: string;
+};
 
 export const expensesApi = {
   getAll: (params?: { category?: ExpenseCategory; from?: string; to?: string }) =>
@@ -15,7 +22,7 @@ export const expensesApi = {
     date?: string;
     receiptUrl?: string;
     notes?: string;
-  }) => apiClient.post<ApiResponse<Expense>>('/expenses', data).then((r) => r.data),
+  } & RecurringFields) => apiClient.post<ApiResponse<Expense>>('/expenses', data).then((r) => r.data),
 
   update: (id: string, data: Partial<{
     amount: number;
@@ -24,13 +31,16 @@ export const expensesApi = {
     date: string;
     receiptUrl: string;
     notes: string;
-  }>) => apiClient.patch<ApiResponse<Expense>>(`/expenses/${id}`, data).then((r) => r.data),
+  } & RecurringFields>) => apiClient.patch<ApiResponse<Expense>>(`/expenses/${id}`, data).then((r) => r.data),
 
   delete: (id: string) =>
     apiClient.delete(`/expenses/${id}`).then((r) => r.data),
 
-  getSummary: (year?: number) =>
+  getSummary: (year?: number, month?: number) =>
     apiClient
-      .get<ApiResponse<ExpenseSummary>>('/expenses/summary', { params: { year } })
+      .get<ApiResponse<ExpenseSummary>>('/expenses/summary', { params: { year, month } })
       .then((r) => r.data),
+
+  getSubscriptions: () =>
+    apiClient.get<ApiResponse<Expense[]>>('/expenses/subscriptions').then((r) => r.data),
 };

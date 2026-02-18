@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { Project, ProjectStatus, ApiResponse } from '../types';
+import type { Project, ProjectProfitability, ProjectProfitabilityHistoryItem, ProjectStatus, ApiResponse } from '../types';
 
 interface CreateProjectData {
   name: string;
@@ -71,5 +71,29 @@ export const projectsApi = {
    */
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/projects/${id}`);
+  },
+
+  /**
+   * Get profitability analysis for a project
+   */
+  getProfitability: async (id: string): Promise<ProjectProfitability> => {
+    const response = await apiClient.get<ApiResponse<ProjectProfitability>>(
+      `/projects/${id}/profitability`,
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Get monthly profitability history for a project (last N months)
+   */
+  getProfitabilityHistory: async (
+    id: string,
+    months = 6,
+  ): Promise<ProjectProfitabilityHistoryItem[]> => {
+    const response = await apiClient.get<ApiResponse<ProjectProfitabilityHistoryItem[]>>(
+      `/projects/${id}/profitability/history`,
+      { params: { months } },
+    );
+    return response.data.data;
   },
 };
