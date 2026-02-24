@@ -15,6 +15,11 @@ export default function ReactQueryProvider({
           queries: {
             staleTime: 60 * 1000, // 1 minute
             refetchOnWindowFocus: true,
+            retry: (failureCount, error: any) => {
+              // Never retry on 401 – triggers logout via axios interceptor
+              if (error?.response?.status === 401) return false;
+              return failureCount < 2;
+            },
           },
         },
       })

@@ -2,7 +2,7 @@ import apiClient from './client';
 import type { ApiResponse, Appointment } from '../types';
 
 export const appointmentsApi = {
-    getAll: async (params?: { from?: string; to?: string; customerId?: string }) => {
+    getAll: async (params?: { from?: string; to?: string; customerId?: string; projectId?: string }) => {
         const response = await apiClient.get<ApiResponse<Appointment[]>>('/appointments', { params });
         return response.data?.data || [];
     },

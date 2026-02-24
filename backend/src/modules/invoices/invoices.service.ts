@@ -140,7 +140,15 @@ export class InvoicesService {
       where: { publicToken: token },
       include: {
         customer: { select: { name: true, company: true, email: true } },
-        owner: { select: { firstName: true, lastName: true, email: true } },
+        owner: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            isKleinunternehmer: true,
+            stripeConnectEnabled: true,
+          },
+        },
         payments: { orderBy: { paymentDate: 'desc' } },
         timeEntries: { orderBy: { startTime: 'asc' } },
       },
@@ -284,6 +292,7 @@ export class InvoicesService {
       description: invoice.description,
       amount: Number(invoice.amount),
       publicToken: invoice.publicToken || undefined,
+      isKleinunternehmer: owner.isKleinunternehmer,
       bankDetails: invoice.paymentDetails ? (invoice.paymentDetails as any) : undefined,
     });
   }
@@ -308,6 +317,7 @@ export class InvoicesService {
       },
       description: invoice.description,
       amount: Number(invoice.amount),
+      isKleinunternehmer: owner.isKleinunternehmer,
       bankDetails: invoice.paymentDetails ? (invoice.paymentDetails as any) : undefined,
     });
 
@@ -383,7 +393,7 @@ export class InvoicesService {
       where: { status: InvoiceStatus.OVERDUE, dunningLevel: { lt: 4 } },
       include: {
         customer: true,
-        owner: { select: { firstName: true, lastName: true, email: true } },
+        owner: { select: { firstName: true, lastName: true, email: true, isKleinunternehmer: true } },
       },
     });
 
@@ -423,6 +433,7 @@ export class InvoicesService {
             },
             description: invoice.description,
             amount: Number(invoice.amount),
+            isKleinunternehmer: invoice.owner.isKleinunternehmer,
           });
 
           await this.mailService.sendDunningEmail({
@@ -527,5 +538,101 @@ export class InvoicesService {
     const due = new Date(from);
     due.setDate(due.getDate() + days);
     return due;
+  }
+
+  /**
+   * Create a Stripe Checkout Session for paying an invoice via the client portal.
+   * Uses Stripe Connect if the invoice has onlinePaymentEnabled=true and the owner
+   * has a connected Stripe account. Platform fee is applied via application_fee_amount.
+   */
+  async createInvoiceCheckoutSession(token: string): Promise<{ url: string }> {
+    const invoice = await this.findByPublicToken(token);
+
+    if (invoice.status === InvoiceStatus.PAID) {
+      throw new BadRequestException('Invoice is already fully paid');
+    }
+
+    if (!invoice.onlinePaymentEnabled) {
+      throw new BadRequestException('Online payment is not enabled for this invoice');
+    }
+
+    const owner = await this.prisma.user.findUnique({ where: { id: invoice.ownerId } });
+    if (!owner?.stripeConnectAccountId || !owner.stripeConnectEnabled) {
+      throw new BadRequestException('The invoice owner has not connected a Stripe account');
+    }
+
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey || stripeKey === 'sk_test_PLACEHOLDER') {
+      throw new BadRequestException('Stripe is not configured');
+    }
+
+    const Stripe = require('stripe').default ?? require('stripe');
+    const stripe = new Stripe(stripeKey, { apiVersion: '2024-12-18.acacia' });
+
+    const remaining = Number(invoice.amount) - Number(invoice.totalPaid ?? 0);
+    const amountCents = Math.round(remaining * 100);
+
+    // Calculate platform fee (default 2%)
+    const feePct = parseFloat(process.env.STRIPE_PLATFORM_FEE_PERCENT ?? '2');
+    const feeAmountCents = Math.round(amountCents * (feePct / 100));
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [
+        {
+          price_data: {
+            currency: 'eur',
+            unit_amount: amountCents,
+            product_data: {
+              name: invoice.invoiceNumber
+                ? `Rechnung ${invoice.invoiceNumber}`
+                : `Rechnung (${(invoice as any).customer?.name ?? 'Kunde'})`,
+              description: invoice.description?.substring(0, 200) ?? undefined,
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      payment_intent_data: {
+        application_fee_amount: feeAmountCents,
+        transfer_data: {
+          destination: owner.stripeConnectAccountId,
+        },
+      },
+      success_url: `${frontendUrl}/invoice/${token}?paid=true`,
+      cancel_url: `${frontendUrl}/invoice/${token}`,
+      metadata: {
+        invoiceToken: token,
+        invoiceId: invoice.id,
+        ownerId: invoice.ownerId,
+      },
+    });
+
+    return { url: session.url };
+  }
+
+  /**
+   * Record a payment for an invoice (called from Stripe webhook).
+   * Does NOT require ownerId – only used by trusted webhook handler.
+   */
+  async recordStripePayment(invoiceId: string, amountPaid: number) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+    });
+    if (!invoice) return;
+
+    await this.prisma.payment.create({
+      data: {
+        invoiceId: invoice.id,
+        ownerId: invoice.ownerId,
+        amount: amountPaid,
+        paymentDate: new Date(),
+        note: 'Stripe Online-Zahlung (Client Portal)',
+      },
+    });
+
+    await this.recalculateStatus(invoiceId);
   }
 }

@@ -43,15 +43,37 @@ export class CustomersService {
       ];
     }
 
-    return this.prisma.customer.findMany({
+    const customers = await this.prisma.customer.findMany({
       where,
-      orderBy: { [sortBy]: order },
+      orderBy: sortBy === 'revenue' ? { createdAt: 'desc' } : { [sortBy]: order },
       include: {
         _count: {
           select: { invoices: true },
         },
+        invoices: {
+          where: { status: { in: ['PAID', 'PARTIALLY_PAID'] } },
+          select: { totalPaid: true },
+        },
       },
     });
+
+    // Compute revenue per customer
+    const withRevenue = customers.map((c) => {
+      const revenue = c.invoices.reduce(
+        (sum, inv) => sum + Number(inv.totalPaid),
+        0,
+      );
+      const { invoices: _invoices, ...rest } = c;
+      return { ...rest, revenue };
+    });
+
+    if (sortBy === 'revenue') {
+      withRevenue.sort((a, b) =>
+        order === 'desc' ? b.revenue - a.revenue : a.revenue - b.revenue,
+      );
+    }
+
+    return withRevenue;
   }
 
   async findOne(id: string, ownerId: string) {

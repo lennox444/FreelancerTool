@@ -35,8 +35,9 @@ export class AppointmentsController {
         @Query('from') from?: string,
         @Query('to') to?: string,
         @Query('customerId') customerId?: string,
+        @Query('projectId') projectId?: string,
     ) {
-        return this.appointmentsService.findAll(req.ownerId, { from, to, customerId });
+        return this.appointmentsService.findAll(req.ownerId, { from, to, customerId, projectId });
     }
 
     @Get(':id')

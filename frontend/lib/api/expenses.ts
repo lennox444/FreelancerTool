@@ -43,4 +43,17 @@ export const expensesApi = {
 
   getSubscriptions: () =>
     apiClient.get<ApiResponse<Expense[]>>('/expenses/subscriptions').then((r) => r.data),
+
+  downloadDATEV: async (year: number): Promise<void> => {
+    const response = await apiClient.get(`/expenses/export/datev`, {
+      params: { year },
+      responseType: 'blob',
+    });
+    const url = URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `DATEV_Ausgaben_${year}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };

@@ -39,11 +39,19 @@ export default function AppointmentForm({
 }: AppointmentFormProps) {
     const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<AppointmentFormData>({
         defaultValues: appointment ? {
-            ...appointment,
+            title: appointment.title,
+            description: appointment.description ?? '',
             startTime: new Date(appointment.startTime).toISOString().slice(0, 10),
             endTime: new Date(appointment.endTime).toISOString().slice(0, 10),
             startTimeTime: new Date(appointment.startTime).toISOString().slice(11, 16),
             endTimeTime: new Date(appointment.endTime).toISOString().slice(11, 16),
+            customerId: appointment.customerId ?? '',
+            projectId: appointment.projectId ?? '',
+            contactName: appointment.contactName ?? '',
+            contactEmail: appointment.contactEmail ?? '',
+            contactPhone: appointment.contactPhone ?? '',
+            meetingLink: appointment.meetingLink ?? '',
+            meetingId: appointment.meetingId ?? '',
         } : {
             startTime: new Date().toISOString().slice(0, 10),
             endTime: new Date().toISOString().slice(0, 10),
@@ -85,10 +93,14 @@ export default function AppointmentForm({
             return;
         }
 
+        // Strip helper fields not in DTO; convert empty strings to undefined
+        const { startTimeTime, endTimeTime, ...rest } = data;
         await onSubmit({
-            ...data,
+            ...rest,
             startTime: startDateTime.toISOString(),
-            endTime: endDateTime.toISOString()
+            endTime: endDateTime.toISOString(),
+            customerId: rest.customerId || undefined,
+            projectId: rest.projectId || undefined,
         });
     };
 

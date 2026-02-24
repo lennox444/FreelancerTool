@@ -18,11 +18,15 @@ import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { OwnershipGuard } from '../../core/guards/ownership.guard';
 import { InvoiceStatus } from '@prisma/client';
+import { DatevExportService } from '../pdf/datev-export.service';
 
 @Controller('invoices')
 @UseGuards(JwtAuthGuard, OwnershipGuard)
 export class InvoicesController {
-  constructor(private readonly invoicesService: InvoicesService) {}
+  constructor(
+    private readonly invoicesService: InvoicesService,
+    private readonly datevExportService: DatevExportService,
+  ) {}
 
   @Post()
   async create(@Body() createInvoiceDto: CreateInvoiceDto, @Request() req) {
@@ -46,6 +50,33 @@ export class InvoicesController {
   async getOverdue(@Request() req) {
     const invoices = await this.invoicesService.getOverdue(req.ownerId);
     return { data: invoices, meta: { total: invoices.length, timestamp: new Date().toISOString() } };
+  }
+
+  @Get('export/datev')
+  async exportDatev(
+    @Request() req,
+    @Query('year') year: string,
+    @Res() res: Response,
+  ) {
+    const fiscalYear = year ? parseInt(year) : new Date().getFullYear();
+    const from = new Date(`${fiscalYear}-01-01`).toISOString();
+    const to = new Date(`${fiscalYear}-12-31`).toISOString();
+    const invoices = await this.invoicesService.findAll(req.ownerId, {
+      from,
+      to,
+      status: undefined,
+    });
+    const paid = invoices.filter((inv) =>
+      ['PAID', 'PARTIALLY_PAID'].includes(inv.status),
+    );
+    const buffer = this.datevExportService.generateInvoicesDATEV(paid, fiscalYear);
+    const filename = `DATEV_Rechnungen_${fiscalYear}.csv`;
+    res.set({
+      'Content-Type': 'text/csv; charset=windows-1252',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
   }
 
   @Get(':id')

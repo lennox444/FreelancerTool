@@ -42,6 +42,7 @@ export const authApi = {
     firstName?: string;
     lastName?: string;
     targetHourlyRate?: number;
+    isKleinunternehmer?: boolean;
   }): Promise<User> => {
     const response = await apiClient.patch<ApiResponse<User>>(
       '/auth/profile',

@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { PrismaService } from '../../core/database/prisma.service';
+import { InvoicesService } from '../invoices/invoices.service';
 
 @Injectable()
 export class BillingService {
@@ -10,6 +11,7 @@ export class BillingService {
     constructor(
         private configService: ConfigService,
         private prisma: PrismaService,
+        private invoicesService: InvoicesService,
     ) {
         const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
 
@@ -107,6 +109,118 @@ export class BillingService {
         }
     }
 
+    // ─── Stripe Connect (Express Accounts) ───────────────────────────────────
+
+    async connectStripeAccount(userId: string): Promise<{ url: string }> {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new BadRequestException('User not found');
+
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+
+        let accountId = user.stripeConnectAccountId;
+
+        // Create a new Express account if the user doesn't have one yet
+        if (!accountId) {
+            const account = await this.stripe.accounts.create({
+                type: 'express',
+                country: 'DE',
+                email: user.email,
+                metadata: { userId },
+            });
+            accountId = account.id;
+
+            await this.prisma.user.update({
+                where: { id: userId },
+                data: { stripeConnectAccountId: accountId },
+            });
+        }
+
+        // Create account link for onboarding (or re-onboarding)
+        const accountLink = await this.stripe.accountLinks.create({
+            account: accountId,
+            refresh_url: `${frontendUrl}/settings?stripe=refresh`,
+            return_url: `${frontendUrl}/settings?stripe=connected`,
+            type: 'account_onboarding',
+        });
+
+        return { url: accountLink.url };
+    }
+
+    async getConnectStatus(userId: string): Promise<{ connected: boolean; chargesEnabled: boolean; accountId: string | null; platformFeePct: number }> {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new BadRequestException('User not found');
+
+        const platformFeePct = parseFloat(this.configService.get<string>('STRIPE_PLATFORM_FEE_PERCENT') ?? '2');
+
+        if (!user.stripeConnectAccountId) {
+            return { connected: false, chargesEnabled: false, accountId: null, platformFeePct };
+        }
+
+        try {
+            const account = await this.stripe.accounts.retrieve(user.stripeConnectAccountId);
+            const chargesEnabled = account.charges_enabled === true;
+
+            // Sync stripeConnectEnabled to DB if it changed
+            if (chargesEnabled !== user.stripeConnectEnabled) {
+                await this.prisma.user.update({
+                    where: { id: userId },
+                    data: { stripeConnectEnabled: chargesEnabled },
+                });
+            }
+
+            return {
+                connected: true,
+                chargesEnabled,
+                accountId: user.stripeConnectAccountId,
+                platformFeePct,
+            };
+        } catch (error) {
+            // Account may have been deleted on Stripe side
+            console.error('Stripe Connect status error:', error);
+            return { connected: false, chargesEnabled: false, accountId: null, platformFeePct };
+        }
+    }
+
+    async disconnectStripe(userId: string): Promise<{ success: boolean }> {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new BadRequestException('User not found');
+
+        if (user.stripeConnectAccountId) {
+            try {
+                await this.stripe.accounts.del(user.stripeConnectAccountId);
+            } catch (error) {
+                // If the account is already deleted or deauthorized, continue anyway
+                console.error('Stripe account delete error (continuing):', error.message);
+            }
+        }
+
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { stripeConnectAccountId: null, stripeConnectEnabled: false },
+        });
+
+        return { success: true };
+    }
+
+    private async updateConnectStatus(account: Stripe.Account) {
+        if (!account.id) return;
+
+        const user = await this.prisma.user.findUnique({
+            where: { stripeConnectAccountId: account.id },
+        });
+
+        if (!user) return;
+
+        const chargesEnabled = account.charges_enabled === true;
+        if (chargesEnabled !== user.stripeConnectEnabled) {
+            await this.prisma.user.update({
+                where: { id: user.id },
+                data: { stripeConnectEnabled: chargesEnabled },
+            });
+            console.log(`Updated stripeConnectEnabled=${chargesEnabled} for user ${user.id}`);
+        }
+    }
+
     async handleWebhook(signature: string, payload: Buffer) {
         const endpointSecret = this.configService.get('STRIPE_WEBHOOK_SECRET');
         let event;
@@ -119,11 +233,21 @@ export class BillingService {
 
         switch (event.type) {
             case 'checkout.session.completed':
-                const session = event.data.object;
-                await this.fulfillSubscription(session);
+                const session = event.data.object as Stripe.Checkout.Session;
+                if (session.metadata?.invoiceToken) {
+                    // Invoice payment via client portal
+                    await this.fulfillInvoicePayment(session);
+                } else {
+                    // Subscription checkout
+                    await this.fulfillSubscription(session);
+                }
                 break;
             case 'invoice.payment_succeeded':
                 // Renew subscription logic if needed
+                break;
+            case 'account.updated':
+                const account = event.data.object as Stripe.Account;
+                await this.updateConnectStatus(account);
                 break;
             default:
                 console.log(`Unhandled event type ${event.type}`);
@@ -145,5 +269,14 @@ export class BillingService {
             });
             console.log(`User ${userId} upgraded to PRO via Stripe.`);
         }
+    }
+
+    private async fulfillInvoicePayment(session: Stripe.Checkout.Session) {
+        const invoiceId = session.metadata?.invoiceId;
+        if (!invoiceId) return;
+
+        const amountPaid = (session.amount_total ?? 0) / 100;
+        await this.invoicesService.recordStripePayment(invoiceId, amountPaid);
+        console.log(`Invoice ${invoiceId} paid via Stripe: ${amountPaid} EUR`);
     }
 }

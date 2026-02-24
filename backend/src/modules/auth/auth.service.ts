@@ -106,9 +106,17 @@ export class AuthService {
         secret: process.env.JWT_REFRESH_SECRET,
       });
 
+      // Check user still exists
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+      if (!user) {
+        throw new UnauthorizedException('User no longer exists');
+      }
+
       // Generate new access token
       const accessToken = this.jwtService.sign(
-        { sub: payload.sub, email: payload.email },
+        { sub: payload.sub, email: payload.email, role: user.role },
         {
           secret: process.env.JWT_SECRET,
           expiresIn: '15m',
@@ -142,12 +150,15 @@ export class AuthService {
       targetHourlyRate: user.targetHourlyRate
         ? Number(user.targetHourlyRate)
         : null,
+      isKleinunternehmer: user.isKleinunternehmer,
+      stripeConnectAccountId: user.stripeConnectAccountId,
+      stripeConnectEnabled: user.stripeConnectEnabled,
     };
   }
 
   async updateProfile(
     userId: string,
-    data: { firstName?: string; lastName?: string; targetHourlyRate?: number },
+    data: { firstName?: string; lastName?: string; targetHourlyRate?: number; isKleinunternehmer?: boolean },
   ) {
     const user = await this.prisma.user.update({
       where: { id: userId },
@@ -156,6 +167,9 @@ export class AuthService {
         ...(data.lastName !== undefined && { lastName: data.lastName }),
         ...(data.targetHourlyRate !== undefined && {
           targetHourlyRate: data.targetHourlyRate,
+        }),
+        ...(data.isKleinunternehmer !== undefined && {
+          isKleinunternehmer: data.isKleinunternehmer,
         }),
       },
     });
@@ -172,6 +186,9 @@ export class AuthService {
       targetHourlyRate: user.targetHourlyRate
         ? Number(user.targetHourlyRate)
         : null,
+      isKleinunternehmer: user.isKleinunternehmer,
+      stripeConnectAccountId: user.stripeConnectAccountId,
+      stripeConnectEnabled: user.stripeConnectEnabled,
     };
   }
 

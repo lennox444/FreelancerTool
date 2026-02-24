@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { appointmentsApi } from '../api/appointments';
 
-export function useAppointments(params?: { from?: string; to?: string; customerId?: string }) {
+export function useAppointments(params?: { from?: string; to?: string; customerId?: string; projectId?: string }) {
     return useQuery({
         queryKey: ['appointments', params],
         queryFn: () => appointmentsApi.getAll(params),

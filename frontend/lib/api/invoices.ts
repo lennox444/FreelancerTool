@@ -29,6 +29,7 @@ export const invoicesApi = {
     recurringInterval?: string;
     recurringStartDate?: string;
     recurringEndDate?: string;
+    onlinePaymentEnabled?: boolean;
   }): Promise<Invoice> => {
     const response = await apiClient.post<ApiResponse<Invoice>>('/invoices', data);
     return response.data.data;
@@ -48,6 +49,7 @@ export const invoicesApi = {
       recurringInterval?: string;
       recurringStartDate?: string;
       recurringEndDate?: string;
+      onlinePaymentEnabled?: boolean;
     }>,
   ): Promise<Invoice> => {
     const response = await apiClient.patch<ApiResponse<Invoice>>(`/invoices/${id}`, data);
@@ -86,5 +88,18 @@ export const invoicesApi = {
   setTimeEntries: async (invoiceId: string, timeEntryIds: string[]): Promise<{ linked: number }> => {
     const response = await apiClient.patch<ApiResponse<{ linked: number }>>(`/invoices/${invoiceId}/time-entries`, { timeEntryIds });
     return response.data.data;
+  },
+
+  downloadDATEV: async (year: number): Promise<void> => {
+    const response = await apiClient.get(`/invoices/export/datev`, {
+      params: { year },
+      responseType: 'blob',
+    });
+    const url = URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `DATEV_Rechnungen_${year}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   },
 };

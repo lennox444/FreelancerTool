@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useCustomers, useCreateCustomer, useDeleteCustomer, useUpdateCustomer } from '@/lib/hooks/useCustomers';
 import CustomerForm, { type CustomerFormData } from '@/components/customers/CustomerForm';
 import SpotlightCard from '@/components/ui/SpotlightCard';
@@ -17,17 +18,39 @@ import {
   Trash2,
   UserPlus,
   X,
-  Loader2
+  Loader2,
+  TrendingUp,
+  Trophy,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 
 export default function CustomersPage() {
+  const searchParams = useSearchParams();
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const [search, setSearch] = useState('');
+  const [sortByRevenue, setSortByRevenue] = useState(false);
+  const [highlightedId, setHighlightedId] = useState('');
+  const highlightRef = useRef<HTMLDivElement>(null);
 
-  const { data: customers, isLoading, error } = useCustomers({ search });
+  useEffect(() => {
+    const id = searchParams.get('id');
+    if (id) setHighlightedId(id);
+  }, [searchParams]);
+
+  // Scroll to highlighted customer once loaded
+  useEffect(() => {
+    if (highlightedId && highlightRef.current) {
+      setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+    }
+  }, [highlightedId, highlightRef.current]);
+
+  const { data: customers, isLoading, error } = useCustomers({
+    search,
+    sortBy: sortByRevenue ? 'revenue' : 'createdAt',
+    order: 'desc',
+  });
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
@@ -162,6 +185,18 @@ export default function CustomersPage() {
           <Users className="w-4 h-4" />
           <span>{customers?.length || 0} Kunden insgesamt</span>
         </div>
+        <button
+          onClick={() => setSortByRevenue(!sortByRevenue)}
+          className={cn(
+            'flex items-center gap-2 px-4 py-3 rounded-2xl border font-semibold text-sm transition-all',
+            sortByRevenue
+              ? 'bg-[#800040] text-white border-[#800040] shadow-md shadow-pink-900/20'
+              : 'bg-white text-slate-600 border-slate-200 hover:border-[#800040]/40 hover:text-[#800040]'
+          )}
+        >
+          <TrendingUp className="w-4 h-4" />
+          <span>Nach Umsatz</span>
+        </button>
       </div>
 
       {/* List Container */}
@@ -173,15 +208,29 @@ export default function CustomersPage() {
           </div>
         ) : customers && customers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {customers.map((customer) => (
+            {(() => {
+              const topRevenue = Math.max(...customers.map((c: any) => c.revenue ?? 0));
+              return customers.map((customer: any) => (
+              <div key={customer.id} ref={customer.id === highlightedId ? highlightRef : undefined}>
               <SpotlightCard
-                key={customer.id}
-                className="bg-white/90 backdrop-blur-md border border-slate-100 shadow-sm p-6 rounded-2xl hover:shadow-md transition-shadow group flex flex-col"
+                className={cn(
+                  'bg-white/90 backdrop-blur-md border shadow-sm p-6 rounded-2xl hover:shadow-md transition-all group flex flex-col',
+                  customer.id === highlightedId
+                    ? 'border-[#800040]/40 ring-2 ring-[#800040]/20 shadow-[#800040]/10'
+                    : 'border-slate-100',
+                )}
                 spotlightColor="rgba(128, 0, 64, 0.05)"
               >
                 <div className="flex justify-between items-start mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-[#800040]/10 flex items-center justify-center text-[#800040] font-bold text-xl uppercase">
-                    {customer.name.charAt(0)}
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-xl bg-[#800040]/10 flex items-center justify-center text-[#800040] font-bold text-xl uppercase">
+                      {customer.name.charAt(0)}
+                    </div>
+                    {topRevenue > 0 && customer.revenue === topRevenue && (
+                      <div className="absolute -top-2 -right-2 w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center shadow-sm" title="Top Kunde">
+                        <Trophy className="w-3 h-3 text-white" />
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => handleDelete(customer.id)}
@@ -221,6 +270,14 @@ export default function CustomersPage() {
                         <span className="text-sm">{customer._count?.invoices || 0} Rechnungen</span>
                       </div>
                     </div>
+                    <div className="flex items-center justify-between text-slate-600">
+                      <div className="flex items-center gap-3">
+                        <TrendingUp className="w-4 h-4 text-slate-400" />
+                        <span className="text-sm font-semibold text-slate-700">
+                          {(customer.revenue ?? 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })} Umsatz
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -234,7 +291,9 @@ export default function CustomersPage() {
                   </button>
                 </div>
               </SpotlightCard>
-            ))}
+              </div>
+            ));
+          })()}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">

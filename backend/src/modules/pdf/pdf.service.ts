@@ -17,6 +17,7 @@ export interface InvoiceData {
   description: string;
   amount: number;
   publicToken?: string;
+  isKleinunternehmer?: boolean;
   bankDetails?: {
     name: string;
     bankName?: string;
@@ -175,20 +176,22 @@ export class PdfService {
         {
           alignment: 'right',
           stack: [
-            {
-              columns: [
-                { text: 'Nettobetrag:', width: '*', alignment: 'right', color: '#6b7280', fontSize: 10 },
-                { text: this.formatCurrency(netAmount), width: 100, alignment: 'right', color: '#6b7280', fontSize: 10 },
-              ],
-              margin: [0, 3, 0, 3],
-            },
-            {
-              columns: [
-                { text: 'MwSt. 19%:', width: '*', alignment: 'right', color: '#6b7280', fontSize: 10 },
-                { text: this.formatCurrency(vatAmount), width: 100, alignment: 'right', color: '#6b7280', fontSize: 10 },
-              ],
-              margin: [0, 3, 0, 3],
-            },
+            ...(data.isKleinunternehmer ? [] : [
+              {
+                columns: [
+                  { text: 'Nettobetrag:', width: '*', alignment: 'right', color: '#6b7280', fontSize: 10 },
+                  { text: this.formatCurrency(netAmount), width: 100, alignment: 'right', color: '#6b7280', fontSize: 10 },
+                ],
+                margin: [0, 3, 0, 3],
+              },
+              {
+                columns: [
+                  { text: 'MwSt. 19%:', width: '*', alignment: 'right', color: '#6b7280', fontSize: 10 },
+                  { text: this.formatCurrency(vatAmount), width: 100, alignment: 'right', color: '#6b7280', fontSize: 10 },
+                ],
+                margin: [0, 3, 0, 3],
+              },
+            ]),
             { canvas: [{ type: 'line', x1: 315, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e5e7eb' }], margin: [0, 5, 0, 5] },
             {
               columns: [
@@ -199,7 +202,14 @@ export class PdfService {
           ],
           margin: [0, 0, 0, 30],
         },
-        // Note
+        // §19 UStG notice or standard payment note
+        ...(data.isKleinunternehmer ? [{
+          text: 'Gemäß §19 UStG wird keine Umsatzsteuer berechnet.',
+          fontSize: 9,
+          color: '#6b7280',
+          italics: true,
+          margin: [0, 0, 0, 6],
+        }] : []),
         {
           text: 'Bitte überweisen Sie den Gesamtbetrag innerhalb der Zahlungsfrist unter Angabe der Rechnungsnummer.',
           fontSize: 9,

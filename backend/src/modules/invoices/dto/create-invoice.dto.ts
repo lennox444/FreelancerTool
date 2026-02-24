@@ -51,4 +51,8 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsString()
   bankAccountId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  onlinePaymentEnabled?: boolean;
 }

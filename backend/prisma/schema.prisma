@@ -43,7 +43,8 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Freelancer settings
-  targetHourlyRate   Decimal?  @db.Decimal(10, 2)
+  targetHourlyRate     Decimal?  @db.Decimal(10, 2)
+  isKleinunternehmer   Boolean   @default(false)
 
   // Subscription
   stripeCustomerId   String?   @unique
@@ -51,6 +52,10 @@ model User {
   subscriptionStatus SubscriptionStatus @default(TRIAL)
   subscriptionPlan   SubscriptionPlan   @default(FREE_TRIAL)
   subscriptionEndsAt DateTime?
+
+  // Stripe Connect (Express Account for receiving payments)
+  stripeConnectAccountId  String?  @unique
+  stripeConnectEnabled    Boolean  @default(false)
 
   // Relations (Multi-Tenant ready)
   customers          Customer[]
@@ -178,9 +183,12 @@ model Invoice {
   nextInvoiceDate      DateTime?
   parentInvoiceId      String?           // Link recurring child invoices to template
 
+  // Online Payment via Stripe Connect
+  onlinePaymentEnabled Boolean           @default(false)
+
   // Payment Method Snapshot
   bankAccountId        String?           // Link to the bank account used
-  
+
   // Snapshot data in case bank account is deleted/changed later
   paymentDetails       Json?             // Stores specific payment info (IBAN, etc.) at time of creation
 

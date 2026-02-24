@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   useProjects,
   useProject,
   useCreateProject,
   useUpdateProject,
   useDeleteProject,
+  useProjectProfitability,
 } from '@/lib/hooks/useProjects';
 import { useCustomers } from '@/lib/hooks/useCustomers';
 import { Project, ProjectStatus, InvoiceStatus, QuoteStatus } from '@/lib/types';
@@ -51,6 +52,31 @@ function fmt(n: number) {
 }
 function fmtDate(s: string) {
   return new Intl.DateTimeFormat('de-DE').format(new Date(s));
+}
+
+// ─── Profitability badge ──────────────────────────────────────────────────────
+
+function ProfitabilityBadge({ projectId }: { projectId: string }) {
+  const { data, isLoading } = useProjectProfitability(projectId);
+  if (isLoading || !data) return null;
+
+  const colors: Record<string, string> = {
+    GREEN:  'bg-emerald-50 text-emerald-700 border-emerald-200',
+    YELLOW: 'bg-amber-50 text-amber-700 border-amber-200',
+    RED:    'bg-red-50 text-red-700 border-red-200',
+  };
+  const dots: Record<string, string> = {
+    GREEN: 'bg-emerald-500', YELLOW: 'bg-amber-400', RED: 'bg-red-500',
+  };
+  const color = colors[data.riskLevel] ?? colors.YELLOW;
+  const dot = dots[data.riskLevel] ?? dots.YELLOW;
+
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-bold', color)}>
+      <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', dot)} />
+      {data.hourlyRateReal > 0 ? `${Math.round(data.hourlyRateReal)} €/h` : 'n/a'}
+    </span>
+  );
 }
 
 // ─── Status badge (display only) ─────────────────────────────────────────────
@@ -265,13 +291,16 @@ export default function ProjectsPage() {
                 )}
                 spotlightColor="rgba(128, 0, 64, 0.05)"
               >
-                {/* Card top row: status picker + delete */}
+                {/* Card top row: status picker + profitability badge + delete */}
                 <div className="flex items-center justify-between mb-4" onClick={(e) => e.stopPropagation()}>
-                  <StatusPicker
-                    status={project.status}
-                    onSelect={(s) => handleStatusChange(project.id, s)}
-                    loading={updateProject.isPending && updateProject.variables?.id === project.id}
-                  />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <StatusPicker
+                      status={project.status}
+                      onSelect={(s) => handleStatusChange(project.id, s)}
+                      loading={updateProject.isPending && updateProject.variables?.id === project.id}
+                    />
+                    <ProfitabilityBadge projectId={project.id} />
+                  </div>
                   <button
                     onClick={(e) => handleDelete(project.id, e)}
                     className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
@@ -504,6 +533,7 @@ function ProjectDetail({
   onStatusChange: (s: ProjectStatus) => void;
   statusLoading: boolean;
 }) {
+  const router = useRouter();
   const stats = project.stats;
 
   return (
@@ -518,12 +548,18 @@ function ProjectDetail({
       {/* Basic info tiles */}
       <div className="grid grid-cols-2 gap-3">
         {project.customer && (
-          <InfoTile
-            icon={<Users className="w-3.5 h-3.5" />}
-            label="Kunde"
-            value={project.customer.name}
-            sub={project.customer.company ?? undefined}
-          />
+          <button
+            onClick={() => router.push(`/customers?id=${project.customer!.id}`)}
+            className="text-left hover:ring-2 hover:ring-[#800040]/20 rounded-xl transition-all group/tile"
+            title="Zum Kunden"
+          >
+            <InfoTile
+              icon={<Users className="w-3.5 h-3.5" />}
+              label="Kunde  →"
+              value={project.customer.name}
+              sub={project.customer.company ?? undefined}
+            />
+          </button>
         )}
         {project.budget != null && (
           <InfoTile
@@ -553,15 +589,20 @@ function ProjectDetail({
         <Section icon={<BarChart2 className="w-3.5 h-3.5" />} title="Kennzahlen">
           <div className="grid grid-cols-2 gap-3">
             {/* Worked hours */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-50/50 border border-blue-100 rounded-xl p-3.5">
+            <button
+              onClick={() => router.push(`/time-tracking?projectId=${project.id}`)}
+              className="bg-gradient-to-br from-blue-50 to-blue-50/50 border border-blue-100 rounded-xl p-3.5 text-left hover:border-blue-300 hover:shadow-sm transition-all group/tile"
+              title="Zur Zeiterfassung"
+            >
               <div className="flex items-center gap-1.5 text-blue-400 mb-1.5">
                 <Timer className="w-3.5 h-3.5" />
                 <span className="text-xs font-semibold uppercase tracking-wider">Gearbeitet</span>
+                <Link2 className="w-3 h-3 ml-auto opacity-0 group-hover/tile:opacity-100 transition-opacity" />
               </div>
               <p className="text-lg font-bold text-blue-900">
                 {stats.totalHours.toFixed(1)} <span className="text-sm font-semibold text-blue-500">Std</span>
               </p>
-            </div>
+            </button>
 
             {/* Effective hourly rate (budget ÷ hours) */}
             <div className="bg-gradient-to-br from-purple-50 to-purple-50/50 border border-purple-100 rounded-xl p-3.5">
@@ -626,7 +667,12 @@ function ProjectDetail({
               const end = new Date(apt.endTime);
               const diffDays = Math.ceil((start.getTime() - Date.now()) / 86400000);
               return (
-                <div key={apt.id} className="flex items-start gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <button
+                  key={apt.id}
+                  onClick={() => router.push(`/appointments?projectId=${project.id}&date=${start.toISOString().split('T')[0]}`)}
+                  className="w-full flex items-start gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3 hover:border-[#800040]/30 hover:bg-[#800040]/5 transition-all text-left group"
+                  title="Zum Kalender"
+                >
                   <div className="flex-shrink-0 w-10 text-center">
                     <p className="text-xs font-bold text-[#800040] uppercase">
                       {start.toLocaleDateString('de-DE', { month: 'short' })}
@@ -634,13 +680,13 @@ function ProjectDetail({
                     <p className="text-xl font-black text-slate-900 leading-tight">{start.getDate()}</p>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{apt.title}</p>
+                    <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-[#800040] transition-colors">{apt.title}</p>
                     <p className="text-xs text-slate-500">
                       {start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – {end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
                     </p>
                     {apt.contactName && <p className="text-xs text-slate-400 mt-0.5">{apt.contactName}</p>}
                   </div>
-                  <div className="flex-shrink-0 flex flex-col items-end gap-1">
+                  <div className="flex-shrink-0 flex flex-col items-end gap-1" onClick={(e) => e.stopPropagation()}>
                     <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full', diffDays <= 1 ? 'bg-red-50 text-red-600' : diffDays <= 7 ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600')}>
                       {diffDays === 0 ? 'Heute' : diffDays === 1 ? 'Morgen' : `in ${diffDays}d`}
                     </span>
@@ -651,7 +697,7 @@ function ProjectDetail({
                       </a>
                     )}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -663,10 +709,15 @@ function ProjectDetail({
         <Section icon={<ClipboardList className="w-3.5 h-3.5" />} title="Angebote">
           <div className="space-y-2">
             {project.quotes.map((q) => (
-              <div key={q.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3">
+              <button
+                key={q.id}
+                onClick={() => router.push(`/quotes?projectId=${project.id}`)}
+                className="w-full flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3 hover:border-[#800040]/30 hover:bg-[#800040]/5 transition-all text-left group"
+                title="Zu den Angeboten"
+              >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-900 truncate">
+                    <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-[#800040] transition-colors">
                       {q.quoteNumber ?? 'Angebot'}
                     </p>
                     <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0', QUOTE_STATUS_COLORS[q.status as QuoteStatus])}>
@@ -675,8 +726,11 @@ function ProjectDetail({
                   </div>
                   <p className="text-xs text-slate-500 truncate mt-0.5">{q.description}</p>
                 </div>
-                <p className="text-sm font-bold text-slate-900 flex-shrink-0">{fmt(q.amount)}</p>
-              </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <p className="text-sm font-bold text-slate-900">{fmt(q.amount)}</p>
+                  <Link2 className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#800040] transition-colors" />
+                </div>
+              </button>
             ))}
           </div>
         </Section>
@@ -687,23 +741,33 @@ function ProjectDetail({
         <Section icon={<Receipt className="w-3.5 h-3.5" />} title="Rechnungen">
           <div className="space-y-2">
             {project.invoices.map((inv) => (
-              <div key={inv.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3">
+              <button
+                key={inv.id}
+                onClick={() => router.push(`/invoices?projectId=${project.id}`)}
+                className="w-full flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3 hover:border-[#800040]/30 hover:bg-[#800040]/5 transition-all text-left group"
+                title="Zu den Rechnungen"
+              >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-900">{inv.invoiceNumber ?? 'Rechnung'}</p>
+                    <p className="text-sm font-semibold text-slate-900 group-hover:text-[#800040] transition-colors">
+                      {inv.invoiceNumber ?? 'Rechnung'}
+                    </p>
                     <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0', INVOICE_STATUS_COLORS[inv.status])}>
                       {INVOICE_STATUS_LABELS[inv.status]}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">Fällig: {fmtDate(inv.dueDate)}</p>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-bold text-slate-900">{fmt(inv.amount)}</p>
-                  {inv.totalPaid != null && inv.totalPaid > 0 && inv.totalPaid < inv.amount && (
-                    <p className="text-xs text-emerald-600">{fmt(inv.totalPaid)} bez.</p>
-                  )}
+                <div className="text-right flex-shrink-0 flex items-center gap-2">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">{fmt(inv.amount)}</p>
+                    {inv.totalPaid != null && inv.totalPaid > 0 && inv.totalPaid < inv.amount && (
+                      <p className="text-xs text-emerald-600">{fmt(inv.totalPaid)} bez.</p>
+                    )}
+                  </div>
+                  <Link2 className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#800040] transition-colors" />
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </Section>

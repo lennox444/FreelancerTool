@@ -38,11 +38,15 @@ export class AppointmentsService {
         });
     }
 
-    async findAll(ownerId: string, filters?: { from?: string; to?: string; customerId?: string }) {
+    async findAll(ownerId: string, filters?: { from?: string; to?: string; customerId?: string; projectId?: string }) {
         const where: any = { ownerId };
 
         if (filters?.customerId) {
             where.customerId = filters.customerId;
+        }
+
+        if (filters?.projectId) {
+            where.projectId = filters.projectId;
         }
 
         if (filters?.from || filters?.to) {

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Req, Res, UseGuards } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
@@ -51,12 +51,36 @@ export class BillingController {
         return this.billingService.verifyCheckoutSession(sessionId, userId);
     }
 
+    // ─── Stripe Connect endpoints ─────────────────────────────────────────────
+
+    @UseGuards(JwtAuthGuard)
+    @Post('/connect/start')
+    async connectStripeAccount(@Req() req: any) {
+        return this.billingService.connectStripeAccount(req.user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('/connect/status')
+    async getConnectStatus(@Req() req: any) {
+        return this.billingService.getConnectStatus(req.user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete('/connect')
+    async disconnectStripe(@Req() req: any) {
+        return this.billingService.disconnectStripe(req.user.id);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
     @Post('/webhook')
     async handleWebhook(@Req() req: any, @Res() res: any) {
         const sig = req.headers['stripe-signature'];
+        // Use rawBody for signature validation; fallback to body for dev without webhook secret
+        const payload = req.rawBody ?? req.body;
 
         try {
-            await this.billingService.handleWebhook(sig, req.body);
+            await this.billingService.handleWebhook(sig, payload);
         } catch (err) {
             res.status(400).send(`Webhook Error: ${err.message}`);
             return;

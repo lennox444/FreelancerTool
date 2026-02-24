@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
     Clock,
     Timer,
@@ -50,6 +51,8 @@ function computeDisplayTime(entry: TimeEntry): { workSeconds: number; pauseSecon
 }
 
 export default function TimeTrackingPage() {
+    const searchParams = useSearchParams();
+
     // Display state (derived from server entry every second — never incremented locally)
     const [displayWork, setDisplayWork] = useState(0);
     const [displayPause, setDisplayPause] = useState(0);
@@ -57,10 +60,16 @@ export default function TimeTrackingPage() {
     // UI state
     const [showModal, setShowModal] = useState(false);
     const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+    const [filterProjectId, setFilterProjectId] = useState('');
+
+    useEffect(() => {
+        const p = searchParams.get('projectId');
+        if (p) setFilterProjectId(p);
+    }, [searchParams]);
 
     // Server data
     const { data: activeEntry, isLoading: activeLoading } = useActiveTimeEntry();
-    const { data: entries, isLoading: entriesLoading } = useTimeEntries();
+    const { data: entries, isLoading: entriesLoading } = useTimeEntries(filterProjectId || undefined);
 
     // Timer mutations
     const startTimer = useStartTimer();
@@ -198,6 +207,14 @@ export default function TimeTrackingPage() {
                             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Zeiterfassung</h1>
                             <p className="text-slate-500 font-medium">Dokumentiere deine Arbeitszeit präzise</p>
                         </div>
+                        {filterProjectId && (
+                            <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#800040]/10 text-[#800040] rounded-full text-sm font-semibold border border-[#800040]/20">
+                                Projektfilter aktiv
+                                <button onClick={() => setFilterProjectId('')} className="hover:opacity-70 transition-opacity" title="Filter entfernen">
+                                    <Square className="w-3 h-3 fill-current" />
+                                </button>
+                            </span>
+                        )}
                     </div>
 
                     <StarBorder as="div" className="rounded-full group" color="#ff3366" speed="4s" thickness={3}>

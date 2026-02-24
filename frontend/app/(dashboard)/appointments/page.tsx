@@ -48,11 +48,13 @@ export default function AppointmentsPage() {
     const [showForm, setShowForm] = useState(false);
     const [editingAppointment, setEditingAppointment] = useState<any>(null);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [filterProjectId, setFilterProjectId] = useState('');
 
     // Initialize from URL params if present
     useEffect(() => {
         const dateParam = searchParams.get('date');
         const idParam = searchParams.get('id');
+        const projectParam = searchParams.get('projectId');
 
         if (dateParam) {
             const date = new Date(dateParam);
@@ -61,11 +63,13 @@ export default function AppointmentsPage() {
                 setSelectedDate(date);
             }
         }
+        if (projectParam) setFilterProjectId(projectParam);
     }, [searchParams]);
 
     const { data: appointments, isLoading } = useAppointments({
         from: startOfMonth(currentDate).toISOString(),
-        to: endOfMonth(currentDate).toISOString()
+        to: endOfMonth(currentDate).toISOString(),
+        ...(filterProjectId ? { projectId: filterProjectId } : {}),
     });
 
     // Open specific appointment directly if ID is in URL and loaded
@@ -160,6 +164,14 @@ export default function AppointmentsPage() {
                     <p className="text-slate-500 font-medium">
                         Plane und verwalte deine Termine und Meetings.
                     </p>
+                    {filterProjectId && (
+                        <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#800040]/10 text-[#800040] rounded-full text-sm font-semibold border border-[#800040]/20">
+                            Projektfilter aktiv
+                            <button onClick={() => setFilterProjectId('')} className="hover:opacity-70 transition-opacity" title="Filter entfernen">
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </span>
+                    )}
                 </div>
                 <div className="flex gap-3">
                     <StarBorder onClick={() => {

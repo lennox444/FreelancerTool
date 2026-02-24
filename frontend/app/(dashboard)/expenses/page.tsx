@@ -8,7 +8,7 @@ import { toast } from 'react-hot-toast';
 import {
   Plus, Search, Trash2, Edit2, Receipt, BarChart3,
   Package, Monitor, Car, Megaphone, Building, GraduationCap, HelpCircle,
-  RefreshCw, ChevronLeft, ChevronRight, Clock, AlertTriangle,
+  RefreshCw, ChevronLeft, ChevronRight, Clock, AlertTriangle, Download, Loader2,
 } from 'lucide-react';
 import PixelBlast from '@/components/landing/PixelBlast';
 import SpotlightCard from '@/components/ui/SpotlightCard';
@@ -133,6 +133,19 @@ export default function ExpensesPage() {
   const [filterCategory, setFilterCategory] = useState<ExpenseCategory | ''>('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [datevExporting, setDatevExporting] = useState(false);
+
+  const handleDatevExport = async () => {
+    setDatevExporting(true);
+    try {
+      await expensesApi.downloadDATEV(new Date().getFullYear());
+      toast.success('DATEV-Export heruntergeladen');
+    } catch {
+      toast.error('Fehler beim DATEV-Export');
+    } finally {
+      setDatevExporting(false);
+    }
+  };
 
   // ── Abonnements state ──
   const [showSubForm, setShowSubForm] = useState(false);
@@ -265,13 +278,24 @@ export default function ExpensesPage() {
           </div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Ausgaben</h1>
         </div>
-        <button
-          onClick={() => activeTab === 'abonnements' ? setShowSubForm(true) : setShowCreateForm(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#800040] hover:bg-[#600030] text-white rounded-full font-semibold transition-all shadow-lg shadow-pink-900/20"
-        >
-          <Plus className="w-5 h-5" />
-          {activeTab === 'abonnements' ? 'Abonnement hinzufügen' : 'Ausgabe erfassen'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleDatevExport}
+            disabled={datevExporting}
+            title={`DATEV-Export ${new Date().getFullYear()}`}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-full text-slate-600 font-semibold text-sm hover:border-[#800040]/40 hover:text-[#800040] transition-all shadow-sm disabled:opacity-50"
+          >
+            {datevExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            DATEV {new Date().getFullYear()}
+          </button>
+          <button
+            onClick={() => activeTab === 'abonnements' ? setShowSubForm(true) : setShowCreateForm(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#800040] hover:bg-[#600030] text-white rounded-full font-semibold transition-all shadow-lg shadow-pink-900/20"
+          >
+            <Plus className="w-5 h-5" />
+            {activeTab === 'abonnements' ? 'Abonnement hinzufügen' : 'Ausgabe erfassen'}
+          </button>
+        </div>
       </div>
 
       {/* ── Month Navigation ── */}

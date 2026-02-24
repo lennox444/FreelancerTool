@@ -1,16 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { CreditCard, Trash2, AlertTriangle, X, Loader2, ShieldAlert, Landmark, Target, Euro } from 'lucide-react';
+import { CreditCard, Trash2, AlertTriangle, X, Loader2, ShieldAlert, Landmark, Target, Euro, Calculator, ChevronDown, ChevronUp, Check, Zap, CheckCircle, Link, Unlink, ArrowRight } from 'lucide-react';
 import apiClient from '@/lib/api/client';
 import { authApi } from '@/lib/api/auth';
+import { billingApi, ConnectStatus } from '@/lib/api/billing';
 import toast from 'react-hot-toast';
-import Link from 'next/link';
+import Link2 from 'next/link';
 
 export default function SettingsPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, updateUser } = useAuthStore();
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -21,6 +23,46 @@ export default function SettingsPage() {
         user?.targetHourlyRate != null ? String(user.targetHourlyRate) : '',
     );
     const [savingRate, setSavingRate] = useState(false);
+
+    // ── Kleinunternehmer ─────────────────────────────────────────────────────
+    const [kleinunternehmer, setKleinunternehmer] = useState(user?.isKleinunternehmer ?? false);
+    const [savingKU, setSavingKU] = useState(false);
+
+    const handleToggleKleinunternehmer = async (value: boolean) => {
+        setSavingKU(true);
+        try {
+            const updated = await authApi.updateProfile({ isKleinunternehmer: value });
+            updateUser({ isKleinunternehmer: updated.isKleinunternehmer });
+            setKleinunternehmer(value);
+            toast.success(value ? 'Kleinunternehmer-Modus aktiviert.' : 'Kleinunternehmer-Modus deaktiviert.');
+        } catch {
+            toast.error('Fehler beim Speichern.');
+        } finally {
+            setSavingKU(false);
+        }
+    };
+
+    // ── Stundensatz-Rechner ───────────────────────────────────────────────────
+    const [showCalc, setShowCalc] = useState(false);
+    const [calcIncome, setCalcIncome] = useState('4000');
+    const [calcHours, setCalcHours] = useState('40');
+    const [calcVacation, setCalcVacation] = useState('5');
+    const [calcOverhead, setCalcOverhead] = useState('20');
+
+    const calcResults = (() => {
+        const income = parseFloat(calcIncome) || 0;
+        const hours = parseFloat(calcHours) || 40;
+        const vacation = parseFloat(calcVacation) || 0;
+        const overhead = parseFloat(calcOverhead) || 0;
+        const effectiveHours = (52 - vacation) * hours * (1 - overhead / 100);
+        if (effectiveHours <= 0) return null;
+        const minimum = (income * 12) / effectiveHours;
+        return {
+            minimum: Math.ceil(minimum),
+            realistic: Math.ceil(minimum * 1.15),
+            comfortable: Math.ceil(minimum * 1.3),
+        };
+    })();
 
     const handleSaveTargetRate = async () => {
         const val = parseFloat(targetRate);
@@ -34,6 +76,84 @@ export default function SettingsPage() {
             toast.error('Fehler beim Speichern.');
         } finally {
             setSavingRate(false);
+        }
+    };
+
+    // ── Stripe Connect ────────────────────────────────────────────────────────
+    const [connectStatus, setConnectStatus] = useState<ConnectStatus | null>(null);
+    const [connectLoading, setConnectLoading] = useState(false);
+    const [disconnectLoading, setDisconnectLoading] = useState(false);
+    const stripeToastShown = useRef(false);
+
+    const loadConnectStatus = async () => {
+        try {
+            const status = await billingApi.getConnectStatus();
+            setConnectStatus(status);
+            if (status.chargesEnabled) {
+                updateUser({
+                    stripeConnectEnabled: true,
+                    stripeConnectAccountId: status.accountId ?? undefined,
+                });
+            }
+            return status;
+        } catch {
+            // Ignore – Stripe may not be configured
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        loadConnectStatus();
+    }, []);
+
+    // Handle return from Stripe Onboarding
+    useEffect(() => {
+        const stripeParam = searchParams.get('stripe');
+        if (!stripeParam) return;
+
+        loadConnectStatus().then((status) => {
+            if (stripeToastShown.current) return;
+            stripeToastShown.current = true;
+
+            if (stripeParam === 'connected') {
+                if (status?.chargesEnabled) {
+                    toast.success('Stripe erfolgreich verbunden!');
+                } else {
+                    toast('Bitte vervollständige dein Stripe-Profil, um Zahlungen zu empfangen.', {
+                        icon: '⚠️',
+                    });
+                }
+            } else if (stripeParam === 'refresh') {
+                toast('Stripe-Onboarding wurde abgebrochen. Du kannst es jederzeit erneut starten.', {
+                    icon: 'ℹ️',
+                });
+            }
+        });
+    }, [searchParams]);
+
+    const handleConnectStripe = async () => {
+        setConnectLoading(true);
+        try {
+            const { url } = await billingApi.connectStripe();
+            window.location.href = url;
+        } catch {
+            toast.error('Fehler beim Verbinden mit Stripe.');
+            setConnectLoading(false);
+        }
+    };
+
+    const handleDisconnectStripe = async () => {
+        if (!confirm('Stripe-Verbindung wirklich trennen? Kunden können dann keine Online-Zahlungen mehr für deine Rechnungen vornehmen.')) return;
+        setDisconnectLoading(true);
+        try {
+            await billingApi.disconnectStripe();
+            setConnectStatus(prev => prev ? { ...prev, connected: false, chargesEnabled: false, accountId: null } : null);
+            updateUser({ stripeConnectEnabled: false, stripeConnectAccountId: undefined });
+            toast.success('Stripe-Verbindung getrennt.');
+        } catch {
+            toast.error('Fehler beim Trennen der Verbindung.');
+        } finally {
+            setDisconnectLoading(false);
         }
     };
 
@@ -113,11 +233,220 @@ export default function SettingsPage() {
                                         )}
                                     </div>
                                 </div>
+
+                                {/* Stundensatz-Rechner */}
+                                <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                                    <button
+                                        onClick={() => setShowCalc(!showCalc)}
+                                        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+                                    >
+                                        <div className="flex items-center gap-2 text-slate-700 font-semibold text-sm">
+                                            <Calculator className="w-4 h-4 text-emerald-600" />
+                                            Stundensatz-Rechner
+                                        </div>
+                                        {showCalc ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                                    </button>
+
+                                    {showCalc && (
+                                        <div className="p-4 space-y-4 bg-white">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Wunsch-Nettoeinkommen (€/Monat)</label>
+                                                    <input
+                                                        type="number" min="0" step="100"
+                                                        value={calcIncome}
+                                                        onChange={(e) => setCalcIncome(e.target.value)}
+                                                        className="w-full px-3 h-9 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Wochenstunden</label>
+                                                    <input
+                                                        type="number" min="1" max="80" step="1"
+                                                        value={calcHours}
+                                                        onChange={(e) => setCalcHours(e.target.value)}
+                                                        className="w-full px-3 h-9 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Urlaubswochen/Jahr</label>
+                                                    <input
+                                                        type="number" min="0" max="20" step="1"
+                                                        value={calcVacation}
+                                                        onChange={(e) => setCalcVacation(e.target.value)}
+                                                        className="w-full px-3 h-9 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Overhead-Anteil (%)</label>
+                                                    <input
+                                                        type="number" min="0" max="90" step="5"
+                                                        value={calcOverhead}
+                                                        onChange={(e) => setCalcOverhead(e.target.value)}
+                                                        className="w-full px-3 h-9 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {calcResults && (
+                                                <div className="grid grid-cols-3 gap-2 mt-2">
+                                                    {[
+                                                        { label: 'Minimum', value: calcResults.minimum, color: 'bg-red-50 border-red-200 text-red-700' },
+                                                        { label: 'Realistisch', value: calcResults.realistic, color: 'bg-amber-50 border-amber-200 text-amber-700' },
+                                                        { label: 'Komfortabel', value: calcResults.comfortable, color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+                                                    ].map(({ label, value, color }) => (
+                                                        <div key={label} className={`border rounded-xl p-3 text-center ${color}`}>
+                                                            <div className="text-xs font-semibold mb-1 opacity-80">{label}</div>
+                                                            <div className="text-lg font-bold">{value} €/h</div>
+                                                            <button
+                                                                onClick={() => setTargetRate(String(value))}
+                                                                className="mt-2 flex items-center justify-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-white/60 hover:bg-white transition-colors w-full"
+                                                            >
+                                                                <Check className="w-3 h-3" /> Übernehmen
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Kleinunternehmer Toggle */}
+                                <div className="border border-amber-200 bg-amber-50 rounded-2xl p-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-slate-900">Kleinunternehmer (§19 UStG)</p>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Aktiviere dies, wenn du von der Umsatzsteuer befreit bist. Beeinflusst Steuerberechnungen und PDF-Ausgaben.
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleToggleKleinunternehmer(!kleinunternehmer)}
+                                            disabled={savingKU}
+                                            className={`relative flex-shrink-0 w-12 h-6 rounded-full transition-colors ${kleinunternehmer ? 'bg-emerald-500' : 'bg-slate-300'} disabled:opacity-50`}
+                                        >
+                                            <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${kleinunternehmer ? 'translate-x-6' : ''}`} />
+                                        </button>
+                                    </div>
+                                    {kleinunternehmer && (
+                                        <div className="mt-3 flex items-start gap-2 p-3 bg-amber-100 rounded-xl border border-amber-200">
+                                            <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                            <p className="text-xs text-amber-700">
+                                                Rechnungen erhalten den §19-Vermerk statt einer MwSt.-Zeile. Die Steuerberechnung zeigt keine Umsatzsteuer-Vorauszahlungen.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Stripe Connect Card */}
+                        <div className="bg-white rounded-3xl shadow-lg border border-slate-200 p-6">
+                            <div className="flex items-start gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center flex-shrink-0">
+                                    <Zap className="w-6 h-6 text-violet-600" />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <h2 className="text-xl font-bold text-slate-900">Online-Zahlung (Stripe Connect)</h2>
+                                        {connectStatus?.chargesEnabled && (
+                                            <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                                <CheckCircle className="w-3 h-3" /> Verbunden
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-slate-600 text-sm">Lass Kunden deine Rechnungen direkt per Kreditkarte oder SEPA bezahlen</p>
+                                </div>
+                            </div>
+
+                            <div className="pl-16 space-y-4">
+                                {connectStatus?.chargesEnabled ? (
+                                    /* ── Connected state ── */
+                                    <div className="space-y-4">
+                                        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-semibold text-slate-700">Stripe Account-ID</span>
+                                                <span className="text-sm font-mono text-slate-600 bg-white px-2 py-0.5 rounded-lg border border-slate-200">{connectStatus.accountId}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-semibold text-slate-700">Platform Fee (FreelancerTool)</span>
+                                                <span className="text-sm font-bold text-violet-700">{connectStatus.platformFeePct}%</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-semibold text-slate-700">Stripe-Gebühren (EU-Karten)</span>
+                                                <span className="text-sm text-slate-500">~1,4% + 25ct</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-slate-500">
+                                            Aktiviere "Online-Zahlung anbieten" beim Erstellen einer Rechnung — deine Kunden sehen dann einen "Jetzt online bezahlen" Button im Client Portal.
+                                        </p>
+                                        <button
+                                            onClick={handleDisconnectStripe}
+                                            disabled={disconnectLoading}
+                                            className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-600 hover:bg-red-50 hover:border-red-200 hover:text-red-600 rounded-xl font-semibold text-sm transition-all disabled:opacity-50"
+                                        >
+                                            {disconnectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
+                                            Verbindung trennen
+                                        </button>
+                                    </div>
+                                ) : connectStatus?.connected && !connectStatus.chargesEnabled ? (
+                                    /* ── Connected but onboarding incomplete ── */
+                                    <div className="space-y-4">
+                                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+                                            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-semibold text-amber-800">Onboarding unvollständig</p>
+                                                <p className="text-xs text-amber-700 mt-1">Bitte vervollständige dein Stripe-Profil, um Zahlungen zu empfangen.</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleConnectStripe}
+                                            disabled={connectLoading}
+                                            className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold text-sm transition-colors disabled:opacity-50"
+                                        >
+                                            {connectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                                            Onboarding fortsetzen
+                                        </button>
+                                    </div>
+                                ) : (
+                                    /* ── Not connected ── */
+                                    <div className="space-y-4">
+                                        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                                            <p className="text-sm font-semibold text-slate-800">So funktioniert es:</p>
+                                            <div className="space-y-2">
+                                                {[
+                                                    'Verbinde deinen Stripe-Account (kostenlos, kein bestehender Account nötig)',
+                                                    'Aktiviere "Online-Zahlung" beim Erstellen einer Rechnung',
+                                                    'Deine Kunden zahlen direkt an dich — Geld landet auf deinem Konto',
+                                                ].map((step, i) => (
+                                                    <div key={i} className="flex items-start gap-3">
+                                                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                                                        <p className="text-sm text-slate-600">{step}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="bg-violet-50 border border-violet-100 rounded-xl p-3">
+                                            <p className="text-xs text-violet-700 font-medium">
+                                                Gebührenstruktur: <span className="font-bold">{connectStatus?.platformFeePct ?? 2}% Platform Fee</span> (FreelancerTool) + Stripe-Gebühren (~1,4% + 25ct für EU-Karten)
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={handleConnectStripe}
+                                            disabled={connectLoading}
+                                            className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 shadow-lg shadow-violet-200"
+                                        >
+                                            {connectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link className="w-4 h-4" />}
+                                            Mit Stripe verbinden
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
                         {/* Billing Card */}
-                        <Link href="/settings/billing">
+                        <Link2 href="/settings/billing">
                             <div className="bg-white rounded-3xl shadow-lg border border-slate-200 p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
                                 <div className="flex items-start gap-4">
                                     <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
@@ -148,9 +477,9 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
                             </div>
-                        </Link>
+                        </Link2>
                         {/* Bank Accounts Card */}
-                        <Link href="/settings/bank-accounts">
+                        <Link2 href="/settings/bank-accounts">
                             <div className="bg-white rounded-3xl shadow-lg border border-slate-200 p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
                                 <div className="flex items-start gap-4">
                                     <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-200 transition-colors">
@@ -167,7 +496,7 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
                             </div>
-                        </Link>
+                        </Link2>
 
                         {/* Danger Zone */}
                         <div className="bg-white rounded-3xl shadow-lg border-2 border-red-200 p-6">

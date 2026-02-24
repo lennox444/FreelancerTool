@@ -80,7 +80,12 @@
       "Bash(npm --version:*)",
       "Bash(psql:*)",
       "Bash(docker compose:*)",
-      "Bash(npm run prisma:seed:*)"
+      "Bash(npm run prisma:seed:*)",
+      "Bash(dir:*)",
+      "Bash(pg_isready:*)",
+      "Bash(docker exec:*)",
+      "Bash(cd /e/FreelancerTool/backend && mv node_modules/.prisma/client/query_engine-windows.dll.node node_modules/.prisma/client/query_engine-windows.dll.node.bak 2>&1 && npx prisma generate 2>&1)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

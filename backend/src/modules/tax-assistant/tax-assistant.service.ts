@@ -11,6 +11,13 @@ export class TaxAssistantService {
     const endDate = new Date(`${targetYear}-12-31T23:59:59`);
     const now = new Date();
 
+    // Load user to check Kleinunternehmer status
+    const user = await this.prisma.user.findUnique({
+      where: { id: ownerId },
+      select: { isKleinunternehmer: true },
+    });
+    const isKleinunternehmer = user?.isKleinunternehmer ?? false;
+
     // Fetch all paid/partially paid invoices for the year
     const invoices = await this.prisma.invoice.findMany({
       where: {
@@ -36,10 +43,10 @@ export class TaxAssistantService {
     const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
 
     // German tax calculations
-    // Assumption: Regelbesteuerung (regular VAT, 19%)
-    const vatRate = 0.19;
-    const netRevenue = grossRevenue / (1 + vatRate); // Net amount excl. VAT
-    const vatCollected = grossRevenue - netRevenue;   // VAT to pay to Finanzamt
+    // Kleinunternehmer (§19 UStG): no VAT
+    const vatRate = isKleinunternehmer ? 0 : 0.19;
+    const netRevenue = isKleinunternehmer ? grossRevenue : grossRevenue / (1 + vatRate);
+    const vatCollected = isKleinunternehmer ? 0 : grossRevenue - netRevenue;
 
     // Income tax estimate (simplified)
     const netProfit = netRevenue - totalExpenses;

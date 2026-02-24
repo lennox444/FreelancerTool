@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileText, User, Calendar, CheckCircle, Clock, AlertTriangle, Building, Timer, ArrowRight, Download } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { FileText, User, Calendar, CheckCircle, Clock, AlertTriangle, Building, Timer, ArrowRight, Download, CreditCard, Loader2, PartyPopper } from 'lucide-react';
 import axios from 'axios';
 import PixelBlast from '@/components/landing/PixelBlast';
 import SpotlightCard from '@/components/ui/SpotlightCard';
@@ -39,7 +40,8 @@ interface Invoice {
   totalPaid: number;
   issueDate: string;
   dueDate: string;
-  owner: { firstName: string; lastName: string; email: string };
+  onlinePaymentEnabled?: boolean;
+  owner: { firstName: string; lastName: string; email: string; isKleinunternehmer?: boolean; stripeConnectEnabled?: boolean };
   customer: { name: string; company?: string; email: string };
   payments?: { id: string; amount: number; paymentDate: string; note?: string }[];
   timeEntries?: TimeEntry[];
@@ -57,6 +59,9 @@ export default function ClientPortalContent({ token }: { token: string }) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const justPaid = searchParams.get('paid') === 'true';
 
   useEffect(() => {
     axios
@@ -65,6 +70,19 @@ export default function ClientPortalContent({ token }: { token: string }) {
       .catch(() => setError('Rechnung nicht gefunden oder Link ungültig.'))
       .finally(() => setLoading(false));
   }, [token]);
+
+  const handleStripeCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const { data } = await axios.post(`/api/public/invoices/${token}/checkout-session`);
+      const url = data?.data?.url;
+      if (url) window.location.href = url;
+    } catch {
+      alert('Zahlung konnte nicht initiiert werden. Bitte versuche es später erneut.');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -145,6 +163,19 @@ export default function ClientPortalContent({ token }: { token: string }) {
 
       <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
 
+        {/* Payment success banner */}
+        {justPaid && (
+          <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-6 flex items-center gap-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+            <div className="p-3 bg-emerald-100 rounded-xl flex-shrink-0">
+              <PartyPopper className="w-6 h-6 text-emerald-600" />
+            </div>
+            <div>
+              <p className="font-bold text-emerald-900 text-lg">Zahlung erfolgreich!</p>
+              <p className="text-emerald-700 text-sm">Vielen Dank für Ihre Zahlung. Die Rechnung wird in Kürze als bezahlt markiert.</p>
+            </div>
+          </div>
+        )}
+
         {/* Invoice Header */}
         <SpotlightCard className="bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl p-8 rounded-3xl" spotlightColor="rgba(128, 0, 64, 0.05)">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
@@ -168,7 +199,7 @@ export default function ClientPortalContent({ token }: { token: string }) {
           </div>
 
           {/* Due Date Banner */}
-          <div className={`rounded-xl p-4 border flex items-start gap-4 mb-8 ${isOverdue
+          <div className={`rounded-xl p-4 border flex items-start gap-4 mb-4 ${isOverdue
               ? 'bg-red-50 border-red-200'
               : invoice.status === 'PAID'
                 ? 'bg-emerald-50 border-emerald-200'
@@ -192,6 +223,24 @@ export default function ClientPortalContent({ token }: { token: string }) {
               )}
             </div>
           </div>
+
+          {/* Online Pay Button — only shown when owner enabled it and has an active Stripe account */}
+          {invoice.status !== 'PAID' && invoice.onlinePaymentEnabled && invoice.owner.stripeConnectEnabled && (
+            <div className="mb-8">
+              <button
+                onClick={handleStripeCheckout}
+                disabled={checkoutLoading}
+                className="w-full flex items-center justify-center gap-3 py-4 bg-[#800040] hover:bg-[#600030] text-white font-bold text-lg rounded-2xl transition-all shadow-xl shadow-pink-900/20 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {checkoutLoading ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Weiterleitung zu Stripe...</>
+                ) : (
+                  <><CreditCard className="w-5 h-5" /> Jetzt online bezahlen</>
+                )}
+              </button>
+              <p className="text-center text-xs text-slate-400 mt-2">Sichere Zahlung via Stripe · Kreditkarte, SEPA & mehr</p>
+            </div>
+          )}
 
           {/* Parties Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -230,14 +279,22 @@ export default function ClientPortalContent({ token }: { token: string }) {
               </div>
             </div>
             <div className="bg-slate-50/50 p-6 space-y-3 pt-6 border-t border-slate-100">
-              <div className="flex justify-between text-slate-500 text-sm">
-                <span>Netto</span>
-                <span>{formatCurrency(Number(invoice.amount) / 1.19)}</span>
-              </div>
-              <div className="flex justify-between text-slate-500 text-sm">
-                <span>Umsatzsteuer (19%)</span>
-                <span>{formatCurrency(Number(invoice.amount) - Number(invoice.amount) / 1.19)}</span>
-              </div>
+              {invoice.owner.isKleinunternehmer ? (
+                <p className="text-slate-500 text-sm italic">
+                  Gemäß §19 UStG wird keine Umsatzsteuer berechnet.
+                </p>
+              ) : (
+                <>
+                  <div className="flex justify-between text-slate-500 text-sm">
+                    <span>Netto</span>
+                    <span>{formatCurrency(Number(invoice.amount) / 1.19)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-500 text-sm">
+                    <span>Umsatzsteuer (19%)</span>
+                    <span>{formatCurrency(Number(invoice.amount) - Number(invoice.amount) / 1.19)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between items-end pt-3 border-t border-slate-200 mt-2">
                 <span className="font-bold text-slate-900">Gesamtbetrag</span>
                 <span className="font-black text-2xl text-[#800040]">{formatCurrency(Number(invoice.amount))}</span>

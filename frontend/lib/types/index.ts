@@ -25,6 +25,9 @@ export interface User {
   subscriptionStatus?: SubscriptionStatus;
   trialEndsAt?: string;
   targetHourlyRate?: number | null;
+  isKleinunternehmer?: boolean;
+  stripeConnectAccountId?: string;
+  stripeConnectEnabled?: boolean;
 }
 
 export interface AuthResponse {
@@ -83,6 +86,7 @@ export interface Invoice {
   recurringEndDate?: string;
   nextInvoiceDate?: string;
   parentInvoiceId?: string;
+  onlinePaymentEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
   customer?: {
