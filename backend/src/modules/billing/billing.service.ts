@@ -273,10 +273,35 @@ export class BillingService {
 
     private async fulfillInvoicePayment(session: Stripe.Checkout.Session) {
         const invoiceId = session.metadata?.invoiceId;
+        const ownerId = session.metadata?.ownerId;
         if (!invoiceId) return;
 
         const amountPaid = (session.amount_total ?? 0) / 100;
         await this.invoicesService.recordStripePayment(invoiceId, amountPaid);
+
+        // Auto-create expense for Stripe fees so profit/tax calculations stay accurate.
+        // Platform fee: exact (from ENV). Stripe fee: ~1.4% + 0.25€ (EU cards estimate).
+        if (ownerId) {
+            const feePct = parseFloat(this.configService.get<string>('STRIPE_PLATFORM_FEE_PERCENT') ?? '2');
+            const platformFee = amountPaid * (feePct / 100);
+            const stripeFee = amountPaid * 0.014 + 0.25;
+            const totalFees = Math.round((platformFee + stripeFee) * 100) / 100;
+
+            const invoice = await this.prisma.invoice.findUnique({ where: { id: invoiceId } });
+            const label = invoice?.invoiceNumber ? `Rechnung ${invoice.invoiceNumber}` : `Rechnung (${invoiceId.slice(0, 8)})`;
+
+            await this.prisma.expense.create({
+                data: {
+                    ownerId,
+                    amount: totalFees,
+                    description: `Stripe-Transaktionsgebühren (${label})`,
+                    category: 'OTHER',
+                    date: new Date(),
+                },
+            });
+            console.log(`Auto-created Stripe fee expense: ${totalFees} EUR for invoice ${invoiceId}`);
+        }
+
         console.log(`Invoice ${invoiceId} paid via Stripe: ${amountPaid} EUR`);
     }
 }

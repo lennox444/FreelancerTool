@@ -381,6 +381,17 @@ export default function SettingsPage() {
                                         <p className="text-xs text-slate-500">
                                             Aktiviere "Online-Zahlung anbieten" beim Erstellen einer Rechnung — deine Kunden sehen dann einen "Jetzt online bezahlen" Button im Client Portal.
                                         </p>
+                                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2.5">
+                                            <AlertTriangle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-semibold text-blue-800">Hinweis zur Gewinnberechnung</p>
+                                                <p className="text-xs text-blue-700 leading-relaxed">
+                                                    Deine Rechnungen werden weiterhin mit dem vollen Rechnungsbetrag als <strong>bezahlt</strong> markiert — so bleibt der Zahlungsstatus korrekt.
+                                                    Die Stripe-Transaktionsgebühren ({connectStatus.platformFeePct}% Platform Fee + ~1,4% + 25ct Stripe-Gebühr) werden automatisch als <strong>Ausgabe</strong> in deinen Ausgaben eingetragen.
+                                                    Dein tatsächlicher Gewinn in der Übersicht und im Steuer-Assistenten ist dadurch immer korrekt.
+                                                </p>
+                                            </div>
+                                        </div>
                                         <button
                                             onClick={handleDisconnectStripe}
                                             disabled={disconnectLoading}
