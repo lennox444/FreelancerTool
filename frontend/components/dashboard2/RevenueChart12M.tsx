@@ -20,15 +20,19 @@ const yTick = (v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white/95 backdrop-blur-md rounded-xl p-3 border border-slate-100 shadow-lg text-sm">
-      <p className="font-bold text-slate-900 mb-2">{label}</p>
-      {payload.map((p: any) => (
-        <div key={p.dataKey} className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }} />
-          <span className="text-slate-600">{p.name}:</span>
-          <span className="font-semibold text-slate-900">{fmt(p.value)}</span>
-        </div>
-      ))}
+    <div className="bg-slate-900/95 backdrop-blur-xl rounded-xl p-3 border border-white/10 shadow-2xl text-[10px]">
+      <p className="font-black text-white mb-2 uppercase tracking-widest opacity-40">{label}</p>
+      <div className="space-y-2">
+        {payload.map((p: any) => (
+          <div key={p.dataKey} className="flex items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: p.color }} />
+              <span className="text-white/60 font-bold uppercase tracking-tight">{p.name}</span>
+            </div>
+            <span className="font-black text-white tabular-nums">{fmt(p.value)}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -41,43 +45,62 @@ interface RevenueChart12MProps {
 export default function RevenueChart12M({ data, isLoading }: RevenueChart12MProps) {
   if (isLoading) {
     return (
-      <div className="h-[320px] animate-pulse bg-slate-100 rounded-xl" />
+      <div className="h-[250px] animate-pulse bg-slate-50/50 rounded-3xl" />
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
-      <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
         <defs>
           <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#800040" stopOpacity={0.9} />
-            <stop offset="100%" stopColor="#800040" stopOpacity={0.5} />
+            <stop offset="0%" stopColor="#800040" stopOpacity={0.8} />
+            <stop offset="100%" stopColor="#800040" stopOpacity={0.15} />
           </linearGradient>
+          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+        <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(0,0,0,0.02)" />
         <XAxis
           dataKey="month"
-          tick={{ fontSize: 11, fill: '#94a3b8' }}
+          tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 700 }}
           axisLine={false}
           tickLine={false}
+          dy={10}
         />
         <YAxis
           tickFormatter={yTick}
-          tick={{ fontSize: 11, fill: '#94a3b8' }}
+          tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 700 }}
           axisLine={false}
           tickLine={false}
-          width={40}
+          width={50}
         />
-        <Tooltip content={<CustomTooltip />} />
-        <Bar dataKey="revenue" name="Umsatz" fill="url(#revenueGrad)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+        <Tooltip
+          content={<CustomTooltip />}
+          cursor={{ fill: 'rgba(0,0,0,0.01)', radius: 8 }}
+        />
+        <Bar
+          dataKey="revenue"
+          name="Umsatz"
+          fill="url(#revenueGrad)"
+          stroke="#800040"
+          strokeWidth={0.5}
+          radius={[6, 6, 2, 2]}
+          maxBarSize={28}
+          animationDuration={1500}
+        />
         <Line
           dataKey="profit"
           name="Gewinn"
           stroke="#10b981"
-          strokeWidth={2.5}
-          dot={false}
-          activeDot={{ r: 4 }}
+          strokeWidth={3}
+          dot={{ r: 0 }}
+          activeDot={{ r: 4, fill: '#10b981', strokeWidth: 0 }}
           type="monotone"
+          animationDuration={2000}
+          style={{ filter: 'url(#glow)' }}
         />
       </ComposedChart>
     </ResponsiveContainer>

@@ -1,6 +1,7 @@
 'use client';
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { Receipt } from 'lucide-react';
 import type { ExpenseSummary } from '@/lib/types';
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -33,7 +34,7 @@ interface ExpenseCategoryWidgetProps {
 
 export default function ExpenseCategoryWidget({ summary, isLoading }: ExpenseCategoryWidgetProps) {
   if (isLoading) {
-    return <div className="h-48 animate-pulse bg-slate-100 rounded-xl" />;
+    return <div className="h-64 animate-pulse bg-slate-50 rounded-[2rem]" />;
   }
 
   const rawByCategory = summary?.byCategory ?? {};
@@ -51,53 +52,74 @@ export default function ExpenseCategoryWidget({ summary, isLoading }: ExpenseCat
 
   if (pieData.length === 0) {
     return (
-      <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
-        Keine Ausgaben dieses Jahr
+      <div className="h-48 flex flex-col items-center justify-center text-slate-400 text-sm gap-2">
+        <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">
+          <Receipt className="w-6 h-6" />
+        </div>
+        Keine Ausgaben erfasst
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <ResponsiveContainer width="100%" height={180}>
-        <PieChart>
-          <Pie
-            data={pieData}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={85}
-            paddingAngle={2}
-            dataKey="value"
-          >
-            {pieData.map((entry) => (
-              <Cell key={entry.name} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value: any, _name: any, props: any) => [fmt(Number(value)), props.payload?.label ?? String(_name)]}
-            contentStyle={{
-              background: 'rgba(255,255,255,0.95)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: 12,
-              border: '1px solid #f1f5f9',
-              fontSize: 12,
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="flex flex-col gap-4">
+      <div className="relative h-[160px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={pieData}
+              cx="50%"
+              cy="50%"
+              innerRadius={55}
+              outerRadius={75}
+              paddingAngle={4}
+              dataKey="value"
+              stroke="none"
+              animationDuration={1500}
+            >
+              {pieData.map((entry) => (
+                <Cell key={entry.name} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip
+              content={({ active, payload }: any) => {
+                if (!active || !payload?.length) return null;
+                const data = payload[0].payload;
+                return (
+                  <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg border border-white/10 shadow-xl text-[11px] font-black uppercase tracking-widest">
+                    {data.label}: {fmt(data.value)}
+                  </div>
+                );
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
 
-      <div className="space-y-1.5">
-        {pieData.map((entry) => (
-          <div key={entry.name} className="flex items-center gap-2 text-xs">
-            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-            <span className="flex-1 text-slate-600">{entry.label}</span>
-            <span className="font-semibold text-slate-900">{fmt(entry.value)}</span>
-            <span className="text-slate-400 w-10 text-right">
-              {total > 0 ? `${Math.round((entry.value / total) * 100)}%` : '0%'}
-            </span>
+        {/* Center Label */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Gesamt</p>
+          <p className="text-lg font-black text-slate-900 tracking-tighter">{fmt(total)}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-0.5">
+        {pieData.slice(0, 4).map((entry) => (
+          <div key={entry.name} className="flex items-center gap-2 p-1.5 rounded-lg transition-colors hover:bg-slate-50 group">
+            <span className="w-1.5 h-1.5 rounded-full shrink-0 group-hover:scale-125 transition-transform" style={{ backgroundColor: entry.color }} />
+            <span className="flex-1 text-[11px] font-bold text-slate-500 uppercase tracking-tight">{entry.label}</span>
+            <div className="flex flex-col items-end">
+              <span className="text-[11px] font-black text-slate-900 whitespace-nowrap">{fmt(entry.value)}</span>
+              <span className="text-[10px] font-bold text-slate-400">
+                {total > 0 ? `${Math.round((entry.value / total) * 100)}%` : '0%'}
+              </span>
+            </div>
           </div>
         ))}
+        {pieData.length > 4 && (
+          <p className="text-[11px] text-center text-slate-400 font-bold mt-1 uppercase tracking-widest">
+            + {pieData.length - 4} weitere
+          </p>
+        )}
       </div>
     </div>
   );

@@ -27,9 +27,9 @@ export default function KpiStrip({ overview, isLoading }: KpiStripProps) {
   const setAsidePct = overview?.taxSavings.setAsidePercentage ?? 0;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
       <KpiCard
-        title="Monatsumsatz"
+        title="Umsatz (Dieser Monat)"
         value={isLoading ? '...' : fmt(monthAmt)}
         subValue={isLoading ? undefined : `${overview?.monthRevenue.count ?? 0} Zahlungen`}
         trend={!isLoading && isFinite(trendPct) ? { pct: trendPct, positive: trendPct >= 0, label: 'vs. Vormonat' } : undefined}

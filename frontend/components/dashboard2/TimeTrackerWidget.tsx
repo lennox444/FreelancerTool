@@ -47,7 +47,6 @@ export default function TimeTrackerWidget() {
   const [description, setDescription] = useState('');
   const [showStart, setShowStart] = useState(false);
 
-  // Recalculate every second from server timestamps — identical to time-tracking/page.tsx
   useEffect(() => {
     if (!activeEntry) {
       setDisplayWork(0);
@@ -76,108 +75,133 @@ export default function TimeTrackerWidget() {
     setDescription('');
   };
 
-  if (isLoading) return <div className="h-20 animate-pulse bg-slate-100 rounded-xl" />;
+  if (isLoading) return <div className="h-32 animate-pulse bg-white/5 rounded-[2rem]" />;
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex w-6 h-6 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-            <Clock className="w-3.5 h-3.5" />
-          </span>
-          <div>
-            <h3 className="font-bold text-slate-900 text-sm leading-tight">Zeiterfassung</h3>
-            <p className="text-xs text-slate-400 truncate max-w-[140px]">
-              {activeEntry
-                ? (activeProject?.name ?? activeEntry.description ?? 'Kein Projekt')
-                : 'Kein aktiver Timer'}
-            </p>
+    <div className="flex flex-col h-full justify-between">
+      {/* Header Info */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
+            <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400">Zeiterfassung</h3>
           </div>
+          <Link href="/time-tracking" className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors">
+            <ArrowRight className="w-3 h-3 text-slate-400" />
+          </Link>
         </div>
-        <Link href="/time-tracking" className="text-xs text-[#800040] hover:underline flex items-center gap-1 shrink-0">
-          Vollansicht <ArrowRight className="w-3 h-3" />
-        </Link>
+
+        <div className="min-h-[2rem]">
+          <h4 className="text-base font-bold text-slate-900 tracking-tight truncate">
+            {activeEntry
+              ? (activeProject?.name ?? activeEntry.description ?? 'Projekt ohne Name')
+              : 'Kein aktiver Einsatz'
+            }
+          </h4>
+          <p className="text-[11px] font-black text-[#800040] uppercase tracking-widest mt-0.5">
+            {activeEntry ? 'MISSION LÄUFT...' : 'BEREIT FÜR DEN START'}
+          </p>
+        </div>
       </div>
 
-      {/* Body */}
+      {/* Timer Body */}
       {activeEntry ? (
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              'flex-1 px-3 py-2.5 rounded-xl font-mono text-xl font-bold text-center tabular-nums',
-              isPaused
-                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                : 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+        <div className="space-y-4">
+          <div className={cn(
+            "relative p-4 rounded-2xl border transition-all duration-500 overflow-hidden group",
+            isPaused
+              ? "border-amber-500/20 bg-amber-500/5 shadow-[0_0_30px_rgba(245,158,11,0.05)]"
+              : "border-[#800040]/30 bg-[#800040]/5 shadow-[0_0_40px_rgba(128,0,64,0.1)]"
+          )}>
+            {/* Visual Pulse */}
+            {!isPaused && (
+              <div className="absolute top-1.5 right-3 flex gap-1 items-center">
+                <div className="w-0.5 h-0.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[6px] font-black text-emerald-500/80 tracking-widest uppercase">Live</span>
+              </div>
             )}
-          >
-            {fmtDuration(displayWork)}
-            <span className="block text-[10px] font-sans font-medium tracking-widest opacity-60 mt-0.5">
-              {isPaused ? `PAUSE ${fmtDuration(displayPause)}` : 'LÄUFT'}
-            </span>
+
+            <div className="flex flex-col items-center">
+              <span className={cn(
+                "text-3xl font-black tracking-tighter tabular-nums transition-colors duration-500",
+                isPaused ? "text-amber-500" : "text-slate-900"
+              )}>
+                {fmtDuration(displayWork)}
+              </span>
+              <span className="text-[10px] font-black tracking-[0.2em] uppercase opacity-40 mt-1 block text-slate-500">
+                {isPaused ? `Pause: ${fmtDuration(displayPause)}` : 'Vergangene Zeit'}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col gap-1.5">
+
+          <div className="grid grid-cols-2 gap-2 mt-auto">
             {isPaused ? (
               <button
                 onClick={() => resumeTimer.mutate(activeEntry.id)}
                 disabled={resumeTimer.isPending}
-                className="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-colors disabled:opacity-50"
-                title="Fortsetzen"
+                className="h-9 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-black uppercase text-[11px] tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
               >
-                <Play className="w-4 h-4 fill-current" />
+                <Play className="w-3 h-3 fill-current" /> Weiter
               </button>
             ) : (
               <button
                 onClick={() => pauseTimer.mutate(activeEntry.id)}
                 disabled={pauseTimer.isPending}
-                className="w-9 h-9 flex items-center justify-center rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-700 transition-colors disabled:opacity-50"
-                title="Pausieren"
+                className="h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-black uppercase text-[11px] tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
               >
-                <Pause className="w-4 h-4 fill-current" />
+                <Pause className="w-3 h-3 fill-current" /> Pause
               </button>
             )}
             <button
               onClick={() => stopTimer.mutate(activeEntry.id)}
               disabled={stopTimer.isPending}
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors disabled:opacity-50"
-              title="Stoppen & Speichern"
+              className="h-9 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-black uppercase text-[11px] tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
             >
-              <Square className="w-4 h-4 fill-current" />
+              <Square className="w-3 h-3 fill-current" /> Stoppen
             </button>
           </div>
         </div>
       ) : showStart ? (
-        <div className="space-y-2">
-          <select
-            value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#800040]/30"
-          >
-            <option value="">Kein Projekt</option>
-            {(projects ?? []).map((p: Project) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-          <input
-            type="text"
-            placeholder="Beschreibung (optional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleStart()}
-            className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#800040]/30"
-          />
-          <div className="flex gap-2">
+        <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+          <div className="space-y-1">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1">Projekt wählen</p>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="w-full h-10 rounded-lg bg-slate-50 border border-slate-100 text-slate-900 text-xs px-3 focus:ring-2 focus:ring-[#800040] outline-none transition-all appearance-none cursor-pointer"
+            >
+              <option value="">Kein Projekt</option>
+              {(projects ?? []).map((p: Project) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1">Beschreibung</p>
+            <input
+              type="text"
+              placeholder="Was tust du gerade?"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleStart()}
+              className="w-full h-9 rounded-lg bg-slate-50 border border-slate-100 text-slate-900 text-xs px-3 placeholder:text-slate-300 focus:ring-2 focus:ring-[#800040] outline-none transition-all"
+            />
+          </div>
+
+          <div className="flex gap-2 pt-1">
             <button
               onClick={handleStart}
               disabled={startTimer.isPending}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#800040] hover:bg-[#600030] text-white text-sm font-semibold transition-colors disabled:opacity-60"
+              className="flex-1 h-9 rounded-lg bg-[#800040] hover:bg-[#A00055] text-white font-black uppercase text-[11px] tracking-widest transition-all"
             >
-              <Play className="w-3.5 h-3.5 fill-current" />
               Starten
             </button>
             <button
               onClick={() => setShowStart(false)}
-              className="px-3 py-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 text-sm transition-colors"
+              className="px-4 h-9 rounded-lg bg-slate-100 text-slate-500 font-black uppercase text-[11px] tracking-widest hover:bg-slate-200 transition-all"
             >
               Abbruch
             </button>
@@ -186,9 +210,9 @@ export default function TimeTrackerWidget() {
       ) : (
         <button
           onClick={() => setShowStart(true)}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-[#800040]/40 hover:bg-slate-50 text-slate-500 hover:text-[#800040] transition-all text-sm font-medium group"
+          className="w-full mt-2 h-11 rounded-full bg-[#800040] hover:bg-[#600030] text-white font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-900/20 transition-all active:scale-95 flex items-center justify-center gap-2.5"
         >
-          <Play className="w-4 h-4 group-hover:fill-current transition-all" />
+          <Play className="w-4 h-4 fill-current" />
           Timer starten
         </button>
       )}

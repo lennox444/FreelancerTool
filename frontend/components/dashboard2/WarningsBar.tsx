@@ -19,7 +19,7 @@ function getDismissed(): string[] {
 function saveDismissed(keys: string[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
-  } catch {}
+  } catch { }
 }
 
 interface WarningsBarProps {
@@ -35,7 +35,6 @@ export default function WarningsBar({ warnings }: WarningsBarProps) {
     setMounted(true);
   }, []);
 
-  // Wait until mounted to avoid hydration mismatch
   if (!mounted) return null;
 
   const visible = warnings.filter((w) => !dismissed.includes(w.type));
@@ -52,24 +51,40 @@ export default function WarningsBar({ warnings }: WarningsBarProps) {
       {visible.map((w) => (
         <div
           key={w.type}
-          className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium bg-blue-50 border border-blue-200 text-blue-800"
+          className="group flex flex-col md:flex-row md:items-center gap-3 p-4 rounded-[1.5rem] bg-slate-900 shadow-xl shadow-slate-900/10 border border-white/5 relative overflow-hidden"
         >
-          <Info className="w-4 h-4 shrink-0 text-blue-500" />
-          <span className="flex-1">
-            {w.message}
+          {/* Accent Glow */}
+          <div className="absolute top-0 left-0 w-1 h-full bg-[#800040]" />
+
+          <div className="flex items-center gap-3 flex-1">
+            <div className="w-9 h-9 rounded-xl bg-[#800040]/20 flex items-center justify-center text-[#800040] shrink-0">
+              <Info className="w-4.5 h-4.5" />
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-[#E60045] uppercase tracking-widest leading-none mb-1">Intelligence Alert</p>
+              <p className="text-xs font-bold text-white/90 leading-snug">
+                {w.message}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 ml-12 md:ml-0">
             {w.link && (
-              <Link href={w.link} className="ml-2 underline underline-offset-2 hover:opacity-80">
-                Jetzt ansehen →
+              <Link
+                href={w.link}
+                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 text-[9px] font-black uppercase tracking-widest transition-all"
+              >
+                Details
               </Link>
             )}
-          </span>
-          <button
-            onClick={() => dismiss(w.type)}
-            className="shrink-0 ml-1 opacity-50 hover:opacity-100 transition-opacity"
-            aria-label="Schließen"
-          >
-            <X className="w-4 h-4" />
-          </button>
+            <button
+              onClick={() => dismiss(w.type)}
+              className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-white/20 hover:text-white/60 hover:bg-white/10 transition-all"
+              aria-label="Verbergen"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       ))}
     </div>

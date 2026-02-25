@@ -39,11 +39,11 @@ function daysUntil(dateStr: string) {
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const QUOTE_STATUS_CONFIG: Record<QuoteStatus, { label: string; color: string; dot: string; Icon: any }> = {
-  [QuoteStatus.DRAFT]:     { label: 'Entwurf',     color: 'bg-slate-100 text-slate-600 border-slate-200',       dot: 'bg-slate-400',   Icon: FileText    },
-  [QuoteStatus.SENT]:      { label: 'Gesendet',    color: 'bg-blue-50 text-blue-700 border-blue-200',           dot: 'bg-blue-500',    Icon: Send        },
-  [QuoteStatus.ACCEPTED]:  { label: 'Angenommen',  color: 'bg-emerald-50 text-emerald-700 border-emerald-200',  dot: 'bg-emerald-500', Icon: CheckCircle },
-  [QuoteStatus.REJECTED]:  { label: 'Abgelehnt',   color: 'bg-red-50 text-red-700 border-red-200',              dot: 'bg-red-500',     Icon: XCircle     },
-  [QuoteStatus.CONVERTED]: { label: 'Konvertiert', color: 'bg-purple-50 text-purple-700 border-purple-200',     dot: 'bg-purple-500',  Icon: ArrowRight  },
+  [QuoteStatus.DRAFT]: { label: 'Entwurf', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400', Icon: FileText },
+  [QuoteStatus.SENT]: { label: 'Gesendet', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500', Icon: Send },
+  [QuoteStatus.ACCEPTED]: { label: 'Angenommen', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500', Icon: CheckCircle },
+  [QuoteStatus.REJECTED]: { label: 'Abgelehnt', color: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-500', Icon: XCircle },
+  [QuoteStatus.CONVERTED]: { label: 'Konvertiert', color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500', Icon: ArrowRight },
 };
 
 function QuoteStatusPicker({ status, onSelect, loading }: {
@@ -126,10 +126,10 @@ function StatsBar({ quotes }: { quotes: Quote[] }) {
   const convRate = total > 0 ? Math.round((accepted / total) * 100) : 0;
 
   const tiles = [
-    { label: 'Gesamt',        value: `${total} Angebote`,  icon: ClipboardList, color: 'text-blue-600',      bg: 'bg-blue-50',         border: 'border-blue-100' },
-    { label: 'Offen',         value: `${open} aktiv`,      icon: Clock,         color: 'text-amber-600',     bg: 'bg-amber-50',        border: 'border-amber-100' },
-    { label: 'Gesamtwert',    value: fmt(totalValue),       icon: Euro,          color: 'text-[#800040]',     bg: 'bg-[#800040]/5',     border: 'border-[#800040]/10' },
-    { label: 'Conversion',    value: `${convRate}%`,        icon: TrendingUp,    color: 'text-emerald-600',   bg: 'bg-emerald-50',      border: 'border-emerald-100' },
+    { label: 'Gesamt', value: `${total} Angebote`, icon: ClipboardList, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+    { label: 'Offen', value: `${open} aktiv`, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
+    { label: 'Gesamtwert', value: fmt(totalValue), icon: Euro, color: 'text-[#800040]', bg: 'bg-[#800040]/5', border: 'border-[#800040]/10' },
+    { label: 'Conversion', value: `${convRate}%`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
   ];
 
   return (
@@ -402,8 +402,8 @@ export default function QuotesPage() {
                   'bg-white/90 backdrop-blur-md border shadow-sm p-6 rounded-2xl hover:shadow-md transition-all group flex flex-col cursor-pointer',
                   selectedQuote?.id === q.id ? 'border-[#800040]/40 ring-2 ring-[#800040]/10'
                     : expired ? 'border-red-200'
-                    : expiringSoon ? 'border-amber-200'
-                    : 'border-slate-100',
+                      : expiringSoon ? 'border-amber-200'
+                        : 'border-slate-100',
                 )}
                 spotlightColor="rgba(128,0,64,0.05)"
               >
@@ -451,7 +451,7 @@ export default function QuotesPage() {
                     <div className="flex items-center justify-between text-sm">
                       <span className={cn('flex items-center gap-1.5', expired ? 'text-red-500 font-semibold' : expiringSoon ? 'text-amber-500 font-semibold' : 'text-slate-500')}>
                         <Clock className="w-3.5 h-3.5" />
-                        {expired ? 'Abgelaufen' : expiringSoon ? `Läuft ab in ${days}d` : 'Gültig bis'}
+                        {expired ? 'Abgelaufen' : expiringSoon ? `Läuft ab in ${days} ${days === 1 ? 'Tag' : 'Tage'}` : 'Gültig bis'}
                       </span>
                       <span className={cn('font-semibold text-sm', expired ? 'text-red-600' : expiringSoon ? 'text-amber-600' : 'text-slate-700')}>
                         {fmtDate(q.validUntil)}

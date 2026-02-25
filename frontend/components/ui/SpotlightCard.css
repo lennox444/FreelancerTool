@@ -1,8 +1,6 @@
 .card-spotlight {
     position: relative;
     border-radius: 1.5rem;
-    /* border: 1px solid #222; Removed to allow Tailwind control */
-    /* background-color: #111; Removed to allow Tailwind control */
     overflow: hidden;
     --mouse-x: 50%;
     --mouse-y: 50%;
@@ -21,13 +19,37 @@
     transition: opacity 0.5s ease;
     pointer-events: none;
     z-index: 10;
-    /* Ensure spotlight is above content if needed, or stick to default */
 }
-
-/* Adjust z-index of content so it's clickable if needed, but the spotlight is pointer-events: none so it's fine */
 
 .card-spotlight:hover::before,
 .card-spotlight:focus-within::before {
     opacity: 1;
-    /* Increased from 0.6 to 1 for better visibility on light backgrounds */
+}
+
+/* Reflective Border Effect */
+.card-spotlight::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: radial-gradient(circle at var(--mouse-x) var(--mouse-y),
+            rgba(255, 255, 255, 0.5),
+            transparent 35%);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.card-spotlight:hover::after {
+    opacity: 1;
 }

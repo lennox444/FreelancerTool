@@ -10,9 +10,10 @@ const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
 
 function daysBadge(daysOverdue: number) {
-  if (daysOverdue <= 14) return { label: `${daysOverdue}d überfällig`, cls: 'bg-amber-100 text-amber-700' };
-  if (daysOverdue <= 30) return { label: `${daysOverdue}d überfällig`, cls: 'bg-orange-100 text-orange-700' };
-  return { label: `${daysOverdue}d überfällig`, cls: 'bg-rose-100 text-rose-700' };
+  const label = `${daysOverdue} ${daysOverdue === 1 ? 'Tag' : 'Tage'} überfällig`;
+  if (daysOverdue <= 14) return { label, cls: 'bg-amber-100 text-amber-700' };
+  if (daysOverdue <= 30) return { label, cls: 'bg-orange-100 text-orange-700' };
+  return { label, cls: 'bg-rose-100 text-rose-700' };
 }
 
 interface OverdueWidgetProps {
@@ -22,54 +23,50 @@ interface OverdueWidgetProps {
 
 export default function OverdueWidget({ invoices = [], isLoading }: OverdueWidgetProps) {
   if (isLoading) {
-    return <div className="h-24 animate-pulse bg-slate-100 rounded-xl" />;
+    return (
+      <div className="space-y-2 animate-pulse">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="h-12 bg-slate-50 rounded-xl" />
+        ))}
+      </div>
+    );
   }
 
   if (invoices.length === 0) return null;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-xs text-slate-400 border-b border-slate-100">
-            <th className="text-left py-2 pr-4 font-medium">Kunde</th>
-            <th className="text-right py-2 pr-4 font-medium">Betrag</th>
-            <th className="text-right py-2 pr-4 font-medium hidden sm:table-cell">Fällig am</th>
-            <th className="text-right py-2 font-medium">Status</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-50">
-          {invoices.map((inv: any) => {
-            const daysOverdue = Math.floor(
-              (Date.now() - new Date(inv.dueDate).getTime()) / (1000 * 60 * 60 * 24),
-            );
-            const badge = daysBadge(Math.max(0, daysOverdue));
-            return (
-              <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
-                <td className="py-2.5 pr-4">
-                  <Link href={`/invoices/${inv.id}`} className="font-medium text-slate-900 hover:text-[#800040]">
-                    {inv.customer?.company || inv.customer?.name || '—'}
-                  </Link>
-                  {inv.invoiceNumber && (
-                    <span className="block text-xs text-slate-400">{inv.invoiceNumber}</span>
-                  )}
-                </td>
-                <td className="py-2.5 pr-4 text-right font-semibold text-slate-900">
-                  {fmt(Number(inv.amount))}
-                </td>
-                <td className="py-2.5 pr-4 text-right text-slate-500 hidden sm:table-cell">
-                  {fmtDate(inv.dueDate)}
-                </td>
-                <td className="py-2.5 text-right">
-                  <span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold', badge.cls)}>
-                    {badge.label}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="space-y-2">
+      {invoices.map((inv: any) => {
+        const daysOverdue = Math.floor(
+          (Date.now() - new Date(inv.dueDate).getTime()) / (1000 * 60 * 60 * 24),
+        );
+        const badge = daysBadge(Math.max(0, daysOverdue));
+        return (
+          <div
+            key={inv.id}
+            className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-slate-100 hover:border-[#800040]/30 hover:shadow-lg transition-all duration-300 group"
+          >
+            <div className="flex-1 min-w-0">
+              <Link href={`/invoices/${inv.id}`} className="block">
+                <p className="text-xs font-black text-slate-900 truncate uppercase tracking-tight group-hover:text-[#800040] transition-colors">
+                  {inv.customer?.company || inv.customer?.name || 'Unbekannt'}
+                </p>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                  {inv.invoiceNumber ? `Rechnung ${inv.invoiceNumber}` : 'Keine Nr.'} • Fällig: {fmtDate(inv.dueDate)}
+                </p>
+              </Link>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-xs font-black text-slate-900 tabular-nums">
+                {fmt(Number(inv.amount))}
+              </span>
+              <span className={cn('px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest', badge.cls)}>
+                {badge.label}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

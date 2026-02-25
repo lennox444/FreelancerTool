@@ -29,11 +29,11 @@ import toast from 'react-hot-toast';
 // ─── Status config (single source of truth) ───────────────────────────────────
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string; dot: string; Icon: any }> = {
-  [ProjectStatus.PLANNING]:  { label: 'Planung',      color: 'bg-blue-50 text-blue-700 border-blue-100',    dot: 'bg-blue-500',    Icon: Lightbulb    },
-  [ProjectStatus.ACTIVE]:    { label: 'Aktiv',        color: 'bg-emerald-50 text-emerald-700 border-emerald-100', dot: 'bg-emerald-500', Icon: Clock        },
-  [ProjectStatus.ON_HOLD]:   { label: 'Pausiert',     color: 'bg-amber-50 text-amber-700 border-amber-100',  dot: 'bg-amber-500',   Icon: Pause        },
-  [ProjectStatus.COMPLETED]: { label: 'Erledigt',     color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400',   Icon: CheckCircle2 },
-  [ProjectStatus.CANCELLED]: { label: 'Abgebrochen',  color: 'bg-red-50 text-red-700 border-red-100',       dot: 'bg-red-500',     Icon: XCircle      },
+  [ProjectStatus.PLANNING]: { label: 'Planung', color: 'bg-blue-50 text-blue-700 border-blue-100', dot: 'bg-blue-500', Icon: Lightbulb },
+  [ProjectStatus.ACTIVE]: { label: 'Aktiv', color: 'bg-emerald-50 text-emerald-700 border-emerald-100', dot: 'bg-emerald-500', Icon: Clock },
+  [ProjectStatus.ON_HOLD]: { label: 'Pausiert', color: 'bg-amber-50 text-amber-700 border-amber-100', dot: 'bg-amber-500', Icon: Pause },
+  [ProjectStatus.COMPLETED]: { label: 'Erledigt', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400', Icon: CheckCircle2 },
+  [ProjectStatus.CANCELLED]: { label: 'Abgebrochen', color: 'bg-red-50 text-red-700 border-red-100', dot: 'bg-red-500', Icon: XCircle },
 };
 
 const INVOICE_STATUS_COLORS: Record<InvoiceStatus, string> = {
@@ -61,9 +61,9 @@ function ProfitabilityBadge({ projectId }: { projectId: string }) {
   if (isLoading || !data) return null;
 
   const colors: Record<string, string> = {
-    GREEN:  'bg-emerald-50 text-emerald-700 border-emerald-200',
+    GREEN: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     YELLOW: 'bg-amber-50 text-amber-700 border-amber-200',
-    RED:    'bg-red-50 text-red-700 border-red-200',
+    RED: 'bg-red-50 text-red-700 border-red-200',
   };
   const dots: Record<string, string> = {
     GREEN: 'bg-emerald-500', YELLOW: 'bg-amber-400', RED: 'bg-red-500',
@@ -74,7 +74,7 @@ function ProfitabilityBadge({ projectId }: { projectId: string }) {
   return (
     <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-bold', color)}>
       <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', dot)} />
-      {data.hourlyRateReal > 0 ? `${Math.round(data.hourlyRateReal)} €/h` : 'n/a'}
+      {data.hourlyRateReal > 0 ? `${Math.round(data.hourlyRateReal)} €/Std.` : 'n/a'}
     </span>
   );
 }
@@ -600,7 +600,7 @@ function ProjectDetail({
                 <Link2 className="w-3 h-3 ml-auto opacity-0 group-hover/tile:opacity-100 transition-opacity" />
               </div>
               <p className="text-lg font-bold text-blue-900">
-                {stats.totalHours.toFixed(1)} <span className="text-sm font-semibold text-blue-500">Std</span>
+                {stats.totalHours.toFixed(1)} <span className="text-sm font-semibold text-blue-500">Std.</span>
               </p>
             </button>
 
@@ -612,7 +612,7 @@ function ProjectDetail({
               </div>
               {stats.effectiveHourlyRate != null ? (
                 <p className="text-lg font-bold text-purple-900">
-                  {fmt(stats.effectiveHourlyRate)}<span className="text-sm font-semibold text-purple-500">/Std</span>
+                  {fmt(stats.effectiveHourlyRate)}<span className="text-sm font-semibold text-purple-500">/Std.</span>
                 </p>
               ) : (
                 <p className="text-sm text-purple-400 italic mt-1">Kein Budget</p>
@@ -630,7 +630,7 @@ function ProjectDetail({
                 <p className="text-xs text-emerald-600 mt-0.5">{fmt(stats.totalPaid)} bezahlt</p>
               )}
               {stats.billedHourlyRate != null && (
-                <p className="text-xs text-emerald-500 mt-0.5">{fmt(stats.billedHourlyRate)}/Std</p>
+                <p className="text-xs text-emerald-500 mt-0.5">{fmt(stats.billedHourlyRate)}/Std.</p>
               )}
             </div>
 
@@ -688,7 +688,7 @@ function ProjectDetail({
                   </div>
                   <div className="flex-shrink-0 flex flex-col items-end gap-1" onClick={(e) => e.stopPropagation()}>
                     <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full', diffDays <= 1 ? 'bg-red-50 text-red-600' : diffDays <= 7 ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600')}>
-                      {diffDays === 0 ? 'Heute' : diffDays === 1 ? 'Morgen' : `in ${diffDays}d`}
+                      {diffDays === 0 ? 'Heute' : diffDays === 1 ? 'Morgen' : `in ${diffDays} ${diffDays === 1 ? 'Tag' : 'Tage'}`}
                     </span>
                     {apt.meetingLink && (
                       <a href={apt.meetingLink} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}

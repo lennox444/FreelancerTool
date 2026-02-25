@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import StarBorder from '@/components/ui/StarBorder';
 import { Plus, FileText, Folder, Users, Clock, Calendar } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const actions = [
   { href: '/invoices?new=1', label: 'Rechnung', icon: FileText, primary: true },
@@ -15,26 +16,26 @@ const actions = [
 
 export default function QuickActionsBar() {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {actions.map((action) => {
         const Icon = action.icon;
-        if (action.primary) {
-          return (
-            <StarBorder key={action.href} as={Link} href={action.href} className="rounded-full" color="#ff3366" speed="3s" thickness={3}>
-              <div className="px-4 h-9 bg-[#800040] hover:bg-[#600030] text-white flex items-center justify-center rounded-full transition-all font-semibold text-sm shadow-lg shadow-pink-900/20 gap-1.5">
-                <Icon className="w-3.5 h-3.5" />
-                <span>{action.label}</span>
-              </div>
-            </StarBorder>
-          );
-        }
         return (
-          <StarBorder key={action.href} as={Link} href={action.href} className="rounded-full" color="#cbd5e1" speed="6s">
-            <div className="px-4 h-9 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 flex items-center justify-center rounded-full transition-all font-medium text-sm gap-1.5 shadow-sm">
-              <Icon className="w-3.5 h-3.5" />
-              <span>{action.label}</span>
-            </div>
-          </StarBorder>
+          <Link
+            key={action.href}
+            href={action.href}
+            className={cn(
+              "h-10 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 text-[11px] font-black uppercase tracking-widest group",
+              action.primary
+                ? "bg-[#800040] text-white shadow-xl shadow-rose-900/10 hover:shadow-2xl hover:-translate-y-0.5"
+                : "bg-white/80 backdrop-blur-md border border-white/40 text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-lg shadow-sm"
+            )}
+          >
+            <Icon className={cn(
+              "w-3.5 h-3.5 transition-transform group-hover:scale-110",
+              action.primary ? "text-white" : "text-slate-400 group-hover:text-[#800040]"
+            )} />
+            <span>{action.label}</span>
+          </Link>
         );
       })}
     </div>

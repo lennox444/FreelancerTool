@@ -136,8 +136,8 @@ export default function TimeTrackingPage() {
     const formatDuration = (totalSeconds: number) => {
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
-        if (hours > 0) return `${hours}h ${minutes}m`;
-        return `${minutes}m`;
+        if (hours > 0) return `${hours} Std. ${minutes} Min.`;
+        return `${minutes} Min.`;
     };
 
     // ─── Manual entry modal ────────────────────────────────────────────
@@ -318,7 +318,7 @@ export default function TimeTrackingPage() {
                                 Heute
                             </h3>
                             <div className="text-4xl font-black text-slate-900">{formatDuration(todayWorkSeconds)}</div>
-                            <p className="text-sm text-slate-500 font-medium mt-1">Soll: 8h 0m</p>
+                            <p className="text-sm text-slate-500 font-medium mt-1">Soll: 8 Std. 0 Min.</p>
                             <div className="w-full h-2.5 bg-slate-100 rounded-full mt-6 overflow-hidden">
                                 <div
                                     className="h-full bg-[#800040] transition-all duration-1000"

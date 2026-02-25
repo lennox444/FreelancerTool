@@ -36,37 +36,40 @@ export default function TaxCalendarWidget({ taxSavings, isLoading }: TaxCalendar
   const year = new Date().getFullYear();
 
   if (isLoading) {
-    return <div className="h-32 animate-pulse bg-slate-100 rounded-xl" />;
+    return (
+      <div className="grid grid-cols-4 gap-2 animate-pulse">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-20 bg-slate-50 rounded-xl" />
+        ))}
+      </div>
+    );
   }
 
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-4 gap-1.5">
       {quarters.map((q) => {
         const deadline = q.deadline(year);
         const status = getStatus(deadline);
         return (
-          <div key={q.label} className="flex flex-col gap-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
+          <div key={q.label} className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-slate-50/50 border border-white hover:border-[#800040]/20 hover:bg-white hover:shadow-md transition-all group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-700">{q.label}</span>
-              <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full', status.cls)}>
-                {status.label}
-              </span>
+              <span className="text-xs font-black text-slate-900 uppercase tracking-tighter">{q.label}</span>
+              <div className={cn('w-1.5 h-1.5 rounded-full', status.cls.split(' ')[0])} />
             </div>
-            <p className="text-[10px] text-slate-400">{q.name}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{q.name}</p>
             {taxSavings && (
-              <div className="space-y-0.5">
-                {taxSavings.quarterlyVat > 0 && (
-                  <p className="text-[10px] text-slate-500">
-                    USt: <span className="font-semibold text-slate-700">{fmt(taxSavings.quarterlyVat)}</span>
-                  </p>
-                )}
-                {taxSavings.quarterlyIncomeTax > 0 && (
-                  <p className="text-[10px] text-slate-500">
-                    ESt: <span className="font-semibold text-slate-700">{fmt(taxSavings.quarterlyIncomeTax)}</span>
-                  </p>
-                )}
-                {taxSavings.quarterlyVat === 0 && taxSavings.quarterlyIncomeTax === 0 && (
-                  <p className="text-[10px] text-slate-400">Keine Daten</p>
+              <div className="space-y-0.5 mt-1">
+                {(taxSavings.quarterlyVat > 0 || taxSavings.quarterlyIncomeTax > 0) ? (
+                  <>
+                    <p className="text-[11px] font-black text-slate-900 tabular-nums">
+                      {fmt(taxSavings.quarterlyVat + taxSavings.quarterlyIncomeTax)}
+                    </p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      Forderung
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-[10px] font-bold text-slate-300 italic">Keine Daten</p>
                 )}
               </div>
             )}
