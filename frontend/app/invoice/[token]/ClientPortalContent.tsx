@@ -64,12 +64,35 @@ export default function ClientPortalContent({ token }: { token: string }) {
   const justPaid = searchParams.get('paid') === 'true';
 
   useEffect(() => {
-    axios
-      .get(`/api/public/invoices/${token}`)
-      .then((r) => setInvoice(r.data.data))
-      .catch(() => setError('Rechnung nicht gefunden oder Link ungültig.'))
-      .finally(() => setLoading(false));
-  }, [token]);
+    const fetchInvoice = async () => {
+      try {
+        const r = await axios.get(`/api/public/invoices/${token}`);
+        setInvoice(r.data.data);
+      } catch {
+        setError('Rechnung nicht gefunden oder Link ungültig.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const verifyPayment = async () => {
+      const sessionId = searchParams.get('session_id');
+      if (justPaid && sessionId) {
+        try {
+          // Verify with backend immediately
+          await axios.post(`/api/public/invoices/${token}/verify-payment`, { sessionId });
+          // Refresh invoice data to show PAID status
+          fetchInvoice();
+        } catch (err) {
+          console.error('Verification failed:', err);
+        }
+      } else {
+        fetchInvoice();
+      }
+    };
+
+    verifyPayment();
+  }, [token, justPaid, searchParams]);
 
   const handleStripeCheckout = async () => {
     setCheckoutLoading(true);
@@ -200,10 +223,10 @@ export default function ClientPortalContent({ token }: { token: string }) {
 
           {/* Due Date Banner */}
           <div className={`rounded-xl p-4 border flex items-start gap-4 mb-4 ${isOverdue
-              ? 'bg-red-50 border-red-200'
-              : invoice.status === 'PAID'
-                ? 'bg-emerald-50 border-emerald-200'
-                : 'bg-blue-50 border-blue-200'
+            ? 'bg-red-50 border-red-200'
+            : invoice.status === 'PAID'
+              ? 'bg-emerald-50 border-emerald-200'
+              : 'bg-blue-50 border-blue-200'
             }`}>
             <div className={`p-2 rounded-lg bg-white bg-opacity-60 ${isOverdue ? 'text-red-600' : invoice.status === 'PAID' ? 'text-emerald-600' : 'text-blue-600'}`}>
               <Calendar className="w-5 h-5 flex-shrink-0" />

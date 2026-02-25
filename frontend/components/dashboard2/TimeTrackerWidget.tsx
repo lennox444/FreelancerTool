@@ -19,11 +19,17 @@ function computeDisplayTime(entry: TimeEntry): { workSeconds: number; pauseSecon
   const now = Date.now();
   const startMs = new Date(entry.startTime).getTime();
   const totalElapsed = Math.floor((now - startMs) / 1000);
-  const currentPause = entry.pauseStartedAt
+  const currentPauseSession = entry.pauseStartedAt
     ? Math.floor((now - new Date(entry.pauseStartedAt).getTime()) / 1000)
     : 0;
-  const workSeconds = Math.max(0, totalElapsed - entry.pauseDuration - currentPause);
-  return { workSeconds, pauseSeconds: currentPause };
+
+  // Work time = Total elapsed since start - (already saved pause duration + current active pause session)
+  const workSeconds = Math.max(0, totalElapsed - entry.pauseDuration - currentPauseSession);
+
+  // Pause time = already saved pause duration + current active pause session
+  const totalPauseSeconds = entry.pauseDuration + currentPauseSession;
+
+  return { workSeconds, pauseSeconds: totalPauseSeconds };
 }
 
 function fmtDuration(s: number) {
@@ -93,17 +99,16 @@ export default function TimeTrackerWidget() {
           </Link>
         </div>
 
-        <div className="min-h-[2rem]">
-          <h4 className="text-base font-bold text-slate-900 tracking-tight truncate">
-            {activeEntry
-              ? (activeProject?.name ?? activeEntry.description ?? 'Projekt ohne Name')
-              : 'Kein aktiver Einsatz'
-            }
-          </h4>
-          <p className="text-[11px] font-black text-[#800040] uppercase tracking-widest mt-0.5">
-            {activeEntry ? 'MISSION LÄUFT...' : 'BEREIT FÜR DEN START'}
-          </p>
-        </div>
+        {activeEntry && (
+          <div className="min-h-[2rem]">
+            <h4 className="text-base font-bold text-slate-900 tracking-tight truncate">
+              {activeProject?.name ?? activeEntry.description ?? 'Projekt ohne Name'}
+            </h4>
+            <p className="text-[11px] font-black text-[#800040] uppercase tracking-widest mt-0.5">
+              MISSION LÄUFT...
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Timer Body */}
@@ -163,7 +168,7 @@ export default function TimeTrackerWidget() {
             </button>
           </div>
         </div>
-      ) : showStart ? (
+      ) : (
         <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
           <div className="space-y-1">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1">Projekt wählen</p>
@@ -191,30 +196,17 @@ export default function TimeTrackerWidget() {
             />
           </div>
 
-          <div className="flex gap-2 pt-1">
+          <div className="flex pt-1">
             <button
               onClick={handleStart}
               disabled={startTimer.isPending}
-              className="flex-1 h-9 rounded-lg bg-[#800040] hover:bg-[#A00055] text-white font-black uppercase text-[11px] tracking-widest transition-all"
+              className="w-full h-9 rounded-lg bg-[#800040] hover:bg-[#A00055] text-white font-black uppercase text-[11px] tracking-widest transition-all flex items-center justify-center gap-2"
             >
-              Starten
-            </button>
-            <button
-              onClick={() => setShowStart(false)}
-              className="px-4 h-9 rounded-lg bg-slate-100 text-slate-500 font-black uppercase text-[11px] tracking-widest hover:bg-slate-200 transition-all"
-            >
-              Abbruch
+              <Play className="w-3.5 h-3.5 fill-current" />
+              Timer starten
             </button>
           </div>
         </div>
-      ) : (
-        <button
-          onClick={() => setShowStart(true)}
-          className="w-full mt-2 h-11 rounded-full bg-[#800040] hover:bg-[#600030] text-white font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-900/20 transition-all active:scale-95 flex items-center justify-center gap-2.5"
-        >
-          <Play className="w-4 h-4 fill-current" />
-          Timer starten
-        </button>
       )}
     </div>
   );

@@ -601,7 +601,7 @@ export class InvoicesService {
           destination: owner.stripeConnectAccountId,
         },
       },
-      success_url: `${frontendUrl}/invoice/${token}?paid=true`,
+      success_url: `${frontendUrl}/invoice/${token}?paid=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${frontendUrl}/invoice/${token}`,
       metadata: {
         invoiceToken: token,
@@ -611,6 +611,56 @@ export class InvoicesService {
     });
 
     return { url: session.url };
+  }
+
+  /**
+   * Directly verify a Stripe Checkout Session for an invoice.
+   * Useful as a real-time fallback for the frontend.
+   */
+  async verifyInvoicePayment(token: string, sessionId: string) {
+    const invoice = await this.findByPublicToken(token);
+
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey || stripeKey === 'sk_test_PLACEHOLDER') {
+      throw new BadRequestException('Stripe is not configured');
+    }
+
+    const Stripe = require('stripe').default ?? require('stripe');
+    const stripe = new Stripe(stripeKey, { apiVersion: '2024-12-18.acacia' });
+
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+      if (session.metadata?.invoiceId !== invoice.id) {
+        throw new BadRequestException('Session does not match invoice');
+      }
+
+      if (session.payment_status === 'paid') {
+        // Record payment if not already done by webhook
+        const amountPaid = (session.amount_total ?? 0) / 100;
+
+        // We check if a payment for this session already exists (local dev safety)
+        const existingPayment = await this.prisma.payment.findFirst({
+          where: {
+            invoiceId: invoice.id,
+            amount: amountPaid,
+            createdAt: { gte: new Date(Date.now() - 1000 * 60 * 10) } // Last 10 mins
+          }
+        });
+
+        if (!existingPayment) {
+          await this.recordStripePayment(invoice.id, amountPaid);
+          console.log(`[VerifyPayment] Payment recorded for invoice ${invoice.id} via session ${sessionId}`);
+        }
+
+        return { success: true, status: 'PAID' };
+      }
+
+      return { success: false, status: invoice.status };
+    } catch (error) {
+      console.error('[VerifyPayment] Error:', error);
+      throw new BadRequestException('Verification failed');
+    }
   }
 
   /**

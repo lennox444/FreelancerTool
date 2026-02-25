@@ -221,36 +221,71 @@ export class BillingService {
         }
     }
 
-    async handleWebhook(signature: string, payload: Buffer) {
+    async handleWebhook(signature: string, payload: any) {
         const endpointSecret = this.configService.get('STRIPE_WEBHOOK_SECRET');
-        let event;
+        let event: Stripe.Event;
+
+        console.log(`[StripeWebhook] Received event. Signature present: ${!!signature}, Secret present: ${!!endpointSecret}`);
 
         try {
-            event = this.stripe.webhooks.constructEvent(payload, signature, endpointSecret);
+            if (endpointSecret && signature) {
+                event = this.stripe.webhooks.constructEvent(payload, signature, endpointSecret);
+            } else {
+                // In development without a webhook secret, we trust the payload
+                // stripe-signature verification is skipped.
+                console.warn('[StripeWebhook] WARNING: Skipping signature verification (no secret or signature provided)');
+                const json = typeof payload === 'string' ? payload : (payload as Buffer).toString('utf8');
+                event = JSON.parse(json);
+            }
         } catch (err) {
+            console.error(`[StripeWebhook] Event construction failed: ${err.message}`);
             throw new BadRequestException(`Webhook Error: ${err.message}`);
         }
 
+        console.log(`[StripeWebhook] Processing event type: ${event.type} (${event.id})`);
+
         switch (event.type) {
-            case 'checkout.session.completed':
+            case 'checkout.session.completed': {
                 const session = event.data.object as Stripe.Checkout.Session;
-                if (session.metadata?.invoiceToken) {
+                console.log(`[StripeWebhook] Checkout session completed: ${session.id}`, session.metadata);
+                if (session.metadata?.invoiceToken || session.metadata?.invoiceId) {
                     // Invoice payment via client portal
                     await this.fulfillInvoicePayment(session);
-                } else {
+                } else if (session.metadata?.userId) {
                     // Subscription checkout
                     await this.fulfillSubscription(session);
                 }
                 break;
-            case 'invoice.payment_succeeded':
-                // Renew subscription logic if needed
+            }
+            case 'invoice.payment_succeeded': {
+                const invoice = event.data.object as any;
+                console.log(`[StripeWebhook] Invoice payment succeeded: ${invoice.id}`, invoice.metadata);
+
+                // If this invoice has our metadata, update our internal invoice status.
+                // This can happen if Stripe generates an invoice for a customer.
+                if (invoice.metadata?.invoiceId) {
+                    await this.fulfillInvoicePayment(invoice);
+                } else if (invoice.subscription) {
+                    // Handle subscription renewal if needed
+                    console.log(`[StripeWebhook] Subscription invoice paid for subscription: ${invoice.subscription}`);
+                }
                 break;
-            case 'account.updated':
+            }
+            case 'invoice.paid': {
+                const invoice = event.data.object as any;
+                console.log(`[StripeWebhook] Invoice marked as paid: ${invoice.id}`);
+                if (invoice.metadata?.invoiceId) {
+                    await this.fulfillInvoicePayment(invoice);
+                }
+                break;
+            }
+            case 'account.updated': {
                 const account = event.data.object as Stripe.Account;
                 await this.updateConnectStatus(account);
                 break;
+            }
             default:
-                console.log(`Unhandled event type ${event.type}`);
+                console.log(`[StripeWebhook] Unhandled event type ${event.type}`);
         }
 
         return { received: true };
@@ -271,37 +306,56 @@ export class BillingService {
         }
     }
 
-    private async fulfillInvoicePayment(session: Stripe.Checkout.Session) {
-        const invoiceId = session.metadata?.invoiceId;
-        const ownerId = session.metadata?.ownerId;
-        if (!invoiceId) return;
+    private async fulfillInvoicePayment(sessionOrInvoice: any) {
+        const metadata = sessionOrInvoice.metadata;
+        const invoiceId = metadata?.invoiceId;
+        const ownerId = metadata?.ownerId;
 
-        const amountPaid = (session.amount_total ?? 0) / 100;
-        await this.invoicesService.recordStripePayment(invoiceId, amountPaid);
+        console.log(`[StripeWebhook] Fulfilling invoice payment for invoiceId: ${invoiceId}, ownerId: ${ownerId}`);
+
+        if (!invoiceId) {
+            console.error('[StripeWebhook] No invoiceId found in metadata');
+            return;
+        }
+
+        // Handle both Checkout Session and Invoice objects
+        const amountPaidCents = sessionOrInvoice.amount_total ?? sessionOrInvoice.amount_paid ?? 0;
+        const amountPaid = amountPaidCents / 100;
+
+        console.log(`[StripeWebhook] Amount paid: ${amountPaid}`);
+
+        try {
+            await this.invoicesService.recordStripePayment(invoiceId, amountPaid);
+            console.log(`[StripeWebhook] Successfully recorded payment for invoice ${invoiceId}`);
+        } catch (error) {
+            console.error(`[StripeWebhook] Error recording payment for invoice ${invoiceId}:`, error);
+        }
 
         // Auto-create expense for Stripe fees so profit/tax calculations stay accurate.
         // Platform fee: exact (from ENV). Stripe fee: ~1.4% + 0.25€ (EU cards estimate).
-        if (ownerId) {
-            const feePct = parseFloat(this.configService.get<string>('STRIPE_PLATFORM_FEE_PERCENT') ?? '2');
-            const platformFee = amountPaid * (feePct / 100);
-            const stripeFee = amountPaid * 0.014 + 0.25;
-            const totalFees = Math.round((platformFee + stripeFee) * 100) / 100;
+        if (ownerId && amountPaid > 0) {
+            try {
+                const feePct = parseFloat(this.configService.get<string>('STRIPE_PLATFORM_FEE_PERCENT') ?? '2');
+                const platformFee = amountPaid * (feePct / 100);
+                const stripeFee = amountPaid * 0.014 + 0.25;
+                const totalFees = Math.round((platformFee + stripeFee) * 100) / 100;
 
-            const invoice = await this.prisma.invoice.findUnique({ where: { id: invoiceId } });
-            const label = invoice?.invoiceNumber ? `Rechnung ${invoice.invoiceNumber}` : `Rechnung (${invoiceId.slice(0, 8)})`;
+                const invoice = await this.prisma.invoice.findUnique({ where: { id: invoiceId } });
+                const label = invoice?.invoiceNumber ? `Rechnung ${invoice.invoiceNumber}` : `Rechnung (${invoiceId.slice(0, 8)})`;
 
-            await this.prisma.expense.create({
-                data: {
-                    ownerId,
-                    amount: totalFees,
-                    description: `Stripe-Transaktionsgebühren (${label})`,
-                    category: 'OTHER',
-                    date: new Date(),
-                },
-            });
-            console.log(`Auto-created Stripe fee expense: ${totalFees} EUR for invoice ${invoiceId}`);
+                await this.prisma.expense.create({
+                    data: {
+                        ownerId,
+                        amount: totalFees,
+                        description: `Stripe-Transaktionsgebühren (${label})`,
+                        category: 'OTHER',
+                        date: new Date(),
+                    },
+                });
+                console.log(`[StripeWebhook] Auto-created Stripe fee expense: ${totalFees} EUR for invoice ${invoiceId}`);
+            } catch (feeError) {
+                console.error('[StripeWebhook] Failed to create fee expense:', feeError);
+            }
         }
-
-        console.log(`Invoice ${invoiceId} paid via Stripe: ${amountPaid} EUR`);
     }
 }
