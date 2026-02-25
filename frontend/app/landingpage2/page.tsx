@@ -26,32 +26,38 @@ import PixelBlast from '@/components/landing/PixelBlast';
 const GlowCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => {
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
+    const rotateX = useSpring(useTransform(mouseY, [-100, 100], [10, -10]), { stiffness: 100, damping: 20 });
+    const rotateY = useSpring(useTransform(mouseX, [-100, 100], [-10, 10]), { stiffness: 100, damping: 20 });
 
     function onMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
-        const { left, top } = currentTarget.getBoundingClientRect();
-        mouseX.set(clientX - left);
-        mouseY.set(clientY - top);
+        const { left, top, width, height } = currentTarget.getBoundingClientRect();
+        const x = clientX - left - width / 2;
+        const y = clientY - top - height / 2;
+        mouseX.set(x);
+        mouseY.set(y);
     }
 
     return (
-        <div
+        <motion.div
             onMouseMove={onMouseMove}
-            className={`group relative rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 bg-white p-6 md:p-8 overflow-hidden shadow-sm transition-all duration-500 hover:shadow-2xl hover:border-[#800040]/20 ${className}`}
+            onMouseLeave={() => { mouseX.set(0); mouseY.set(0); }}
+            style={{ rotateX, rotateY, perspective: 1000 }}
+            className={`group relative rounded-[2.5rem] md:rounded-[3rem] border border-slate-200/60 bg-white p-8 md:p-12 overflow-hidden shadow-sm transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1),0_0_20px_rgba(128,0,64,0.05)] hover:border-[#800040]/30 ${className}`}
         >
             <motion.div
-                className="pointer-events-none absolute -inset-px rounded-[inherit] opacity-0 transition duration-300 group-hover:opacity-100 hidden md:block"
+                className="pointer-events-none absolute -inset-px rounded-[inherit] opacity-0 transition duration-500 group-hover:opacity-100 hidden md:block"
                 style={{
                     background: useMotionTemplate`
                         radial-gradient(
-                            600px circle at ${mouseX}px ${mouseY}px,
-                            rgba(128, 0, 64, 0.06),
+                            500px circle at ${mouseX.get() + 200}px ${mouseY.get() + 200}px,
+                            rgba(128, 0, 64, 0.08),
                             transparent 80%
                         )
                     `,
                 }}
             />
             <div className="relative z-10 h-full">{children}</div>
-        </div>
+        </motion.div>
     );
 };
 
@@ -113,6 +119,14 @@ export default function LandingPage2() {
     const heroScale = useTransform(smoothProgress, [0, 0.2], [1, 0.98]);
 
     const [isScrolled, setIsScrolled] = useState(false);
+    const mouseX = useMotionValue(0);
+    const mouseY = useMotionValue(0);
+
+    function handleMouseMove({ clientX, clientY }: React.MouseEvent) {
+        mouseX.set(clientX);
+        mouseY.set(clientY);
+    }
+
     useEffect(() => {
         const handleScroll = () => setIsScrolled(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
@@ -120,7 +134,10 @@ export default function LandingPage2() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-[#800040] selection:text-white overflow-x-hidden antialiased">
+        <div
+            onMouseMove={handleMouseMove}
+            className="min-h-screen bg-white font-sans text-slate-900 selection:bg-[#800040] selection:text-white overflow-x-hidden antialiased"
+        >
 
             {/* Background Atmosphere */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
@@ -181,20 +198,35 @@ export default function LandingPage2() {
                         <PixelBlast variant="square" pixelSize={6} color="#800040" patternScale={5} patternDensity={0.8} speed={0.3} transparent />
                     </div>
 
-                    {/* Sophisticated Gradient Mesh */}
-                    <div className="absolute top-[-20%] left-[-10%] w-[1200px] h-[1200px] bg-[radial-gradient(circle,rgba(128,0,64,0.12)_0%,transparent_70%)] animate-pulse transition-all duration-[10s]" />
-                    <div className="absolute bottom-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-[radial-gradient(circle,rgba(59,130,246,0.08)_0%,transparent_70%)]" />
-                    <div className="absolute top-[20%] right-[10%] w-[800px] h-[800px] bg-[radial-gradient(circle,rgba(168,85,247,0.05)_0%,transparent_70%)] animate-blob animation-delay-2000" />
-
-                    {/* Moving Accent Beam */}
+                    {/* Massive Floating Background Blobs */}
                     <motion.div
-                        animate={{
-                            x: [-100, 100, -100],
-                            y: [-50, 50, -50],
-                            opacity: [0.3, 0.6, 0.3]
+                        animate={{ x: [0, 40, -20, 0], y: [0, -40, 30, 0], scale: [1, 1.1, 0.9, 1] }}
+                        transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute top-[-10%] left-[-5%] w-[800px] h-[800px] bg-pink-100/40 rounded-full blur-[160px]"
+                    />
+                    <motion.div
+                        animate={{ x: [0, -30, 20, 0], y: [0, 50, -30, 0], scale: [1.1, 1, 1.15, 1.1] }}
+                        transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute bottom-[-10%] right-[-10%] w-[1000px] h-[1000px] bg-blue-100/30 rounded-full blur-[180px]"
+                    />
+                    <motion.div
+                        animate={{ x: [-20, 30, -10], y: [40, -40, 40] }}
+                        transition={{ duration: 20, repeat: Infinity }}
+                        className="absolute top-1/4 right-[20%] w-[400px] h-[400px] bg-purple-100/30 rounded-full blur-[120px]"
+                    />
+
+                    {/* Dynamic Spotlight Follower */}
+                    <motion.div
+                        className="pointer-events-none absolute inset-0 z-10 hidden lg:block"
+                        style={{
+                            background: useMotionTemplate`
+                                radial-gradient(
+                                    1200px circle at ${mouseX}px ${mouseY}px,
+                                    rgba(128, 0, 64, 0.03),
+                                    transparent 80%
+                                )
+                            `,
                         }}
-                        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute top-1/4 left-1/4 w-[600px] h-[300px] bg-[#800040]/5 blur-[120px] rounded-full rotate-45"
                     />
 
                     {/* Premium Grain Texture Overlay */}
@@ -263,9 +295,39 @@ export default function LandingPage2() {
                     </Reveal>
 
                     <Reveal delay={0.2} y={20}>
-                        <h1 className="text-[44px] sm:text-[60px] md:text-[120px] lg:text-[160px] font-black tracking-[-0.08em] leading-[0.85] text-slate-950 mb-10 md:mb-14 py-2">
-                            Arbeite im <br />
-                            <span className="text-[#800040] italic">Flow.</span>
+                        <h1 className="text-[44px] sm:text-[60px] md:text-[120px] lg:text-[180px] font-extrabold tracking-[-0.09em] leading-[0.85] text-slate-950 mb-10 md:mb-14 py-2 flex flex-col items-center">
+                            <span className="relative inline-block overflow-hidden pb-4">
+                                {"Arbeite im".split("").map((char, i) => (
+                                    <motion.span
+                                        key={i}
+                                        initial={{ y: "100%" }}
+                                        animate={{ y: 0 }}
+                                        transition={{ duration: 0.8, delay: 0.2 + i * 0.03, ease: [0.33, 1, 0.68, 1] }}
+                                        className="inline-block"
+                                    >
+                                        {char === " " ? "\u00A0" : char}
+                                    </motion.span>
+                                ))}
+                            </span>
+                            <span className="text-[#800040] italic relative">
+                                {"Flow.".split("").map((char, i) => (
+                                    <motion.span
+                                        key={i}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ duration: 1, delay: 0.8 + i * 0.1, ease: "easeOut" }}
+                                        className="inline-block"
+                                    >
+                                        {char}
+                                    </motion.span>
+                                ))}
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: "100%" }}
+                                    transition={{ duration: 1.2, delay: 1.5, ease: "easeInOut" }}
+                                    className="absolute -bottom-2 left-0 h-1 md:h-2 bg-[#800040]/20 rounded-full"
+                                />
+                            </span>
                         </h1>
                     </Reveal>
 
