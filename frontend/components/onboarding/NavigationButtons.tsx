@@ -20,7 +20,7 @@ export function NavigationButtons({
   loading = false,
 }: NavigationButtonsProps) {
   return (
-    <div className="flex items-center justify-between gap-6 pt-8 border-t border-slate-100 mt-10">
+    <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-100 mt-6">
       {/* Back Button */}
       {onBack ? (
         <button

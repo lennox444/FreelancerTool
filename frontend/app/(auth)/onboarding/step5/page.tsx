@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { NavigationButtons } from '@/components/onboarding/NavigationButtons';
 import { useOnboardingStore } from '@/lib/stores/onboardingStore';
 import { onboardingApi } from '@/lib/api/onboarding';
 import toast from 'react-hot-toast';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Users, CreditCard, TrendingUp, Zap, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export default function Step5Page() {
   const router = useRouter();
@@ -49,75 +50,99 @@ export default function Step5Page() {
 
   return (
     <OnboardingLayout currentStep={5}>
-      <div className="space-y-6">
-        <div className="text-center space-y-3">
-          <div className="flex justify-center relative">
-            {/* Animated Celebration Circles */}
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1.5, opacity: 0 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "easeOut" }}
-              className="absolute inset-0 bg-[#800040]/20 rounded-full"
-            />
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 2, opacity: 0 }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
-              className="absolute inset-0 bg-[#800040]/10 rounded-full"
-            />
+      <div className="space-y-6 relative py-2">
+        <div className="text-center space-y-4 relative">
+          <div className="flex justify-center relative scale-110 mb-4 mt-2">
+            {/* Massive Success Rings - Wine Red Theme */}
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 2 + i * 0.5, opacity: 0 }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  delay: i * 0.4,
+                  ease: "easeOut",
+                }}
+                className="absolute inset-0 bg-[#800040] rounded-full opacity-20 blur-[30px]"
+              />
+            ))}
 
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 260, damping: 20 }}
-              className="w-16 h-16 bg-gradient-to-br from-[#800040] to-[#A00055] rounded-full flex items-center justify-center shadow-lg shadow-[#800040]/30 relative z-10"
+              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              className="w-20 h-20 bg-[#800040] rounded-2xl flex items-center justify-center shadow-[0_10px_40px_rgba(128,0,64,0.3)] relative z-20 border border-white/20"
             >
-              <CheckCircle2 className="w-8 h-8 text-white" />
+              <CheckCircle2 className="w-10 h-10 text-white" />
             </motion.div>
           </div>
 
           <motion.div
-            initial={{ y: 10, opacity: 0 }}
+            initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-1"
           >
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Fast geschafft!</h2>
-            <p className="text-slate-500 font-medium">
-              Du bist bereit, mit FreelanceFlow durchzustarten
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter">
+              <span className="text-[#800040]">
+                Weltklasse!
+              </span>
+            </h2>
+            <p className="text-slate-500 font-bold text-base">
+              Dein Workspace ist nun vollständig bereit.
             </p>
           </motion.div>
         </div>
 
-        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 md:p-8 space-y-4 relative overflow-hidden">
-          <h3 className="text-lg font-bold text-slate-900 relative z-10">
-            Was dich erwartet:
-          </h3>
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-            {[
-              'Kunden und Projekte verwalten',
-              'Professionelle Rechnungen erstellen',
-              'Zahlungen nachverfolgen',
-              'Übersicht über dein Business behalten',
-            ].map((item, i) => (
-              <li key={i} className="flex items-start gap-2.5">
-                <div className="mt-1 w-5 h-5 rounded-full bg-[#800040]/10 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 className="w-3 h-3 text-[#800040]" />
-                </div>
-                <span className="text-sm text-slate-600 font-medium">
-                  {item}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+        >
+          {[
+            { label: 'Smart CRM', desc: 'Kunden im Griff', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-100' },
+            { label: 'Pro Invoicing', desc: 'Bezahlt werden', icon: CreditCard, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+            { label: 'Growth Tracking', desc: 'Erfolg messen', icon: TrendingUp, color: 'text-[#800040]', bg: 'bg-[#800040]/10' },
+            { label: 'Auto-Workflows', desc: 'Zeit sparen', icon: Zap, color: 'text-amber-600', bg: 'bg-amber-100' },
+          ].map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ x: -10, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.6 + i * 0.1 }}
+              className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-slate-100 shadow-sm group/item"
+            >
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all group-hover/item:scale-110 shadow-sm border border-black/5", item.bg, item.color)}>
+                <item.icon className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-black text-slate-900 leading-none mb-1">{item.label}</span>
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider leading-none">{item.desc}</span>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
 
-        <NavigationButtons
-          onBack={handleBack}
-          onSkip={handleSkip}
-          onNext={handleComplete}
-          nextDisabled={false}
-          loading={loading}
-        />
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 1.2, duration: 0.5 }}
+          className="relative pt-4"
+        >
+          {/* Decorative aura behind button */}
+          <div className="absolute inset-0 bg-[#800040]/10 blur-[50px] rounded-full scale-75 -z-10 animate-pulse" />
+
+          <NavigationButtons
+            onBack={handleBack}
+            onSkip={handleSkip}
+            onNext={handleComplete}
+            nextDisabled={false}
+            loading={loading}
+          />
+        </motion.div>
       </div>
     </OnboardingLayout>
   );

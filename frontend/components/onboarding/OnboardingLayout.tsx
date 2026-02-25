@@ -1,9 +1,9 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { StepIndicator } from './StepIndicator';
 import PixelBlast from '@/components/landing/PixelBlast';
 import SpotlightCard from '@/components/ui/SpotlightCard';
@@ -14,44 +14,98 @@ interface OnboardingLayoutProps {
   totalSteps?: number;
 }
 
+const Confetti = () => {
+  const colors = ['#800040', '#A00055', '#FF3366', '#500028', '#900048', '#FF6699', '#B00058'];
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-[9999]">
+      {Array.from({ length: 140 }).map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{
+            top: '-10%',
+            left: `${Math.random() * 100}%`,
+            opacity: 1,
+            scale: Math.random() * 0.5 + 0.5,
+            rotate: 0,
+          }}
+          animate={{
+            top: '110%',
+            left: `${Math.random() * 100 + (Math.random() - 0.5) * 20}%`,
+            opacity: 0,
+            rotate: Math.random() * 720,
+          }}
+          transition={{
+            duration: Math.random() * 4 + 3,
+            ease: [0.23, 1, 0.32, 1],
+            delay: Math.random() * 2,
+          }}
+          className="absolute w-2.5 h-2.5 rounded-sm"
+          style={{ backgroundColor: colors[i % colors.length] }}
+        />
+      ))}
+    </div>
+  );
+};
+
 export function OnboardingLayout({
   children,
   currentStep,
   totalSteps = 5,
 }: OnboardingLayoutProps) {
-  return (
-    <div className="min-h-screen relative isolate flex flex-col items-center justify-center p-4 md:p-6 bg-slate-50 overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 -z-10 bg-slate-50">
-        {/* Animated Gradient Blobs for "Wow" effect - increased vibrancy */}
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-[#800040]/15 rounded-full blur-[140px] animate-blob" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#800040]/15 rounded-full blur-[140px] animate-blob animation-delay-2000" />
-        <div className="absolute top-[20%] right-[-5%] w-[45%] h-[45%] bg-[#FF3366]/10 rounded-full blur-[120px] animate-blob animation-delay-4000" />
-        <div className="absolute bottom-[10%] left-[5%] w-[40%] h-[40%] bg-blue-100/40 rounded-full blur-[100px] animate-blob" />
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
 
-        <div className="absolute inset-0 w-full h-full opacity-60">
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX);
+      mouseY.set(e.clientY);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [mouseX, mouseY]);
+
+  return (
+    <div className="h-screen w-full relative isolate flex flex-col items-center justify-center p-4 md:p-6 bg-white overflow-hidden">
+      {/* Confetti Trigger */}
+      {currentStep === totalSteps && <Confetti />}
+
+      {/* Interactive Background Glow */}
+      <motion.div
+        className="pointer-events-none absolute -inset-px transition duration-300"
+        style={{
+          background: useTransform(
+            [mouseX, mouseY],
+            ([x, y]) => `radial-gradient(600px circle at ${x}px ${y}px, rgba(128, 0, 64, 0.04), transparent 80%)`
+          ),
+        }}
+      />
+
+      {/* Background Elements */}
+      <div className="absolute inset-0 -z-10 bg-slate-50 overflow-hidden">
+        {/* Animated Gradient Blobs - Increased vibrancy for "Bunt" feel */}
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-[#800040]/20 rounded-full blur-[140px] animate-blob" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#800040]/20 rounded-full blur-[140px] animate-blob animation-delay-2000" />
+        <div className="absolute top-[20%] right-[-5%] w-[45%] h-[45%] bg-[#FF3366]/15 rounded-full blur-[120px] animate-blob animation-delay-4000" />
+        <div className="absolute bottom-[20%] left-[10%] w-[40%] h-[40%] bg-blue-400/10 rounded-full blur-[100px] animate-blob animation-delay-1000" />
+        <div className="absolute top-[40%] left-[30%] w-[30%] h-[30%] bg-amber-400/10 rounded-full blur-[90px] animate-blob animation-delay-3000" />
+
+        <div className="absolute inset-0 w-full h-full opacity-40 contrast-125">
           <PixelBlast
             variant="square"
             pixelSize={5}
             color="#800040"
             patternScale={2.5}
-            patternDensity={0.7}
+            patternDensity={0.6}
             speed={0.2}
             enableRipples
             transparent
           />
         </div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.2)_0%,rgba(240,244,248,0.6)_100%)] pointer-events-none" />
       </div>
 
-      {/* Header / Logo */}
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="absolute top-8 left-1/2 -translate-x-1/2 md:left-12 md:translate-x-0 z-20"
-      >
-        <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+      {/* Static Header / Logo */}
+      <div className="absolute top-8 left-8 md:left-12 z-30">
+        <Link href="/" className="flex items-center gap-2">
           <Image
             src="/logo.svg"
             alt="FreelanceFlow Logo"
@@ -61,28 +115,27 @@ export function OnboardingLayout({
             priority
           />
         </Link>
-      </motion.div>
+      </div>
 
-      {/* Content Container */}
-      <div className="relative w-full max-w-xl z-10">
+      {/* Content Container - Compact & No Scroll */}
+      <div className="relative w-full max-w-xl z-20 max-h-[90vh] flex flex-col">
         <SpotlightCard
-          className="bg-white/80 backdrop-blur-xl border border-white rounded-3xl p-8 md:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden"
-          spotlightColor="rgba(128, 0, 64, 0.05)"
+          className="bg-white/95 backdrop-blur-2xl border border-slate-200 rounded-[2rem] p-6 md:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative overflow-hidden flex-shrink"
+          spotlightColor="rgba(128, 0, 64, 0.15)"
         >
           <div className="relative z-10">
             <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
 
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={currentStep}
-                initial={{ x: 20, y: 5, opacity: 0, scale: 0.98, rotate: -0.5 }}
-                animate={{ x: 0, y: 0, opacity: 1, scale: 1, rotate: 0 }}
-                exit={{ x: -20, y: -5, opacity: 0, scale: 0.98, rotate: 0.5 }}
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -20, opacity: 0 }}
                 transition={{
-                  duration: 0.4,
-                  ease: [0.23, 1, 0.32, 1] // Custom ease for a premium feel
+                  duration: 0.3,
+                  ease: "easeOut"
                 }}
-                className="mt-2"
               >
                 {children}
               </motion.div>
@@ -92,15 +145,9 @@ export function OnboardingLayout({
       </div>
 
       {/* Footer minimal */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="mt-12 text-xs text-slate-400 font-bold tracking-widest uppercase flex flex-col items-center gap-2"
-      >
-        <div className="w-8 h-px bg-slate-200" />
-        <span>© {new Date().getFullYear()} FreelanceFlow Onboarding</span>
-      </motion.div>
+      <div className="mt-8 text-[10px] text-slate-400 font-bold tracking-[0.2em] uppercase opacity-40">
+        © {new Date().getFullYear()} FreelanceFlow Onboarding
+      </div>
     </div>
   );
 }

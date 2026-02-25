@@ -15,23 +15,31 @@ import { Sprout, Rocket, Trophy, Zap } from 'lucide-react';
 const stageOptions = [
   {
     value: BusinessStage.JUST_STARTED,
-    label: 'Gerade gestartet (0-6 Monate)',
+    label: 'Neu',
+    description: '0-6 Mon. / Start-Phase',
     icon: Sprout,
+    color: 'emerald',
   },
   {
     value: BusinessStage.GROWING,
-    label: 'Wachsend (6-24 Monate)',
+    label: 'Wachsend',
+    description: '6-24 Mon. / Umsatzstabil',
     icon: Rocket,
+    color: 'blue',
   },
   {
     value: BusinessStage.ESTABLISHED,
-    label: 'Etabliert (2+ Jahre)',
+    label: 'Etabliert',
+    description: '2+ Jahre / Fester Fokus',
     icon: Trophy,
+    color: 'amber',
   },
   {
     value: BusinessStage.SIDE_BUSINESS,
     label: 'Nebenberuflich',
+    description: 'Start neben dem Hauptjob',
     icon: Zap,
+    color: 'indigo',
   },
 ];
 
@@ -63,17 +71,8 @@ export default function Step3Page() {
     }
   };
 
-  const handleSkip = async () => {
-    setLoading(true);
-    try {
-      const updatedProfile = await onboardingApi.skipStep(3);
-      updateStep({ currentStep: updatedProfile.currentStep });
-      router.push('/onboarding/step4');
-    } catch (error) {
-      toast.error('Fehler beim Überspringen');
-    } finally {
-      setLoading(false);
-    }
+  const handleSkip = () => {
+    router.push('/onboarding/step4');
   };
 
   const handleBack = () => {
@@ -82,22 +81,24 @@ export default function Step3Page() {
 
   return (
     <OnboardingLayout currentStep={3}>
-      <div className="space-y-6">
-        <div className="text-center space-y-1.5">
+      <div className="space-y-5">
+        <div className="text-center space-y-1">
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-            In welcher Phase befindet sich dein Business?
+            In welcher Phase bist du?
           </h2>
-          <p className="text-slate-500 font-medium">
-            Wir passen unsere Empfehlungen an deine Erfahrung an
+          <p className="text-slate-500 font-medium text-sm">
+            Deine Erfahrung hilft uns bei den Empfehlungen
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 pt-4">
+        <div className="grid grid-cols-2 gap-3">
           {stageOptions.map((option) => (
             <OptionCard
               key={option.value}
               icon={option.icon}
               label={option.label}
+              description={option.description}
+              color={option.color}
               selected={selected === option.value}
               onClick={() => setSelected(option.value)}
             />

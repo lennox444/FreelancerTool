@@ -13,20 +13,22 @@ import toast from 'react-hot-toast';
 import { Linkedin, MessageSquare, Users, Handshake, Search, Sparkles } from 'lucide-react';
 
 const channelOptions = [
-  { value: AcquisitionChannel.LINKEDIN, label: 'LinkedIn', icon: Linkedin },
-  { value: AcquisitionChannel.REDDIT, label: 'Reddit', icon: MessageSquare },
+  { value: AcquisitionChannel.LINKEDIN, label: 'LinkedIn', icon: Linkedin, color: 'blue' },
+  { value: AcquisitionChannel.REDDIT, label: 'Reddit', icon: MessageSquare, color: 'orange' },
   {
     value: AcquisitionChannel.FACEBOOK_GROUP,
-    label: 'Facebook Gruppe',
+    label: 'Facebook',
     icon: Users,
+    color: 'blue',
   },
-  { value: AcquisitionChannel.REFERRAL, label: 'Empfehlung', icon: Handshake },
+  { value: AcquisitionChannel.REFERRAL, label: 'Empfehlung', icon: Handshake, color: 'emerald' },
   {
     value: AcquisitionChannel.GOOGLE_SEARCH,
-    label: 'Google Suche',
+    label: 'Google',
     icon: Search,
+    color: 'red',
   },
-  { value: AcquisitionChannel.OTHER, label: 'Andere', icon: Sparkles },
+  { value: AcquisitionChannel.OTHER, label: 'Andere', icon: Sparkles, color: 'slate' },
 ];
 
 export default function Step4Page() {
@@ -57,17 +59,8 @@ export default function Step4Page() {
     }
   };
 
-  const handleSkip = async () => {
-    setLoading(true);
-    try {
-      const updatedProfile = await onboardingApi.skipStep(4);
-      updateStep({ currentStep: updatedProfile.currentStep });
-      router.push('/onboarding/step5');
-    } catch (error) {
-      toast.error('Fehler beim Überspringen');
-    } finally {
-      setLoading(false);
-    }
+  const handleSkip = () => {
+    router.push('/onboarding/step5');
   };
 
   const handleBack = () => {
@@ -76,22 +69,23 @@ export default function Step4Page() {
 
   return (
     <OnboardingLayout currentStep={4}>
-      <div className="space-y-6">
-        <div className="text-center space-y-1.5">
+      <div className="space-y-5">
+        <div className="text-center space-y-1">
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Wie hast du von FreelanceFlow erfahren?
+            Wie hast du uns gefunden?
           </h2>
-          <p className="text-slate-500 font-medium">
+          <p className="text-slate-500 font-medium text-sm">
             Hilf uns zu verstehen, wo unsere Community ist
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 pt-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {channelOptions.map((option) => (
             <OptionCard
               key={option.value}
               icon={option.icon}
               label={option.label}
+              color={option.color}
               selected={selected === option.value}
               onClick={() => setSelected(option.value)}
             />

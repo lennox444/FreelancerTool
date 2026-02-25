@@ -6,18 +6,20 @@ import './SpotlightCard.css';
 interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement> {
     className?: string;
     spotlightColor?: string;
+    disabled?: boolean;
 }
 
 const SpotlightCard: React.FC<SpotlightCardProps> = ({
     children,
     className = '',
     spotlightColor = 'rgba(255, 255, 255, 0.25)',
+    disabled = false,
     ...props
 }) => {
     const divRef = useRef<HTMLDivElement>(null);
 
     const handleMouseMove: React.MouseEventHandler<HTMLDivElement> = e => {
-        if (!divRef.current) return;
+        if (!divRef.current || disabled) return;
 
         const rect = divRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
