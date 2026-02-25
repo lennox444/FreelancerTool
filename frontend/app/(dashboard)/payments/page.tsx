@@ -8,6 +8,7 @@ import { useProjects } from '@/lib/hooks/useProjects';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import StarBorder from '@/components/ui/StarBorder';
 import PixelBlast from '@/components/landing/PixelBlast';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   Search,
@@ -19,12 +20,29 @@ import {
   Check,
   X,
   Loader2,
-  ArrowUpRight,
   TrendingDown,
-  Info
+  Info,
+  ArrowUpRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
+
+// ─── Animation helper ─────────────────────────────────────────────────────────
+
+function fadeUp(delay = 0) {
+  return {
+    initial: { opacity: 0, y: 14 },
+    animate: { opacity: 1, y: 0 },
+    transition: { type: 'spring' as const, stiffness: 320, damping: 26, delay },
+  };
+}
+
+// ─── Form field styles ────────────────────────────────────────────────────────
+
+const fieldClass = 'w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all';
+const labelClass = 'block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5';
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PaymentsPage() {
   const [showForm, setShowForm] = useState(false);
@@ -87,185 +105,257 @@ export default function PaymentsPage() {
     (inv) => inv.totalPaid < inv.amount
   ) || [];
 
-  const inputClasses = "mt-1 block w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] focus:bg-white transition-all text-slate-700 placeholder:text-slate-400";
-  const labelClasses = "flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1 ml-1";
+  // ─── Computed stats ──────────────────────────────────────────────────────────
+
+  const totalReceived = payments?.reduce((sum, p) => sum + p.amount, 0) ?? 0;
+  const totalCount = payments?.length ?? 0;
+  const filteredCount = filteredPayments?.length ?? 0;
+  const avgPayment = totalCount > 0 ? totalReceived / totalCount : 0;
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount);
+
+  const statTiles = [
+    {
+      label: 'Einnahmen gesamt',
+      value: formatCurrency(totalReceived),
+      icon: ArrowUpRight,
+      bg: 'bg-emerald-50',
+      border: 'border-emerald-100',
+      color: 'text-emerald-600',
+    },
+    {
+      label: 'Zahlungen',
+      value: totalCount.toString(),
+      icon: Wallet,
+      bg: 'bg-blue-50',
+      border: 'border-blue-100',
+      color: 'text-blue-600',
+    },
+    {
+      label: 'Ø Zahlung',
+      value: formatCurrency(avgPayment),
+      icon: TrendingDown,
+      bg: 'bg-violet-50',
+      border: 'border-violet-100',
+      color: 'text-violet-600',
+    },
+    {
+      label: 'Gefiltert',
+      value: filteredCount.toString(),
+      icon: Search,
+      bg: 'bg-slate-50',
+      border: 'border-slate-200',
+      color: 'text-slate-600',
+    },
+  ];
 
   return (
-    <div className="relative isolate min-h-full p-4 md:p-6">
-      {/* Background Elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none rounded-3xl">
-        <div className="absolute inset-0 w-full h-full opacity-30">
+    <div className="relative isolate min-h-full p-4 md:p-8 flex flex-col gap-6">
+
+      {/* ── Background ── */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#800040]/8 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-violet-500/4 rounded-full blur-3xl" />
+        <div className="absolute inset-0 opacity-20">
           <PixelBlast
             variant="square"
-            pixelSize={6}
+            pixelSize={5}
             color="#800040"
-            patternScale={4}
-            patternDensity={0.5}
+            patternScale={5}
+            patternDensity={0.4}
             pixelSizeJitter={0.5}
             enableRipples
-            rippleSpeed={0.3}
-            rippleThickness={0.1}
-            speed={0.2}
+            rippleSpeed={0.2}
+            rippleThickness={0.08}
+            speed={0.15}
             transparent
           />
         </div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.8)_0%,rgba(248,250,252,0.95)_100%)]" />
+        <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white/80 to-slate-50/50" />
       </div>
 
-      <div className="mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Zahlungen</h1>
-          <div className="hidden md:block h-8 w-[2px] bg-slate-200 rounded-full"></div>
-          <p className="text-slate-500 font-medium">
-            Behalte deine Zahlungseingänge und Einnahmen im Überblick.
-          </p>
-        </div>
-
-        <div className="flex gap-3">
-          <StarBorder onClick={() => setShowForm(!showForm)} className="rounded-full group" color={showForm ? "#94a3b8" : "#ff3366"} speed="4s" thickness={3}>
-            <div className={cn(
-              "px-6 h-12 flex items-center justify-center rounded-full transition-all font-semibold text-sm shadow-lg gap-2",
-              showForm
-                ? "bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-slate-200/20"
-                : "bg-[#800040] hover:bg-[#600030] text-white shadow-pink-900/20"
-            )}>
-              {showForm ? <X className="w-5 h-5" /> : <Wallet className="w-5 h-5" />}
-              <span>{showForm ? 'Abbrechen' : 'Zahlung erfassen'}</span>
-            </div>
-          </StarBorder>
-        </div>
-      </div>
-
-      {showForm && (
-        <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-300">
-          <SpotlightCard className="bg-white/95 backdrop-blur-md border border-[#800040]/20 shadow-xl p-8 rounded-3xl" spotlightColor="rgba(128, 0, 64, 0.05)">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold text-slate-900">Zahlung manuell erfassen</h2>
-              <button onClick={() => setShowForm(false)} className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreate} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className={labelClasses}>
-                    <FileText className="w-4 h-4 text-slate-400" />
-                    Rechnung auswählen *
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <select
-                      required
-                      value={formData.invoiceId}
-                      onChange={(e) => setFormData({ ...formData, invoiceId: e.target.value })}
-                      className={inputClasses}
-                    >
-                      <option value="">Wähle eine offene Rechnung...</option>
-                      {unpaidInvoices?.map((inv) => (
-                        <option key={inv.id} value={inv.id}>
-                          {inv.customer?.name} - {inv.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })} (Offen: {(inv.amount - inv.totalPaid).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className={labelClasses}>
-                    <TrendingDown className="w-4 h-4 text-slate-400" />
-                    Zahlbetrag (€) *
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
-                      <TrendingDown className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="number"
-                      required
-                      step="0.01"
-                      placeholder="0,00"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-                      className={inputClasses}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className={labelClasses}>
-                    <Calendar className="w-4 h-4 text-slate-400" />
-                    Zahlungsdatum *
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
-                      <Calendar className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="date"
-                      required
-                      value={formData.paymentDate}
-                      onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
-                      className={inputClasses}
-                    />
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className={labelClasses}>
-                    <Info className="w-4 h-4 text-slate-400" />
-                    Notiz (optional)
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute top-3.5 left-3.5 text-slate-400 group-focus-within:text-[#800040] transition-colors">
-                      <Info className="w-4 h-4" />
-                    </div>
-                    <textarea
-                      value={formData.note}
-                      onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                      placeholder="Verwendungszweck, Provider, etc."
-                      className={cn(inputClasses, "pl-10 h-20")}
-                    />
-                  </div>
-                </div>
+      {/* ── Header ── */}
+      <motion.div {...fadeUp(0)} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-100">
+        <div>
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
+              <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-[#800040]" />
               </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-8 py-3 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-full transition-all font-semibold text-sm"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  disabled={createPayment.isPending}
-                  className="px-8 py-3 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-semibold text-sm shadow-lg shadow-pink-900/20 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {createPayment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  Zahlung buchen
-                </button>
-              </div>
-            </form>
-          </SpotlightCard>
-        </div>
-      )}
-
-      {/* Search & Filter */}
-      <div className="mb-8 flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1 group">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#800040] transition-colors">
-            <Search className="w-5 h-5" />
+            </div>
+            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Freelancer Tool</span>
           </div>
+          <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">Zahlungen</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Behalte deine Zahlungseingänge und Einnahmen im Überblick.</p>
+        </div>
+        <StarBorder
+          onClick={() => setShowForm(!showForm)}
+          color={showForm ? '#94a3b8' : '#ff3366'}
+          speed="4s"
+          thickness={2}
+        >
+          <div className={cn(
+            'px-5 h-11 flex items-center gap-2 rounded-full transition-all font-black text-[11px] uppercase tracking-widest shadow-lg',
+            showForm
+              ? 'bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-slate-200/20'
+              : 'bg-[#800040] hover:bg-[#600030] text-white shadow-rose-900/20'
+          )}>
+            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            <span>{showForm ? 'Abbrechen' : 'Zahlung erfassen'}</span>
+          </div>
+        </StarBorder>
+      </motion.div>
+
+      {/* ── Stat Tiles ── */}
+      <motion.div {...fadeUp(0.05)} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {statTiles.map((tile, i) => (
+          <motion.div
+            key={tile.label}
+            {...fadeUp(i * 0.04)}
+            className={cn('flex items-center gap-3 p-4 rounded-2xl border', tile.bg, tile.border)}
+          >
+            <div className={cn('p-2 rounded-xl bg-white/80 shrink-0', tile.color)}>
+              <tile.icon className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate">{tile.label}</p>
+              <p className="font-black text-slate-900 tabular-nums truncate">{tile.value}</p>
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* ── Create Form ── */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+          >
+            <SpotlightCard
+              className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-[1.8rem] p-8 shadow-xl"
+              spotlightColor="rgba(128, 0, 64, 0.04)"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px]">
+                  <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
+                    <Wallet className="w-4 h-4 text-[#800040]" />
+                  </div>
+                </div>
+                <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Zahlung manuell erfassen</h2>
+              </div>
+
+              <form onSubmit={handleCreate} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className={labelClass}>
+                      <span className="flex items-center gap-1.5"><FileText className="w-3 h-3" /> Rechnung auswählen *</span>
+                    </label>
+                    <div className="relative group">
+                      <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#800040] transition-colors pointer-events-none" />
+                      <select
+                        required
+                        value={formData.invoiceId}
+                        onChange={(e) => setFormData({ ...formData, invoiceId: e.target.value })}
+                        className={cn(fieldClass, 'pl-10')}
+                      >
+                        <option value="">Wähle eine offene Rechnung...</option>
+                        {unpaidInvoices?.map((inv) => (
+                          <option key={inv.id} value={inv.id}>
+                            {inv.customer?.name} — {inv.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })} (Offen: {(inv.amount - inv.totalPaid).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      <span className="flex items-center gap-1.5"><TrendingDown className="w-3 h-3" /> Zahlbetrag (€) *</span>
+                    </label>
+                    <div className="relative group">
+                      <TrendingDown className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#800040] transition-colors pointer-events-none" />
+                      <input
+                        type="number"
+                        required
+                        step="0.01"
+                        placeholder="0,00"
+                        value={formData.amount}
+                        onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                        className={cn(fieldClass, 'pl-10')}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      <span className="flex items-center gap-1.5"><Calendar className="w-3 h-3" /> Zahlungsdatum *</span>
+                    </label>
+                    <div className="relative group">
+                      <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#800040] transition-colors pointer-events-none" />
+                      <input
+                        type="date"
+                        required
+                        value={formData.paymentDate}
+                        onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
+                        className={cn(fieldClass, 'pl-10')}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      <span className="flex items-center gap-1.5"><Info className="w-3 h-3" /> Notiz (optional)</span>
+                    </label>
+                    <div className="relative group">
+                      <Info className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400 group-focus-within:text-[#800040] transition-colors pointer-events-none" />
+                      <textarea
+                        value={formData.note}
+                        onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                        placeholder="Verwendungszweck, Provider, etc."
+                        rows={3}
+                        className={cn(fieldClass, 'pl-10 resize-none')}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="px-6 h-11 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-full transition-all font-black text-[11px] uppercase tracking-widest"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createPayment.isPending}
+                    className="px-6 h-11 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-900/20 disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {createPayment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    Zahlung buchen
+                  </button>
+                </div>
+              </form>
+            </SpotlightCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Search & Filter ── */}
+      <motion.div {...fadeUp(0.1)} className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#800040] transition-colors pointer-events-none" />
           <input
             type="text"
             placeholder="Zahlungen durchsuchen..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all text-slate-700 shadow-sm"
+            className="w-full pl-11 pr-4 h-11 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm"
           />
         </div>
 
@@ -273,9 +363,9 @@ export default function PaymentsPage() {
           value={customerFilter}
           onChange={(e) => {
             setCustomerFilter(e.target.value);
-            setProjectFilter(''); // Reset project when customer changes
+            setProjectFilter('');
           }}
-          className="px-6 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1rem_center] bg-no-repeat pr-12 min-w-[200px]"
+          className="px-4 h-11 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm min-w-[180px]"
         >
           <option value="">Alle Kunden</option>
           {customers?.map((c) => (
@@ -287,92 +377,105 @@ export default function PaymentsPage() {
           value={projectFilter}
           onChange={(e) => setProjectFilter(e.target.value)}
           disabled={!customerFilter}
-          className="px-6 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1rem_center] bg-no-repeat pr-12 min-w-[200px]"
+          className="px-4 h-11 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm min-w-[180px] disabled:opacity-50"
         >
           <option value="">{customerFilter ? 'Alle Projekte' : 'Kunde wählen...'}</option>
           {projects?.map((p) => (
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
-      </div>
+      </motion.div>
 
-      <div className="relative min-h-[400px]">
+      {/* ── Payments List ── */}
+      <div className="min-h-100">
         {isLoading ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
-            <Loader2 className="w-10 h-10 animate-spin text-[#800040] mb-3" />
-            <p className="font-medium">Lade Zahlungen...</p>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <div className="relative w-12 h-12">
+              <div className="absolute inset-0 border-4 border-[#800040]/10 rounded-full" />
+              <div className="absolute inset-0 border-4 border-t-[#800040] rounded-full animate-spin" />
+            </div>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Lade Zahlungen...</p>
           </div>
         ) : filteredPayments && filteredPayments.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPayments.map((payment) => (
-              <SpotlightCard
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredPayments.map((payment, index) => (
+              <motion.div
                 key={payment.id}
-                className="bg-white/90 backdrop-blur-md border border-slate-100 shadow-sm p-6 rounded-2xl hover:shadow-md transition-shadow group flex flex-col"
-                spotlightColor="rgba(128, 0, 64, 0.05)"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.04, 0.3), duration: 0.2 }}
               >
-                <div className="flex justify-between items-start mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-100/50 flex items-center justify-center text-emerald-600">
-                    <TrendingDown className="w-6 h-6" />
-                  </div>
-                  <button
-                    onClick={() => handleDelete(payment.id)}
-                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                    title="Löschen"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <div className="text-2xl font-bold text-emerald-600">
-                      +{payment.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                <SpotlightCard
+                  className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-[1.8rem] p-6 flex flex-col h-full hover:shadow-lg transition-shadow group"
+                  spotlightColor="rgba(128, 0, 64, 0.04)"
+                >
+                  {/* Card Header */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                        <ArrowUpRight className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Eingang</p>
+                        <p className="text-lg font-black text-emerald-600 tabular-nums leading-tight">
+                          +{payment.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-slate-500 mt-1">
-                      <User className="w-4 h-4" />
-                      <span className="text-sm font-medium">{payment.invoice?.customer?.name || 'Unbekannt'}</span>
-                    </div>
+                    <button
+                      onClick={() => handleDelete(payment.id)}
+                      className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100 shrink-0"
+                      title="Löschen"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-50 space-y-2.5">
-                    <div className="flex items-center gap-3 text-slate-600">
-                      <FileText className="w-4 h-4 text-slate-400" />
+                  {/* Details */}
+                  <div className="flex-1 space-y-2.5 border-t border-slate-100 pt-4">
+                    <div className="flex items-center gap-2.5 text-slate-600">
+                      <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="text-sm font-semibold truncate">{payment.invoice?.customer?.name || 'Unbekannt'}</span>
+                    </div>
+                    <div className="flex items-center gap-2.5 text-slate-600">
+                      <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="text-sm truncate">{payment.invoice?.description || 'Rechnung'}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-slate-600">
-                      <Calendar className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm">{new Date(payment.paymentDate).toLocaleDateString('de-DE')}</span>
+                    <div className="flex items-center gap-2.5 text-slate-600">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="text-sm tabular-nums">{new Date(payment.paymentDate).toLocaleDateString('de-DE')}</span>
                     </div>
                     {payment.note && (
-                      <div className="flex items-center gap-3 text-slate-500 italic">
-                        <Info className="w-4 h-4 text-slate-300" />
-                        <span className="text-xs">{payment.note}</span>
+                      <div className="flex items-start gap-2.5 text-slate-500">
+                        <Info className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
+                        <span className="text-xs italic line-clamp-2">{payment.note}</span>
                       </div>
                     )}
                   </div>
-                </div>
 
-                <div className="mt-6 pt-4">
-                  <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Rechnungs-Info</div>
-                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center justify-between">
-                    <div className="text-xs font-semibold text-slate-600">
-                      Gesamt: {payment.invoice?.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
-                    </div>
-                    <div className="text-[10px] font-bold px-2 py-0.5 bg-slate-200 text-slate-600 rounded-full">
-                      {payment.invoice?.status}
+                  {/* Invoice Info Footer */}
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Rechnungs-Info</p>
+                    <div className="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100">
+                      <span className="text-xs font-semibold text-slate-600">
+                        Gesamt: {payment.invoice?.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                      </span>
+                      <span className="text-[10px] font-black px-2 py-0.5 bg-slate-200 text-slate-600 rounded-full uppercase tracking-wide">
+                        {payment.invoice?.status}
+                      </span>
                     </div>
                   </div>
-                </div>
-              </SpotlightCard>
+                </SpotlightCard>
+              </motion.div>
             ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100">
-              <Wallet className="w-10 h-10 text-slate-300" />
+            <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mb-5 border-2 border-dashed border-slate-200">
+              <Wallet className="w-8 h-8 text-slate-300" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900">Keine Zahlungen gefunden</h3>
-            <p className="text-slate-500 mt-2 max-w-sm mx-auto">
+            <h3 className="text-lg font-black uppercase italic tracking-tight text-slate-900">Keine Zahlungen gefunden</h3>
+            <p className="text-slate-500 mt-2 text-sm max-w-xs mx-auto">
               Erfasse deinen ersten Zahlungseingang, um deine Einnahmen zu verfolgen.
             </p>
           </div>

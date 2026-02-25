@@ -12,11 +12,12 @@ import {
     Pause,
     Trash2,
     Edit2,
-    ChevronRight
+    ChevronRight,
 } from 'lucide-react';
 import PixelBlast from '@/components/landing/PixelBlast';
 import StarBorder from '@/components/ui/StarBorder';
 import SpotlightCard from '@/components/ui/SpotlightCard';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     useTimeEntries,
     useActiveTimeEntry,
@@ -32,6 +33,17 @@ import { TimeEntry } from '@/lib/types';
 import TimeEntryModal from '@/components/time-tracking/TimeEntryModal';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+
+// ─── Animation helper ─────────────────────────────────────────────────────────
+
+function fadeUp(delay = 0) {
+    return {
+        initial: { opacity: 0, y: 14 },
+        animate: { opacity: 1, y: 0 },
+        transition: { type: 'spring' as const, stiffness: 320, damping: 26, delay },
+    };
+}
 
 /**
  * Compute display seconds from a server-side active entry.
@@ -179,245 +191,385 @@ export default function TimeTrackingPage() {
         return acc;
     }, 0) || 0;
 
+    // ─── Derived stat tiles ────────────────────────────────────────────
+
+    const totalEntries = entries?.length ?? 0;
+    const todayPct = Math.min((todayWorkSeconds / (8 * 3600)) * 100, 100);
+
+    const statTiles = [
+        {
+            label: 'Heute',
+            value: formatDuration(todayWorkSeconds),
+            icon: Clock,
+            bg: 'bg-rose-50',
+            border: 'border-rose-100',
+            color: 'text-rose-600',
+        },
+        {
+            label: 'Diese Woche',
+            value: formatDuration(weekWorkSeconds),
+            icon: History,
+            bg: 'bg-blue-50',
+            border: 'border-blue-100',
+            color: 'text-blue-600',
+        },
+        {
+            label: 'Einträge gesamt',
+            value: totalEntries.toString(),
+            icon: Timer,
+            bg: 'bg-violet-50',
+            border: 'border-violet-100',
+            color: 'text-violet-600',
+        },
+        {
+            label: 'Tagesziel',
+            value: `${Math.round(todayPct)} %`,
+            icon: Play,
+            bg: todayPct >= 100 ? 'bg-emerald-50' : 'bg-slate-50',
+            border: todayPct >= 100 ? 'border-emerald-100' : 'border-slate-200',
+            color: todayPct >= 100 ? 'text-emerald-600' : 'text-slate-600',
+        },
+    ];
+
     return (
-        <div className="relative isolate min-h-full p-4 md:p-6 pb-20">
-            <div className="fixed inset-0 -z-10 bg-slate-50/50">
-                <div className="absolute inset-0 w-full h-full opacity-[0.03]">
+        <div className="relative isolate min-h-full p-4 md:p-8 flex flex-col gap-6 pb-20">
+
+            {/* ── Background ── */}
+            <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#800040]/8 rounded-full blur-3xl" />
+                <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-violet-500/4 rounded-full blur-3xl" />
+                <div className="absolute inset-0 opacity-20">
                     <PixelBlast
                         variant="square"
-                        pixelSize={6}
+                        pixelSize={5}
                         color="#800040"
-                        patternScale={4}
-                        patternDensity={0.5}
-                        speed={0.2}
+                        patternScale={5}
+                        patternDensity={0.4}
+                        pixelSizeJitter={0.5}
+                        enableRipples
+                        rippleSpeed={0.2}
+                        rippleThickness={0.08}
+                        speed={0.15}
                         transparent
                     />
                 </div>
+                <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white/80 to-slate-50/50" />
             </div>
 
-            <div className="max-w-7xl mx-auto space-y-8">
-                {/* Header */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
-                        <div className="hidden sm:flex w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-100 items-center justify-center text-[#800040]">
-                            <Clock className="w-7 h-7" />
+            {/* ── Header ── */}
+            <motion.div {...fadeUp(0)} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                    <div className="flex items-center gap-2.5 mb-1">
+                        <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
+                            <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
+                                <Clock className="w-4 h-4 text-[#800040]" />
+                            </div>
                         </div>
-                        <div className="h-12 w-px bg-slate-200 hidden sm:block mx-1"></div>
-                        <div>
-                            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Zeiterfassung</h1>
-                            <p className="text-slate-500 font-medium">Dokumentiere deine Arbeitszeit präzise</p>
-                        </div>
+                        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Freelancer Tool</span>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">Zeiterfassung</h1>
                         {filterProjectId && (
-                            <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#800040]/10 text-[#800040] rounded-full text-sm font-semibold border border-[#800040]/20">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#800040]/10 text-[#800040] rounded-full text-[11px] font-black border border-[#800040]/20 uppercase tracking-wide">
                                 Projektfilter aktiv
-                                <button onClick={() => setFilterProjectId('')} className="hover:opacity-70 transition-opacity" title="Filter entfernen">
+                                <button
+                                    onClick={() => setFilterProjectId('')}
+                                    className="hover:opacity-70 transition-opacity"
+                                    title="Filter entfernen"
+                                >
                                     <Square className="w-3 h-3 fill-current" />
                                 </button>
                             </span>
                         )}
                     </div>
-
-                    <StarBorder as="div" className="rounded-full group" color="#ff3366" speed="4s" thickness={3}>
-                        <button
-                            onClick={() => setShowModal(true)}
-                            className="px-6 h-12 flex items-center justify-center rounded-full transition-all font-semibold text-sm shadow-lg gap-2 bg-[#800040] hover:bg-[#600030] text-white shadow-pink-900/20"
-                        >
-                            <Plus className="w-5 h-5" />
-                            <span>Zeit manuell erfassen</span>
-                        </button>
-                    </StarBorder>
+                    <p className="text-slate-500 text-sm mt-0.5">Dokumentiere deine Arbeitszeit präzise</p>
                 </div>
+                <StarBorder onClick={() => setShowModal(true)} color="#ff3366" speed="4s" thickness={2}>
+                    <div className="px-5 h-11 flex items-center gap-2 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-900/20">
+                        <Plus className="w-4 h-4" />
+                        <span>Zeit erfassen</span>
+                    </div>
+                </StarBorder>
+            </motion.div>
 
-                {/* Timer UI */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <SpotlightCard
-                        className="lg:col-span-2 p-10 bg-white/90 backdrop-blur-md border border-slate-100 shadow-xl rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-8"
-                        spotlightColor="rgba(128, 0, 64, 0.08)"
+            {/* ── Stat Tiles ── */}
+            <motion.div {...fadeUp(0.05)} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {statTiles.map((tile, i) => (
+                    <motion.div
+                        key={tile.label}
+                        {...fadeUp(i * 0.04)}
+                        className={cn('flex items-center gap-3 p-4 rounded-2xl border', tile.bg, tile.border)}
                     >
-                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-8 sm:gap-12">
-                            <div className="flex flex-col items-center">
-                                <div className="text-6xl sm:text-7xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
-                                    {formatTime(displayWork)}
-                                </div>
-                                <p className="text-[#800040] font-bold text-xs sm:text-sm tracking-widest uppercase mt-4">Arbeitszeit</p>
+                        <div className={cn('p-2 rounded-xl bg-white/80 shrink-0', tile.color)}>
+                            <tile.icon className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate">{tile.label}</p>
+                            <p className="font-black text-slate-900 tabular-nums truncate">{tile.value}</p>
+                        </div>
+                    </motion.div>
+                ))}
+            </motion.div>
+
+            {/* ── Timer Section ── */}
+            <motion.div {...fadeUp(0.1)} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                {/* Main Timer Display */}
+                <SpotlightCard
+                    className="lg:col-span-2 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-[1.8rem] p-8 shadow-xl flex flex-col items-center justify-center text-center gap-8"
+                    spotlightColor="rgba(128, 0, 64, 0.06)"
+                >
+                    <div className="flex items-center gap-2.5 self-start">
+                        <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px]">
+                            <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
+                                <Timer className="w-4 h-4 text-[#800040]" />
                             </div>
+                        </div>
+                        <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Live-Timer</h2>
+                    </div>
 
-                            {isActive && (
-                                <div className="w-px h-20 bg-slate-200 hidden sm:block"></div>
-                            )}
-
-                            {isActive && (
-                                <div className={`transition-all duration-300 flex flex-col items-center ${isPaused ? "opacity-100 scale-110" : "opacity-30 scale-90"}`}>
-                                    <div className="text-4xl sm:text-5xl font-black text-slate-400 tracking-tight tabular-nums leading-none">
-                                        {formatTime(displayPause)}
-                                    </div>
-                                    <p className="text-slate-400 font-bold text-[10px] sm:text-xs tracking-widest uppercase mt-4">Pause</p>
-                                </div>
-                            )}
+                    {/* Time display */}
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-8 w-full">
+                        <div className="flex flex-col items-center">
+                            <div className="text-6xl sm:text-7xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
+                                {formatTime(displayWork)}
+                            </div>
+                            <p className="text-[#800040] font-black text-xs tracking-widest uppercase mt-3">Arbeitszeit</p>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-                            {activeLoading ? (
-                                <div className="px-12 py-5 bg-slate-100 rounded-full text-slate-400 font-bold text-xl animate-pulse">
-                                    Lädt...
+                        {isActive && (
+                            <div className="w-0.5 h-16 bg-slate-100 hidden sm:block mx-auto" />
+                        )}
+
+                        {isActive && (
+                            <div className={cn(
+                                'transition-all duration-300 flex flex-col items-center',
+                                isPaused ? 'opacity-100 scale-110' : 'opacity-30 scale-90'
+                            )}>
+                                <div className="text-4xl sm:text-5xl font-black text-slate-400 tracking-tight tabular-nums leading-none">
+                                    {formatTime(displayPause)}
                                 </div>
-                            ) : !isActive ? (
+                                <p className="text-slate-400 font-black text-[10px] tracking-widest uppercase mt-3">Pause</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                        {activeLoading ? (
+                            <div className="px-10 py-4 bg-slate-100 rounded-full text-slate-400 font-black text-base animate-pulse uppercase tracking-widest text-[11px]">
+                                Lädt...
+                            </div>
+                        ) : !isActive ? (
+                            <button
+                                onClick={handleStartTimer}
+                                disabled={startTimer.isPending}
+                                className="px-10 py-4 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-black text-sm shadow-xl shadow-rose-900/30 flex items-center gap-3 disabled:opacity-60 uppercase tracking-widest"
+                            >
+                                <Play className="w-5 h-5 fill-current" />
+                                Timer starten
+                            </button>
+                        ) : (
+                            <>
                                 <button
-                                    onClick={handleStartTimer}
-                                    disabled={startTimer.isPending}
-                                    className="px-12 py-5 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-bold text-xl shadow-xl shadow-pink-900/40 flex items-center gap-3 disabled:opacity-60"
+                                    onClick={handleTogglePause}
+                                    disabled={pauseTimer.isPending || resumeTimer.isPending}
+                                    className={cn(
+                                        'px-8 py-4 rounded-full transition-all shadow-lg flex items-center gap-2.5 font-black text-sm disabled:opacity-60 uppercase tracking-widest',
+                                        isPaused
+                                            ? 'bg-[#800040] text-white hover:bg-[#600030] shadow-rose-900/20'
+                                            : 'bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200'
+                                    )}
                                 >
-                                    <Play className="w-7 h-7 fill-current" />
-                                    Timer starten
+                                    {isPaused ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4 fill-current" />}
+                                    {isPaused ? 'Pause beenden' : 'Pause'}
                                 </button>
-                            ) : (
-                                <>
-                                    <button
-                                        onClick={handleTogglePause}
-                                        disabled={pauseTimer.isPending || resumeTimer.isPending}
-                                        className={`px-10 py-5 rounded-full transition-all shadow-lg flex items-center gap-3 font-bold text-lg disabled:opacity-60 ${isPaused
-                                            ? "bg-[#800040] text-white hover:bg-[#600030]"
-                                            : "bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200"
-                                            }`}
-                                    >
-                                        {isPaused ? <Play className="w-6 h-6 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
-                                        {isPaused ? 'Pause beenden' : 'Pause'}
-                                    </button>
-                                    <button
-                                        onClick={handleStopTimer}
-                                        disabled={stopTimer.isPending}
-                                        className="px-10 py-5 bg-slate-900 text-white rounded-full transition-all font-bold text-lg shadow-xl hover:bg-black border border-slate-700 flex items-center gap-3 disabled:opacity-60"
-                                    >
-                                        <Square className="w-5 h-5 fill-current" />
-                                        Stoppen
-                                    </button>
-                                </>
-                            )}
-                        </div>
+                                <button
+                                    onClick={handleStopTimer}
+                                    disabled={stopTimer.isPending}
+                                    className="px-8 py-4 bg-slate-900 text-white rounded-full transition-all font-black text-sm shadow-xl hover:bg-black border border-slate-700 flex items-center gap-2.5 disabled:opacity-60 uppercase tracking-widest"
+                                >
+                                    <Square className="w-4 h-4 fill-current" />
+                                    Stoppen
+                                </button>
+                            </>
+                        )}
+                    </div>
 
-                        <div className="h-6">
+                    {/* Status indicator */}
+                    <div className="h-5 flex items-center justify-center">
+                        <AnimatePresence mode="wait">
                             {isActive && !isPaused && (
-                                <p className="text-emerald-500 font-bold text-sm animate-pulse flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                <motion.p
+                                    key="working"
+                                    initial={{ opacity: 0, y: 4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -4 }}
+                                    className="text-emerald-500 font-black text-xs animate-pulse flex items-center gap-2 uppercase tracking-widest"
+                                >
+                                    <span className="w-2 h-2 bg-emerald-500 rounded-full" />
                                     Arbeitsmodus aktiv
-                                </p>
+                                </motion.p>
                             )}
                             {isPaused && (
-                                <p className="text-orange-500 font-bold text-sm animate-pulse flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                                <motion.p
+                                    key="paused"
+                                    initial={{ opacity: 0, y: 4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -4 }}
+                                    className="text-orange-500 font-black text-xs animate-pulse flex items-center gap-2 uppercase tracking-widest"
+                                >
+                                    <span className="w-2 h-2 bg-orange-500 rounded-full" />
                                     Pausenmodus aktiv
-                                </p>
+                                </motion.p>
                             )}
+                        </AnimatePresence>
+                    </div>
+                </SpotlightCard>
+
+                {/* Side Stats */}
+                <div className="flex flex-col gap-4">
+                    {/* Today's progress */}
+                    <SpotlightCard
+                        className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-[1.8rem] p-6 shadow-sm"
+                        spotlightColor="rgba(128, 0, 64, 0.04)"
+                    >
+                        <div className="flex items-center gap-2.5 mb-4">
+                            <div className="p-2 rounded-xl bg-rose-50 shrink-0">
+                                <Clock className="w-4 h-4 text-rose-600" />
+                            </div>
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Heute</h3>
                         </div>
+                        <div className="text-3xl font-black text-slate-900 tabular-nums">{formatDuration(todayWorkSeconds)}</div>
+                        <p className="text-xs text-slate-400 font-semibold mt-1 mb-4">Soll: 8 Std. 0 Min.</p>
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <motion.div
+                                className="h-full bg-linear-to-r from-[#800040] to-[#E60045] rounded-full"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${todayPct}%` }}
+                                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
+                            />
+                        </div>
+                        <p className="text-[10px] font-black text-slate-400 mt-2 text-right tabular-nums">{Math.round(todayPct)}% erreicht</p>
                     </SpotlightCard>
 
-                    <div className="space-y-6">
-                        <SpotlightCard className="p-8 bg-white/90 backdrop-blur-md border border-slate-100 shadow-sm rounded-[2rem]">
-                            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                <History className="w-5 h-5 text-[#800040]" />
-                                Heute
-                            </h3>
-                            <div className="text-4xl font-black text-slate-900">{formatDuration(todayWorkSeconds)}</div>
-                            <p className="text-sm text-slate-500 font-medium mt-1">Soll: 8 Std. 0 Min.</p>
-                            <div className="w-full h-2.5 bg-slate-100 rounded-full mt-6 overflow-hidden">
-                                <div
-                                    className="h-full bg-[#800040] transition-all duration-1000"
-                                    style={{ width: `${Math.min((todayWorkSeconds / (8 * 3600)) * 100, 100)}%` }}
-                                ></div>
+                    {/* Week total */}
+                    <SpotlightCard
+                        className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-[1.8rem] p-6 shadow-sm"
+                        spotlightColor="rgba(128, 0, 64, 0.04)"
+                    >
+                        <div className="flex items-center gap-2.5 mb-4">
+                            <div className="p-2 rounded-xl bg-blue-50 shrink-0">
+                                <History className="w-4 h-4 text-blue-600" />
                             </div>
-                        </SpotlightCard>
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Woche gesamt</h3>
+                        </div>
+                        <div className="text-3xl font-black text-slate-900 tabular-nums">{formatDuration(weekWorkSeconds)}</div>
+                        <p className="text-xs text-slate-400 font-semibold mt-1">Letzte 7 Tage</p>
+                    </SpotlightCard>
+                </div>
+            </motion.div>
 
-                        <SpotlightCard className="p-8 bg-white/90 backdrop-blur-md border border-slate-100 shadow-sm rounded-[2rem]">
-                            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
-                                Woche gesamt
-                            </h3>
-                            <div className="text-4xl font-black text-slate-900">{formatDuration(weekWorkSeconds)}</div>
-                            <p className="text-sm text-slate-500 font-medium mt-1">Letzte 7 Tage</p>
-                        </SpotlightCard>
+            {/* ── Entries List ── */}
+            <motion.div {...fadeUp(0.15)} className="flex flex-col gap-4">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px]">
+                        <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
+                            <History className="w-4 h-4 text-[#800040]" />
+                        </div>
                     </div>
+                    <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Letzte Einträge</h2>
+                    {totalEntries > 0 && (
+                        <span className="bg-[#800040] text-white text-[10px] rounded-full px-2 py-0.5 min-w-[20px] text-center leading-tight font-black">
+                            {totalEntries}
+                        </span>
+                    )}
                 </div>
 
-                {/* Entries List */}
-                <div className="space-y-4">
-                    <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 ml-1">
-                        <History className="w-5 h-5 text-[#800040]" />
-                        Letzte Einträge
-                    </h2>
-
-                    <div className="space-y-3">
-                        {entriesLoading ? (
-                            <div className="py-20 text-center text-slate-400">Lädt Einträge...</div>
-                        ) : entries && entries.length > 0 ? (
-                            entries.map((entry) => (
+                <div className="flex flex-col gap-3">
+                    {entriesLoading ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-3">
+                            <div className="relative w-12 h-12">
+                                <div className="absolute inset-0 border-4 border-[#800040]/10 rounded-full" />
+                                <div className="absolute inset-0 border-4 border-t-[#800040] rounded-full animate-spin" />
+                            </div>
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Lade Einträge...</p>
+                        </div>
+                    ) : entries && entries.length > 0 ? (
+                        entries.map((entry, index) => (
+                            <motion.div
+                                key={entry.id}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: Math.min(index * 0.04, 0.3), duration: 0.2 }}
+                            >
                                 <SpotlightCard
-                                    key={entry.id}
-                                    className="p-5 bg-white/80 backdrop-blur-sm border border-slate-100 rounded-[1.5rem] flex items-center justify-between hover:shadow-lg hover:border-slate-200 transition-all group"
+                                    className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-[1.8rem] p-5 flex items-center justify-between hover:shadow-lg transition-shadow group"
                                     spotlightColor="rgba(128, 0, 64, 0.03)"
                                 >
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-[#800040] transition-colors shadow-sm">
-                                            <Clock className="w-6 h-6" />
+                                    <div className="flex items-center gap-4 min-w-0">
+                                        <div className="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-[#800040] transition-colors shadow-sm shrink-0">
+                                            <Clock className="w-5 h-5" />
                                         </div>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-bold text-slate-900">
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-black text-slate-900 text-sm">
                                                     {format(new Date(entry.startTime), 'dd. MMM yyyy', { locale: de })}
                                                 </span>
-                                                <ChevronRight className="w-4 h-4 text-slate-300" />
-                                                <span className="text-sm font-semibold text-[#800040]">
+                                                <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                                                <span className="text-sm font-black text-[#800040] truncate">
                                                     {entry.project?.name || 'Kein Projekt'}
                                                 </span>
                                             </div>
-                                            <p className="text-slate-400 text-sm mt-0.5 line-clamp-1 italic">
+                                            <p className="text-slate-400 text-xs mt-0.5 line-clamp-1 italic">
                                                 {entry.description || 'Keine Beschreibung'}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-10">
+                                    <div className="flex items-center gap-6 shrink-0 ml-4">
                                         <div className="text-right">
-                                            <div className="text-xl font-black text-slate-900">
+                                            <div className="text-base font-black text-slate-900 tabular-nums">
                                                 {formatDuration(entry.duration)}
                                             </div>
                                             {entry.pauseDuration > 0 && (
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">
                                                     inkl. {formatDuration(entry.pauseDuration)} Pause
                                                 </p>
                                             )}
                                         </div>
 
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5">
                                             <button
                                                 onClick={() => handleEdit(entry)}
-                                                className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
+                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
                                             >
-                                                <Edit2 className="w-4.5 h-4.5" />
+                                                <Edit2 className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(entry.id)}
-                                                className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
+                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
                                             >
-                                                <Trash2 className="w-4.5 h-4.5" />
+                                                <Trash2 className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </div>
                                 </SpotlightCard>
-                            ))
-                        ) : (
-                            <div className="bg-white/50 backdrop-blur-sm rounded-[2.5rem] border border-slate-100 border-dashed py-24 text-center">
-                                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
-                                    <History className="w-10 h-10" />
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-2">Keine Einträge vorhanden</h3>
-                                <p className="text-slate-500 text-sm max-w-xs mx-auto font-medium">
-                                    Starte den Timer oder erfasse deine Arbeitszeit manuell, um deine Statistiken zu füllen.
-                                </p>
+                            </motion.div>
+                        ))
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-20 text-center">
+                            <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mb-5 border-2 border-dashed border-slate-200">
+                                <History className="w-8 h-8 text-slate-300" />
                             </div>
-                        )}
-                    </div>
+                            <h3 className="text-lg font-black uppercase italic tracking-tight text-slate-900">Keine Einträge vorhanden</h3>
+                            <p className="text-slate-500 mt-2 text-sm max-w-xs mx-auto">
+                                Starte den Timer oder erfasse deine Arbeitszeit manuell, um deine Statistiken zu füllen.
+                            </p>
+                        </div>
+                    )}
                 </div>
-            </div>
+            </motion.div>
 
             <TimeEntryModal
                 isOpen={showModal}

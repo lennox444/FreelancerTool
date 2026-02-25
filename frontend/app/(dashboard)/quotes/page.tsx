@@ -15,6 +15,7 @@ import {
   Check, Hash, Folder, AlertTriangle, TrendingUp, ChevronRight, ChevronDown,
 } from 'lucide-react';
 import apiClient from '@/lib/api/client';
+import { motion, AnimatePresence } from 'framer-motion';
 import PixelBlast from '@/components/landing/PixelBlast';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import StarBorder from '@/components/ui/StarBorder';
@@ -34,6 +35,14 @@ function isExpired(q: Quote) {
 }
 function daysUntil(dateStr: string) {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
+}
+
+function fadeUp(delay = 0) {
+  return {
+    initial: { opacity: 0, y: 14 },
+    animate: { opacity: 1, y: 0 },
+    transition: { type: 'spring' as const, stiffness: 320, damping: 26, delay },
+  };
 }
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -93,7 +102,7 @@ function QuoteStatusPicker({ status, onSelect, loading }: {
                   'w-full flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors text-left',
                   val === status ? 'bg-slate-50 text-slate-400 cursor-default' : 'text-slate-700 hover:bg-slate-50',
                 )}>
-                <span className={cn('w-2 h-2 rounded-full flex-shrink-0', c.dot)} />
+                <span className={cn('w-2 h-2 rounded-full shrink-0', c.dot)} />
                 {c.label}
                 {val === status && <span className="ml-auto text-[10px] text-slate-400">Aktuell</span>}
               </button>
@@ -115,39 +124,6 @@ const STATUS_STYLES: Record<QuoteStatus, string> = {
   REJECTED: 'bg-red-50 text-red-600 border-red-200',
   CONVERTED: 'bg-purple-50 text-purple-600 border-purple-200',
 };
-
-// ─── Stats bar ────────────────────────────────────────────────────────────────
-
-function StatsBar({ quotes }: { quotes: Quote[] }) {
-  const total = quotes.length;
-  const accepted = quotes.filter(q => q.status === QuoteStatus.ACCEPTED).length;
-  const open = quotes.filter(q => [QuoteStatus.DRAFT, QuoteStatus.SENT].includes(q.status)).length;
-  const totalValue = quotes.reduce((s, q) => s + Number(q.amount), 0);
-  const convRate = total > 0 ? Math.round((accepted / total) * 100) : 0;
-
-  const tiles = [
-    { label: 'Gesamt', value: `${total} Angebote`, icon: ClipboardList, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-    { label: 'Offen', value: `${open} aktiv`, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
-    { label: 'Gesamtwert', value: fmt(totalValue), icon: Euro, color: 'text-[#800040]', bg: 'bg-[#800040]/5', border: 'border-[#800040]/10' },
-    { label: 'Conversion', value: `${convRate}%`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      {tiles.map(({ label, value, icon: Icon, color, bg, border }) => (
-        <div key={label} className={cn('flex items-center gap-4 p-4 rounded-2xl border', bg, border)}>
-          <div className={cn('p-2.5 rounded-xl bg-white/80', color)}>
-            <Icon className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</p>
-            <p className={cn('text-lg font-bold', color)}>{value}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -191,6 +167,20 @@ export default function QuotesPage() {
     const matchProject = !filterProjectId || (q as any).projectId === filterProjectId;
     return matchSearch && matchProject;
   }), [allQuotes, search, filterProjectId]);
+
+  // Stats
+  const total = allQuotes.length;
+  const accepted = allQuotes.filter(q => q.status === QuoteStatus.ACCEPTED).length;
+  const openCount = allQuotes.filter(q => [QuoteStatus.DRAFT, QuoteStatus.SENT].includes(q.status)).length;
+  const totalValue = allQuotes.reduce((s, q) => s + Number(q.amount), 0);
+  const convRate = total > 0 ? Math.round((accepted / total) * 100) : 0;
+
+  const statTiles = [
+    { label: 'Gesamt', value: `${total} Angebote`, icon: ClipboardList, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+    { label: 'Offen', value: `${openCount} aktiv`, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
+    { label: 'Gesamtwert', value: fmt(totalValue), icon: Euro, color: 'text-[#800040]', bg: 'bg-[#800040]/5', border: 'border-[#800040]/10' },
+    { label: 'Conversion', value: `${convRate}%`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+  ];
 
   // ─── Mutations ──────────────────────────────────────────────────────────────
 
@@ -311,195 +301,230 @@ export default function QuotesPage() {
   return (
     <div className="relative isolate min-h-full p-4 md:p-6">
       {/* Background */}
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none rounded-3xl">
-        <div className="absolute inset-0 w-full h-full opacity-30">
-          <PixelBlast variant="square" pixelSize={6} color="#800040" patternScale={4}
-            patternDensity={0.5} pixelSizeJitter={0.5} enableRipples rippleSpeed={0.3}
-            rippleThickness={0.1} speed={0.2} transparent />
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#800040]/8 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-violet-500/4 rounded-full blur-3xl" />
+        <div className="absolute inset-0 opacity-20">
+          <PixelBlast variant="square" pixelSize={5} color="#800040" patternScale={5} patternDensity={0.4} pixelSizeJitter={0.5} enableRipples rippleSpeed={0.2} rippleThickness={0.08} speed={0.15} transparent />
         </div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.8)_0%,rgba(248,250,252,0.95)_100%)]" />
+        <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white/80 to-slate-50/50" />
       </div>
 
-      {/* Header */}
-      <div className="mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#800040]/10 rounded-xl">
-              <ClipboardList className="w-7 h-7 text-[#800040]" />
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <motion.div {...fadeUp(0)} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
+                <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
+                  <ClipboardList className="w-4 h-4 text-[#800040]" />
+                </div>
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Freelancer Tool</span>
             </div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Angebote</h1>
+            <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">Angebote</h1>
+            <p className="text-slate-500 text-sm mt-0.5">Erstelle und verwalte deine Angebote professionell.</p>
           </div>
-          <div className="hidden md:block h-8 w-[2px] bg-slate-200 rounded-full" />
-          <p className="text-slate-500 font-medium">Erstelle und verwalte deine Angebote professionell.</p>
-          {filterProjectId && (
-            <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#800040]/10 text-[#800040] rounded-full text-sm font-semibold border border-[#800040]/20">
-              Projektfilter aktiv
-              <button onClick={() => setFilterProjectId('')} className="hover:opacity-70"><X className="w-3.5 h-3.5" /></button>
-            </span>
-          )}
-        </div>
-        <StarBorder onClick={() => setShowCreateForm(true)} className="rounded-full group" color="#ff3366" speed="4s" thickness={3}>
-          <div className="px-6 h-12 flex items-center justify-center rounded-full transition-all font-semibold text-sm shadow-lg gap-2 bg-[#800040] hover:bg-[#600030] text-white shadow-pink-900/20">
-            <Plus className="w-5 h-5" /><span>Neues Angebot</span>
+          <div className="flex items-center gap-3">
+            {filterProjectId && (
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#800040]/10 text-[#800040] rounded-full text-xs font-black uppercase tracking-widest border border-[#800040]/20">
+                Projektfilter aktiv
+                <button onClick={() => setFilterProjectId('')} className="hover:opacity-70"><X className="w-3.5 h-3.5" /></button>
+              </span>
+            )}
+            <StarBorder onClick={() => setShowCreateForm(true)} color="#ff3366" speed="4s" thickness={2}>
+              <div className="px-5 h-11 flex items-center gap-2 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-900/20">
+                <Plus className="w-4 h-4" /><span>Neues Angebot</span>
+              </div>
+            </StarBorder>
           </div>
-        </StarBorder>
-      </div>
+        </motion.div>
 
-      {/* Stats */}
-      {allQuotes.length > 0 && <StatsBar quotes={allQuotes} />}
+        {/* Stats tiles */}
+        {allQuotes.length > 0 && (
+          <motion.div {...fadeUp(0.05)} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {statTiles.map((tile, i) => (
+              <motion.div key={tile.label} {...fadeUp(i * 0.04)} className={cn('flex items-center gap-3 p-4 rounded-2xl border', tile.bg, tile.border)}>
+                <div className={cn('p-2 rounded-xl bg-white/80 shrink-0', tile.color)}>
+                  <tile.icon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate">{tile.label}</p>
+                  <p className="font-black text-slate-900 tabular-nums truncate">{tile.value}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
 
-      {/* Filters */}
-      <div className="mb-8 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#800040] transition-colors" />
-          <input type="text" placeholder="Nach Kunde, Beschreibung, Angebotsnr. suchen…" value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all text-slate-700 shadow-sm" />
-        </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)}
-          className="px-6 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm appearance-none min-w-[180px]">
-          <option value="">Alle Status</option>
-          {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
-      </div>
+        {/* Filters */}
+        <motion.div {...fadeUp(0.1)} className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#800040] transition-colors" />
+            <input
+              type="text"
+              placeholder="Nach Kunde, Beschreibung, Angebotsnr. suchen…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-11 pr-4 h-11 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all text-slate-700 text-sm shadow-sm"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={e => setFilterStatus(e.target.value as any)}
+            className="px-5 h-11 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm min-w-[160px]"
+          >
+            <option value="">Alle Status</option>
+            {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </motion.div>
 
-      {/* Grid */}
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <div className="relative w-16 h-16">
-            <div className="absolute inset-0 border-4 border-[#800040]/10 rounded-full" />
-            <div className="absolute inset-0 border-4 border-t-[#800040] rounded-full animate-spin" />
+        {/* Content */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <div className="relative w-12 h-12">
+              <div className="absolute inset-0 border-4 border-[#800040]/10 rounded-full" />
+              <div className="absolute inset-0 border-4 border-t-[#800040] rounded-full animate-spin" />
+            </div>
+            <p className="text-slate-500 text-sm font-black uppercase tracking-widest animate-pulse">Angebote werden geladen…</p>
           </div>
-          <p className="text-slate-500 font-medium animate-pulse">Angebote werden geladen…</p>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center bg-white/50 backdrop-blur-sm rounded-[2rem] border border-slate-100 border-dashed">
-          <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
-            <ClipboardList className="w-10 h-10" />
-          </div>
-          <h3 className="text-xl font-bold text-slate-900 mb-2">Keine Angebote gefunden</h3>
-          <p className="text-slate-500 max-w-sm mx-auto mb-8">
-            {search || filterStatus || filterProjectId ? 'Passe deine Filter an.' : 'Erstelle dein erstes Angebot, um neue Aufträge zu gewinnen.'}
-          </p>
-          {!search && !filterStatus && (
-            <button onClick={() => setShowCreateForm(true)}
-              className="px-8 h-12 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-semibold text-sm shadow-lg shadow-pink-900/20">
-              Erstes Angebot erstellen
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(q => {
-            const expired = isExpired(q);
-            const days = daysUntil(q.validUntil);
-            const expiringSoon = !expired && days <= 7 && [QuoteStatus.DRAFT, QuoteStatus.SENT].includes(q.status);
-            return (
-              <SpotlightCard
-                key={q.id}
-                onClick={() => openDrawer(q)}
-                className={cn(
-                  'bg-white/90 backdrop-blur-md border shadow-sm p-6 rounded-2xl hover:shadow-md transition-all group flex flex-col cursor-pointer',
-                  selectedQuote?.id === q.id ? 'border-[#800040]/40 ring-2 ring-[#800040]/10'
-                    : expired ? 'border-red-200'
-                      : expiringSoon ? 'border-amber-200'
-                        : 'border-slate-100',
-                )}
-                spotlightColor="rgba(128,0,64,0.05)"
-              >
-                {/* Top row */}
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex flex-col gap-1.5">
-                    <QuoteStatusPicker
-                      status={q.status}
-                      onSelect={s => statusMutation.mutate({ id: q.id, status: s })}
-                      loading={statusMutation.isPending}
-                    />
-                    {q.quoteNumber && (
-                      <span className="flex items-center gap-1 text-xs text-slate-400 font-mono">
-                        <Hash className="w-3 h-3" />{q.quoteNumber}
-                      </span>
+        ) : filtered.length === 0 ? (
+          <motion.div {...fadeUp(0.15)}>
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mb-5 border-2 border-dashed border-slate-200">
+                <ClipboardList className="w-8 h-8 text-slate-300" />
+              </div>
+              <h3 className="text-lg font-black uppercase italic tracking-tight text-slate-900">Keine Angebote</h3>
+              <p className="text-slate-500 mt-2 text-sm max-w-xs mx-auto">
+                {search || filterStatus || filterProjectId ? 'Passe deine Filter an.' : 'Erstelle dein erstes Angebot, um neue Aufträge zu gewinnen.'}
+              </p>
+              {!search && !filterStatus && (
+                <button
+                  onClick={() => setShowCreateForm(true)}
+                  className="mt-6 px-6 h-10 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-900/20"
+                >
+                  Erstes Angebot erstellen
+                </button>
+              )}
+            </div>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((q, index) => {
+              const expired = isExpired(q);
+              const days = daysUntil(q.validUntil);
+              const expiringSoon = !expired && days <= 7 && [QuoteStatus.DRAFT, QuoteStatus.SENT].includes(q.status);
+              return (
+                <motion.div
+                  key={q.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(index * 0.04, 0.3), duration: 0.2 }}
+                >
+                  <SpotlightCard
+                    onClick={() => openDrawer(q)}
+                    className={cn(
+                      'bg-white/95 backdrop-blur-xl border rounded-[1.8rem] p-6 hover:shadow-lg transition-all group flex flex-col cursor-pointer h-full',
+                      selectedQuote?.id === q.id ? 'border-[#800040]/40 ring-2 ring-[#800040]/10 shadow-md'
+                        : expired ? 'border-red-200 shadow-sm'
+                          : expiringSoon ? 'border-amber-200 shadow-sm'
+                            : 'border-slate-200/80 shadow-sm',
                     )}
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className={cn('text-xl font-bold transition-colors', expired ? 'text-red-600' : 'text-slate-900 group-hover:text-[#800040]')}>
-                      {fmt(Number(q.amount))}
-                    </span>
-                    <button
-                      onClick={e => { e.stopPropagation(); handleDelete(q); }}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                      title="Angebot löschen"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 space-y-3">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 line-clamp-1">{q.customer?.name}</h3>
-                    <p className="text-sm text-slate-500 line-clamp-2 mt-0.5">{q.description}</p>
-                  </div>
-                  {(q as any).project && (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                      <Folder className="w-3.5 h-3.5" />
-                      <span className="truncate">{(q as any).project.name}</span>
+                    spotlightColor="rgba(128,0,64,0.05)"
+                  >
+                    {/* Top row */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex flex-col gap-1.5">
+                        <QuoteStatusPicker
+                          status={q.status}
+                          onSelect={s => statusMutation.mutate({ id: q.id, status: s })}
+                          loading={statusMutation.isPending}
+                        />
+                        {q.quoteNumber && (
+                          <span className="flex items-center gap-1 text-[10px] text-slate-400 font-mono font-black uppercase tracking-widest">
+                            <Hash className="w-3 h-3" />{q.quoteNumber}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className={cn('text-xl font-black tracking-tight transition-colors', expired ? 'text-red-600' : 'text-slate-900 group-hover:text-[#800040]')}>
+                          {fmt(Number(q.amount))}
+                        </span>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleDelete(q); }}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                          title="Angebot löschen"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                  )}
-                  <div className="pt-3 border-t border-slate-50 space-y-1.5">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className={cn('flex items-center gap-1.5', expired ? 'text-red-500 font-semibold' : expiringSoon ? 'text-amber-500 font-semibold' : 'text-slate-500')}>
-                        <Clock className="w-3.5 h-3.5" />
-                        {expired ? 'Abgelaufen' : expiringSoon ? `Läuft ab in ${days} ${days === 1 ? 'Tag' : 'Tage'}` : 'Gültig bis'}
-                      </span>
-                      <span className={cn('font-semibold text-sm', expired ? 'text-red-600' : expiringSoon ? 'text-amber-600' : 'text-slate-700')}>
-                        {fmtDate(q.validUntil)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Action row */}
-                <div className="mt-4 pt-4 flex gap-2 border-t border-slate-50 flex-wrap" onClick={e => e.stopPropagation()}>
-                  {q.status === QuoteStatus.DRAFT && (
-                    <button onClick={() => sendMutation.mutate(q.id)} disabled={sendMutation.isPending}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold border border-blue-100">
-                      <Send className="w-3.5 h-3.5" /> Senden
-                    </button>
-                  )}
-                  {q.status === QuoteStatus.SENT && (
-                    <>
-                      <button onClick={() => statusMutation.mutate({ id: q.id, status: QuoteStatus.ACCEPTED })}
-                        className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold border border-emerald-100">
-                        <CheckCircle className="w-3.5 h-3.5" /> Angenommen
+                    {/* Content */}
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900 line-clamp-1 uppercase tracking-tight">{q.customer?.name}</h3>
+                        <p className="text-sm text-slate-500 line-clamp-2 mt-1 leading-relaxed">{q.description}</p>
+                      </div>
+                      {(q as any).project && (
+                        <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                          <Folder className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{(q as any).project.name}</span>
+                        </div>
+                      )}
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-sm">
+                        <span className={cn('flex items-center gap-1.5 text-xs font-black uppercase tracking-widest', expired ? 'text-red-500' : expiringSoon ? 'text-amber-500' : 'text-slate-400')}>
+                          <Clock className="w-3.5 h-3.5" />
+                          {expired ? 'Abgelaufen' : expiringSoon ? `${days}d` : 'Gültig bis'}
+                        </span>
+                        <span className={cn('font-black text-xs tabular-nums', expired ? 'text-red-600' : expiringSoon ? 'text-amber-600' : 'text-slate-700')}>
+                          {fmtDate(q.validUntil)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action row */}
+                    <div className="mt-4 pt-4 flex gap-2 border-t border-slate-100 flex-wrap" onClick={e => e.stopPropagation()}>
+                      {q.status === QuoteStatus.DRAFT && (
+                        <button onClick={() => sendMutation.mutate(q.id)} disabled={sendMutation.isPending}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all text-[11px] font-black uppercase tracking-widest border border-blue-100">
+                          <Send className="w-3.5 h-3.5" /> Senden
+                        </button>
+                      )}
+                      {q.status === QuoteStatus.SENT && (
+                        <>
+                          <button onClick={() => statusMutation.mutate({ id: q.id, status: QuoteStatus.ACCEPTED })}
+                            className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all text-[11px] font-black uppercase tracking-widest border border-emerald-100">
+                            <CheckCircle className="w-3.5 h-3.5" /> Angenommen
+                          </button>
+                          <button onClick={() => statusMutation.mutate({ id: q.id, status: QuoteStatus.REJECTED })}
+                            className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all text-[11px] font-black uppercase tracking-widest border border-red-100">
+                            <Ban className="w-3.5 h-3.5" /> Abgelehnt
+                          </button>
+                        </>
+                      )}
+                      {(q.status === QuoteStatus.ACCEPTED || q.status === QuoteStatus.SENT) && !q.convertedToInvoiceId && (
+                        <button onClick={() => convertMutation.mutate(q.id)} disabled={convertMutation.isPending}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white transition-all text-[11px] font-black uppercase tracking-widest border border-purple-100">
+                          <ArrowRight className="w-3.5 h-3.5" /> Rechnung
+                        </button>
+                      )}
+                      <button onClick={() => handleDownloadPdf(q)}
+                        className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-100" title="PDF">
+                        <Download className="w-4 h-4" />
                       </button>
-                      <button onClick={() => statusMutation.mutate({ id: q.id, status: QuoteStatus.REJECTED })}
-                        className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all text-xs font-bold border border-red-100">
-                        <Ban className="w-3.5 h-3.5" /> Abgelehnt
+                      <button onClick={() => emailMutation.mutate(q.id)}
+                        className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-100" title="E-Mail">
+                        <Mail className="w-4 h-4" />
                       </button>
-                    </>
-                  )}
-                  {(q.status === QuoteStatus.ACCEPTED || q.status === QuoteStatus.SENT) && !q.convertedToInvoiceId && (
-                    <button onClick={() => convertMutation.mutate(q.id)} disabled={convertMutation.isPending}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white transition-all text-xs font-bold border border-purple-100">
-                      <ArrowRight className="w-3.5 h-3.5" /> → Rechnung
-                    </button>
-                  )}
-                  <button onClick={() => handleDownloadPdf(q)}
-                    className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-100" title="PDF">
-                    <Download className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => emailMutation.mutate(q.id)}
-                    className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-100" title="E-Mail">
-                    <Mail className="w-4 h-4" />
-                  </button>
-                </div>
-              </SpotlightCard>
-            );
-          })}
-        </div>
-      )}
+                    </div>
+                  </SpotlightCard>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* ─── Detail / Edit Drawer ──────────────────────────────────────────── */}
       {selectedQuote && (
@@ -509,26 +534,26 @@ export default function QuotesPage() {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 bg-[#800040]/10 rounded-xl flex-shrink-0">
+                <div className="p-2 bg-[#800040]/10 rounded-xl shrink-0">
                   <ClipboardList className="w-5 h-5 text-[#800040]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-900 text-lg leading-tight truncate">
+                  <p className="font-black text-slate-900 text-base uppercase tracking-tight leading-tight truncate">
                     {selectedQuote.quoteNumber ?? 'Angebot'}
                   </p>
                   <p className="text-sm text-slate-500 truncate">{selectedQuote.customer?.name}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 {drawerMode === 'view' && selectedQuote.status !== QuoteStatus.CONVERTED && (
                   <button onClick={() => startEdit(selectedQuote)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-[#800040] hover:bg-[#600030] text-white rounded-full text-sm font-semibold transition-colors">
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-[#800040] hover:bg-[#600030] text-white rounded-full text-xs font-black uppercase tracking-widest transition-colors">
                     <Edit2 className="w-3.5 h-3.5" /> Bearbeiten
                   </button>
                 )}
                 {drawerMode === 'edit' && (
                   <button onClick={() => setDrawerMode('view')}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-sm font-semibold transition-colors">
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-xs font-black uppercase tracking-widest transition-colors">
                     <X className="w-3.5 h-3.5" /> Abbrechen
                   </button>
                 )}
@@ -576,25 +601,44 @@ export default function QuotesPage() {
       )}
 
       {/* Create Modal */}
-      {showCreateForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setShowCreateForm(false)} />
-          <SpotlightCard className="bg-white border border-slate-200 rounded-3xl p-8 w-full max-w-lg shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto" spotlightColor="rgba(128,0,64,0.05)">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-900">Neues Angebot</h2>
-              <button onClick={() => setShowCreateForm(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                <X className="w-5 h-5 text-slate-400" />
-              </button>
-            </div>
-            <CreateQuoteForm
-              customers={customers}
-              onSubmit={(data: any) => createMutation.mutate(data)}
-              onCancel={() => setShowCreateForm(false)}
-              isLoading={createMutation.isPending}
+      <AnimatePresence>
+        {showCreateForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+              onClick={() => setShowCreateForm(false)}
             />
-          </SpotlightCard>
-        </div>
-      )}
+            <motion.div
+              initial={{ opacity: 0, y: -12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+              className="relative z-10 w-full max-w-lg"
+            >
+              <SpotlightCard className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-[1.8rem] p-8 shadow-xl max-h-[90vh] overflow-y-auto" spotlightColor="rgba(128,0,64,0.05)">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-black uppercase italic tracking-tight text-slate-900">Neues Angebot</h2>
+                    <p className="text-sm text-slate-500 mt-0.5">Alle Pflichtfelder ausfüllen</p>
+                  </div>
+                  <button onClick={() => setShowCreateForm(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                    <X className="w-5 h-5 text-slate-400" />
+                  </button>
+                </div>
+                <CreateQuoteForm
+                  customers={customers}
+                  onSubmit={(data: any) => createMutation.mutate(data)}
+                  onCancel={() => setShowCreateForm(false)}
+                  isLoading={createMutation.isPending}
+                />
+              </SpotlightCard>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -621,7 +665,7 @@ function QuoteDrawerView({ q, onSend, onAccept, onReject, onConvert, onDownload,
         <div className="flex items-center justify-between mb-3">
           <QuoteStatusPicker status={q.status} onSelect={onStatusChange} loading={pending.status} />
           {q.quoteNumber && (
-            <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
+            <span className="text-xs font-mono text-slate-400 flex items-center gap-1 font-black">
               <Hash className="w-3 h-3" />{q.quoteNumber}
             </span>
           )}
@@ -630,7 +674,7 @@ function QuoteDrawerView({ q, onSend, onAccept, onReject, onConvert, onDownload,
           {fmt(Number(q.amount))}
         </p>
         {(expired || expiringSoon) && (
-          <p className={cn('text-sm font-semibold mt-2 flex items-center gap-1.5', expired ? 'text-red-600' : 'text-amber-600')}>
+          <p className={cn('text-sm font-black mt-2 flex items-center gap-1.5 uppercase tracking-widest text-[11px]', expired ? 'text-red-600' : 'text-amber-600')}>
             <AlertTriangle className="w-4 h-4" />
             {expired ? `Abgelaufen seit ${fmtDate(q.validUntil)}` : `Läuft ab in ${days} Tag${days !== 1 ? 'en' : ''}`}
           </p>
@@ -642,7 +686,7 @@ function QuoteDrawerView({ q, onSend, onAccept, onReject, onConvert, onDownload,
         {q.customer && (
           <button onClick={() => onNavigate(`/customers?id=${q.customer!.id}`)}
             className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-left hover:border-[#800040]/30 hover:bg-[#800040]/5 transition-all group">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
               <User className="w-3 h-3" /> Kunde <ArrowUpRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100" />
             </p>
             <p className="text-sm font-bold text-slate-900 truncate">{q.customer.name}</p>
@@ -652,18 +696,18 @@ function QuoteDrawerView({ q, onSend, onAccept, onReject, onConvert, onDownload,
         {(q as any).project && (
           <button onClick={() => onNavigate(`/projects?id=${(q as any).project.id}`)}
             className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-left hover:border-[#800040]/30 hover:bg-[#800040]/5 transition-all group">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
               <Folder className="w-3 h-3" /> Projekt <ArrowUpRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100" />
             </p>
             <p className="text-sm font-bold text-slate-900 truncate">{(q as any).project.name}</p>
           </button>
         )}
         <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1"><FileText className="w-3 h-3" /> Erstellt</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1"><FileText className="w-3 h-3" /> Erstellt</p>
           <p className="text-sm font-bold text-slate-900">{fmtDate(q.issueDate)}</p>
         </div>
         <div className={cn('border rounded-xl p-3.5', expired ? 'bg-red-50 border-red-100' : expiringSoon ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100')}>
-          <p className={cn('text-xs font-semibold uppercase tracking-wide mb-1 flex items-center gap-1', expired ? 'text-red-400' : expiringSoon ? 'text-amber-400' : 'text-slate-400')}>
+          <p className={cn('text-[10px] font-black uppercase tracking-widest mb-1.5 flex items-center gap-1', expired ? 'text-red-400' : expiringSoon ? 'text-amber-400' : 'text-slate-400')}>
             <Clock className="w-3 h-3" /> Gültig bis
           </p>
           <p className={cn('text-sm font-bold', expired ? 'text-red-700' : expiringSoon ? 'text-amber-700' : 'text-slate-900')}>{fmtDate(q.validUntil)}</p>
@@ -672,7 +716,7 @@ function QuoteDrawerView({ q, onSend, onAccept, onReject, onConvert, onDownload,
 
       {/* Description */}
       <div>
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
           <FileText className="w-3 h-3" /> Leistungsbeschreibung
         </p>
         <p className="text-sm text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-4 whitespace-pre-wrap leading-relaxed">{q.description}</p>
@@ -681,7 +725,7 @@ function QuoteDrawerView({ q, onSend, onAccept, onReject, onConvert, onDownload,
       {/* Notes */}
       {q.notes && (
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Hinweise</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Hinweise</p>
           <p className="text-sm text-slate-600 bg-amber-50/50 border border-amber-100 rounded-xl p-4 whitespace-pre-wrap leading-relaxed">{q.notes}</p>
         </div>
       )}
@@ -690,7 +734,7 @@ function QuoteDrawerView({ q, onSend, onAccept, onReject, onConvert, onDownload,
       {q.convertedToInvoiceId && (
         <button onClick={() => onNavigate('/invoices')}
           className="w-full flex items-center justify-between p-4 bg-purple-50 border border-purple-100 rounded-xl hover:bg-purple-100 transition-colors group">
-          <div className="flex items-center gap-2 text-purple-700 font-semibold text-sm">
+          <div className="flex items-center gap-2 text-purple-700 font-black text-xs uppercase tracking-widest">
             <CheckCircle className="w-4 h-4" /> In Rechnung umgewandelt
           </div>
           <ArrowUpRight className="w-4 h-4 text-purple-400 group-hover:text-purple-700 transition-colors" />
@@ -699,47 +743,47 @@ function QuoteDrawerView({ q, onSend, onAccept, onReject, onConvert, onDownload,
 
       {/* Actions */}
       <div>
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Aktionen</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Aktionen</p>
         <div className="grid grid-cols-2 gap-2">
           {q.status === QuoteStatus.DRAFT && (
             <button onClick={onSend} disabled={pending.send}
-              className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all text-sm font-semibold border border-blue-100 disabled:opacity-50">
-              <Send className="w-4 h-4" /> Als gesendet markieren
+              className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all text-xs font-black uppercase tracking-widest border border-blue-100 disabled:opacity-50">
+              <Send className="w-4 h-4" /> Als gesendet
             </button>
           )}
           {q.status === QuoteStatus.SENT && (
             <>
               <button onClick={onAccept} disabled={pending.status}
-                className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all text-sm font-semibold border border-emerald-100 disabled:opacity-50">
+                className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all text-xs font-black uppercase tracking-widest border border-emerald-100 disabled:opacity-50">
                 <CheckCircle className="w-4 h-4" /> Angenommen
               </button>
               <button onClick={onReject} disabled={pending.status}
-                className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all text-sm font-semibold border border-red-100 disabled:opacity-50">
+                className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all text-xs font-black uppercase tracking-widest border border-red-100 disabled:opacity-50">
                 <XCircle className="w-4 h-4" /> Abgelehnt
               </button>
             </>
           )}
           {(q.status === QuoteStatus.ACCEPTED || q.status === QuoteStatus.SENT) && !q.convertedToInvoiceId && (
             <button onClick={onConvert} disabled={pending.convert}
-              className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white transition-all text-sm font-semibold border border-purple-100 disabled:opacity-50 col-span-2">
+              className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white transition-all text-xs font-black uppercase tracking-widest border border-purple-100 disabled:opacity-50 col-span-2">
               <ArrowRight className="w-4 h-4" /> In Rechnung umwandeln
             </button>
           )}
           <button onClick={onDownload}
-            className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all text-sm font-semibold border border-slate-100">
-            <Download className="w-4 h-4" /> PDF herunterladen
+            className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all text-xs font-black uppercase tracking-widest border border-slate-100">
+            <Download className="w-4 h-4" /> PDF
           </button>
           <button onClick={onEmail} disabled={pending.email}
-            className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all text-sm font-semibold border border-slate-100 disabled:opacity-50">
-            <Mail className="w-4 h-4" /> Per E-Mail senden
+            className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all text-xs font-black uppercase tracking-widest border border-slate-100 disabled:opacity-50">
+            <Mail className="w-4 h-4" /> E-Mail
           </button>
           <button onClick={onDuplicate}
-            className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-amber-50 hover:text-amber-600 transition-all text-sm font-semibold border border-slate-100">
+            className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-amber-50 hover:text-amber-600 transition-all text-xs font-black uppercase tracking-widest border border-slate-100">
             <Copy className="w-4 h-4" /> Duplizieren
           </button>
           {q.status !== QuoteStatus.CONVERTED && (
             <button onClick={onDelete}
-              className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all text-sm font-semibold border border-red-100">
+              className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all text-xs font-black uppercase tracking-widest border border-red-100">
               <Trash2 className="w-4 h-4" /> Löschen
             </button>
           )}
@@ -761,14 +805,14 @@ function QuoteDrawerEdit({ q, data, onChange, onSave, onCancel, pending }: {
   return (
     <div className="space-y-5">
       <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm text-amber-700 font-medium flex items-center gap-2">
-        <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+        <AlertTriangle className="w-4 h-4 shrink-0" />
         {q.status === QuoteStatus.DRAFT
           ? 'Entwurf – alle Felder bearbeitbar.'
           : 'Bereits versendet – Betrag kann nicht mehr geändert werden.'}
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-slate-400" />Status</label>
+        <label className="block text-xs font-black text-slate-700 mb-1.5 flex items-center gap-2 uppercase tracking-widest"><AlertTriangle className="w-4 h-4 text-slate-400" />Status</label>
         <select value={data.status ?? q.status} onChange={e => onChange({ ...data, status: e.target.value })} className={ic}>
           {(Object.entries(QUOTE_STATUS_CONFIG) as [QuoteStatus, typeof QUOTE_STATUS_CONFIG[QuoteStatus]][])
             .filter(([val]) => val !== QuoteStatus.CONVERTED)
@@ -776,35 +820,35 @@ function QuoteDrawerEdit({ q, data, onChange, onSave, onCancel, pending }: {
         </select>
       </div>
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2"><Hash className="w-4 h-4 text-slate-400" />Angebotsnummer</label>
+        <label className="block text-xs font-black text-slate-700 mb-1.5 flex items-center gap-2 uppercase tracking-widest"><Hash className="w-4 h-4 text-slate-400" />Angebotsnummer</label>
         <input type="text" value={data.quoteNumber ?? ''} onChange={e => onChange({ ...data, quoteNumber: e.target.value })}
           placeholder="A-2026-001" className={ic} />
       </div>
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2"><Euro className="w-4 h-4 text-slate-400" />Betrag (€)</label>
+        <label className="block text-xs font-black text-slate-700 mb-1.5 flex items-center gap-2 uppercase tracking-widest"><Euro className="w-4 h-4 text-slate-400" />Betrag (€)</label>
         <input type="number" step="0.01" value={data.amount ?? ''} onChange={e => onChange({ ...data, amount: parseFloat(e.target.value) })}
           disabled={!canEditAmount} className={cn(ic, !canEditAmount && 'opacity-50 cursor-not-allowed')} />
       </div>
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2"><FileText className="w-4 h-4 text-slate-400" />Leistungsbeschreibung</label>
+        <label className="block text-xs font-black text-slate-700 mb-1.5 flex items-center gap-2 uppercase tracking-widest"><FileText className="w-4 h-4 text-slate-400" />Leistungsbeschreibung</label>
         <textarea rows={4} value={data.description ?? ''} onChange={e => onChange({ ...data, description: e.target.value })} className={cn(ic, 'resize-none')} />
       </div>
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" />Gültig bis</label>
+        <label className="block text-xs font-black text-slate-700 mb-1.5 flex items-center gap-2 uppercase tracking-widest"><Clock className="w-4 h-4 text-slate-400" />Gültig bis</label>
         <input type="date" value={data.validUntil ?? ''} onChange={e => onChange({ ...data, validUntil: e.target.value })} className={ic} />
       </div>
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Hinweise <span className="text-slate-400 font-normal">(optional)</span></label>
+        <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-widest">Hinweise <span className="text-slate-400 font-normal normal-case">(optional)</span></label>
         <textarea rows={3} value={data.notes ?? ''} onChange={e => onChange({ ...data, notes: e.target.value })}
           placeholder="Optionale Hinweise..." className={cn(ic, 'resize-none')} />
       </div>
 
       <div className="flex gap-3 pt-2 border-t border-slate-100">
-        <button onClick={onCancel} className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-full text-sm font-semibold transition-all">
+        <button onClick={onCancel} className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-full text-xs font-black uppercase tracking-widest transition-all">
           Abbrechen
         </button>
         <button onClick={onSave} disabled={pending}
-          className="flex-1 py-3 bg-[#800040] hover:bg-[#600030] text-white rounded-full text-sm font-semibold shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 transition-all">
+          className="flex-1 py-3 bg-[#800040] hover:bg-[#600030] text-white rounded-full text-xs font-black uppercase tracking-widest shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 transition-all">
           {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           Speichern
         </button>
@@ -845,12 +889,12 @@ function CreateQuoteForm({ customers, onSubmit, onCancel, isLoading }: any) {
     });
   };
 
-  const sc = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all";
+  const sc = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all text-sm";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Kunde <span className="text-[#800040]">*</span></label>
+        <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-widest">Kunde <span className="text-[#800040]">*</span></label>
         <div className="relative">
           <select value={form.customerId} onChange={e => setForm({ ...form, customerId: e.target.value, projectId: '' })} className={sc} required>
             <option value="">{customers.length === 0 ? 'Keine Kunden vorhanden' : 'Kunde auswählen…'}</option>
@@ -862,7 +906,7 @@ function CreateQuoteForm({ customers, onSubmit, onCancel, isLoading }: any) {
 
       {form.customerId && (
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Projekt <span className="text-slate-400 font-normal">(optional)</span></label>
+          <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-widest">Projekt <span className="text-slate-400 font-normal normal-case">(optional)</span></label>
           <div className="relative">
             <select value={form.projectId} onChange={e => setForm({ ...form, projectId: e.target.value })} className={sc} disabled={loadingProjects}>
               <option value="">{loadingProjects ? 'Lade…' : (projects as any[]).length === 0 ? 'Keine Projekte' : 'Projekt auswählen…'}</option>
@@ -875,41 +919,41 @@ function CreateQuoteForm({ customers, onSubmit, onCancel, isLoading }: any) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Betrag (€) <span className="text-[#800040]">*</span></label>
+          <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-widest">Betrag (€) <span className="text-[#800040]">*</span></label>
           <input type="number" min="0.01" step="0.01" value={form.amount}
             onChange={e => setForm({ ...form, amount: e.target.value })}
             className={sc} placeholder="0,00" required />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Angebotsnummer</label>
+          <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-widest">Angebotsnr.</label>
           <input type="text" value={form.quoteNumber} onChange={e => setForm({ ...form, quoteNumber: e.target.value })}
             className={sc} placeholder="A-2026-001" />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Gültig bis <span className="text-[#800040]">*</span></label>
+        <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-widest">Gültig bis <span className="text-[#800040]">*</span></label>
         <input type="date" value={form.validUntil} onChange={e => setForm({ ...form, validUntil: e.target.value })} className={sc} required />
       </div>
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Leistungsbeschreibung <span className="text-[#800040]">*</span></label>
+        <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-widest">Leistungsbeschreibung <span className="text-[#800040]">*</span></label>
         <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
           rows={3} className={cn(sc, 'resize-none')} placeholder="Webentwicklung, Beratung, Design…" required />
       </div>
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Hinweise <span className="text-slate-400 font-normal">(optional)</span></label>
+        <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-widest">Hinweise <span className="text-slate-400 font-normal normal-case">(optional)</span></label>
         <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
           rows={2} className={cn(sc, 'resize-none')} placeholder="Optionale Hinweise…" />
       </div>
 
       <div className="flex gap-4 pt-4">
         <button type="button" onClick={onCancel}
-          className="flex-1 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-bold transition-colors">
+          className="flex-1 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-full font-black text-xs uppercase tracking-widest transition-colors">
           Abbrechen
         </button>
         <button type="submit" disabled={isLoading}
-          className="flex-1 py-3 bg-[#800040] hover:bg-[#600030] text-white rounded-xl font-bold transition-colors disabled:opacity-50 shadow-lg shadow-pink-900/10">
-          {isLoading ? 'Erstelle…' : 'Angebot erstellen'}
+          className="flex-1 py-3 bg-[#800040] hover:bg-[#600030] text-white rounded-full font-black text-xs uppercase tracking-widest transition-colors disabled:opacity-50 shadow-lg shadow-rose-900/10">
+          {isLoading ? 'Erstelle…' : 'Erstellen'}
         </button>
       </div>
     </form>
