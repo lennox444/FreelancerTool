@@ -184,9 +184,8 @@ export default function PaymentsPage() {
                 <Wallet className="w-4 h-4 text-[#800040]" />
               </div>
             </div>
-            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Freelancer Tool</span>
+            <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">Zahlungen</h1>
           </div>
-          <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">Zahlungen</h1>
           <p className="text-slate-500 text-sm mt-0.5">Behalte deine Zahlungseingänge und Einnahmen im Überblick.</p>
         </div>
         <StarBorder

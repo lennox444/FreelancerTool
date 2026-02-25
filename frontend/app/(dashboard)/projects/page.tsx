@@ -252,9 +252,8 @@ export default function ProjectsPage() {
                   <Folder className="w-4 h-4 text-[#800040]" />
                 </div>
               </div>
-              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Freelancer Tool</span>
+              <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">Projekte</h1>
             </div>
-            <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">Projekte</h1>
             <p className="text-slate-500 text-sm mt-0.5">Behalte den Überblick über deine aktuellen Vorhaben</p>
           </div>
           <StarBorder onClick={() => setShowForm(!showForm)} color={showForm ? '#94a3b8' : '#ff3366'} speed="4s" thickness={2}>

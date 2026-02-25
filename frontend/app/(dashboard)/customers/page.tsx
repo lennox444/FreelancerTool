@@ -146,15 +146,14 @@ export default function CustomersPage() {
       {/* Header */}
       <motion.div {...fadeUp(0)} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-100">
         <div>
-          <div className="flex items-center gap-2.5 mb-1">
+          <div className="flex items-center gap-2.5 mb-0.5">
             <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
               <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
                 <Users className="w-4 h-4 text-[#800040]" />
               </div>
             </div>
-            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Freelancer Tool</span>
+            <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">KUNDEN</h1>
           </div>
-          <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">KUNDEN</h1>
           <p className="text-slate-500 text-sm mt-0.5">Verwalte deine Kontakte und Geschäftsbeziehungen an einem Ort.</p>
         </div>
         <StarBorder onClick={() => setShowForm(!showForm)} color={showForm ? '#94a3b8' : '#ff3366'} speed="4s" thickness={2}>

@@ -259,15 +259,12 @@ export default function TimeTrackingPage() {
             {/* ── Header ── */}
             <motion.div {...fadeUp(0)} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
-                    <div className="flex items-center gap-2.5 mb-1">
+                    <div className="flex items-center gap-2.5 mb-0.5 flex-wrap">
                         <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
                             <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
                                 <Clock className="w-4 h-4 text-[#800040]" />
                             </div>
                         </div>
-                        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Freelancer Tool</span>
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap">
                         <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">Zeiterfassung</h1>
                         {filterProjectId && (
                             <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#800040]/10 text-[#800040] rounded-full text-[11px] font-black border border-[#800040]/20 uppercase tracking-wide">
