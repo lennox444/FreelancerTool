@@ -39,3 +39,6 @@ postgres_data/
 tmp/
 temp/
 *.tmp
+
+# Claude Code agent worktrees
+.claude/worktrees/
