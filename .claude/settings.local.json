@@ -88,7 +88,8 @@
       "WebFetch(domain:github.com)",
       "Bash(cd E:/FreelancerTool/backend && rename \"node_modules/.prisma/client/query_engine-windows.dll.node\" \"query_engine-windows.dll.node.bak\" 2>&1 && npx prisma generate 2>&1)",
       "Bash(mv \"E:/FreelancerTool/backend/node_modules/.prisma/client/query_engine-windows.dll.node\" \"E:/FreelancerTool/backend/node_modules/.prisma/client/query_engine-windows.dll.node.bak\" 2>&1 && cd E:/FreelancerTool/backend && npx prisma generate 2>&1)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(head:*)"
     ]
   }
 }
