@@ -1,33 +1,36 @@
-'use client';
-
-import { Check } from 'lucide-react';
+import { Check, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OptionCardProps {
-  icon: string;
+  icon: LucideIcon;
   label: string;
   selected: boolean;
   onClick: () => void;
 }
 
-export function OptionCard({ icon, label, selected, onClick }: OptionCardProps) {
+export function OptionCard({ icon: Icon, label, selected, onClick }: OptionCardProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "relative p-8 rounded-[2rem] border-2 transition-all duration-300 group overflow-hidden",
+        "relative p-5 rounded-2xl border-2 transition-all duration-300 group overflow-hidden flex flex-col items-center justify-center gap-3 text-center aspect-square md:aspect-auto md:min-h-[140px]",
         selected
-          ? "border-[#800040] bg-[#800040]/10 shadow-xl shadow-pink-900/10 scale-105"
-          : "border-white/5 bg-white/5 hover:border-white/20 hover:bg-white/10"
+          ? "border-[#800040] bg-[#800040]/5 shadow-sm scale-[1.02]"
+          : "border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-slate-50"
       )}
     >
-      <div className="flex flex-col items-center gap-4 relative z-10">
-        <span className="text-5xl transition-transform group-hover:scale-110 duration-500">{icon}</span>
+      <div className="relative z-10 flex flex-col items-center gap-3">
+        <div className={cn(
+          "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110",
+          selected ? "bg-[#800040] text-white shadow-md shadow-[#800040]/20" : "bg-white text-slate-400 border border-slate-100 shadow-sm"
+        )}>
+          <Icon className="w-6 h-6" />
+        </div>
         <span
           className={cn(
             "text-sm font-bold tracking-tight transition-colors",
-            selected ? "text-[#FF3366]" : "text-slate-300"
+            selected ? "text-slate-900" : "text-slate-500"
           )}
         >
           {label}
@@ -35,8 +38,8 @@ export function OptionCard({ icon, label, selected, onClick }: OptionCardProps) 
       </div>
 
       {selected && (
-        <div className="absolute top-4 right-4 w-7 h-7 bg-[#800040] rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
-          <Check className="w-4 h-4 text-white" />
+        <div className="absolute top-2 right-2 w-6 h-6 bg-[#800040] rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-300">
+          <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
         </div>
       )}
     </button>

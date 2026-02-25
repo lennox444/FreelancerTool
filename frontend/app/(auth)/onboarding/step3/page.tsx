@@ -10,26 +10,28 @@ import { onboardingApi } from '@/lib/api/onboarding';
 import { BusinessStage } from '@/lib/types';
 import toast from 'react-hot-toast';
 
+import { Sprout, Rocket, Trophy, Zap } from 'lucide-react';
+
 const stageOptions = [
   {
     value: BusinessStage.JUST_STARTED,
     label: 'Gerade gestartet (0-6 Monate)',
-    icon: '🌱',
+    icon: Sprout,
   },
   {
     value: BusinessStage.GROWING,
     label: 'Wachsend (6-24 Monate)',
-    icon: '🚀',
+    icon: Rocket,
   },
   {
     value: BusinessStage.ESTABLISHED,
     label: 'Etabliert (2+ Jahre)',
-    icon: '🏆',
+    icon: Trophy,
   },
   {
     value: BusinessStage.SIDE_BUSINESS,
     label: 'Nebenberuflich',
-    icon: '⚡',
+    icon: Zap,
   },
 ];
 
@@ -81,11 +83,11 @@ export default function Step3Page() {
   return (
     <OnboardingLayout currentStep={3}>
       <div className="space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold text-white">
+        <div className="text-center space-y-1.5">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
             In welcher Phase befindet sich dein Business?
           </h2>
-          <p className="text-gray-400">
+          <p className="text-slate-500 font-medium">
             Wir passen unsere Empfehlungen an deine Erfahrung an
           </p>
         </div>

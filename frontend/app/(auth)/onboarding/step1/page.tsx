@@ -10,17 +10,19 @@ import { onboardingApi } from '@/lib/api/onboarding';
 import { FreelancerVertical } from '@/lib/types';
 import toast from 'react-hot-toast';
 
+import { Palette, Code2, BarChart3, PenTool, Camera, Sparkles } from 'lucide-react';
+
 const verticalOptions = [
-  { value: FreelancerVertical.DESIGNER, label: 'Designer', icon: '🎨' },
-  { value: FreelancerVertical.DEVELOPER, label: 'Developer', icon: '💻' },
-  { value: FreelancerVertical.CONSULTANT, label: 'Berater/Consultant', icon: '📊' },
-  { value: FreelancerVertical.MARKETING_CONTENT, label: 'Marketing/Content', icon: '📝' },
+  { value: FreelancerVertical.DESIGNER, label: 'Designer', icon: Palette },
+  { value: FreelancerVertical.DEVELOPER, label: 'Developer', icon: Code2 },
+  { value: FreelancerVertical.CONSULTANT, label: 'Berater/Consultant', icon: BarChart3 },
+  { value: FreelancerVertical.MARKETING_CONTENT, label: 'Marketing/Content', icon: PenTool },
   {
     value: FreelancerVertical.PHOTOGRAPHER_VIDEOGRAPHER,
     label: 'Fotograf/Videograf',
-    icon: '📷',
+    icon: Camera,
   },
-  { value: FreelancerVertical.OTHER, label: 'Andere', icon: '✨' },
+  { value: FreelancerVertical.OTHER, label: 'Andere', icon: Sparkles },
 ];
 
 export default function Step1Page() {
@@ -64,11 +66,11 @@ export default function Step1Page() {
   return (
     <OnboardingLayout currentStep={1}>
       <div className="space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold text-white">
+        <div className="text-center space-y-1.5">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
             Was ist deine Haupttätigkeit?
           </h2>
-          <p className="text-gray-400">
+          <p className="text-slate-500 font-medium">
             Hilf uns, dein Dashboard optimal anzupassen
           </p>
         </div>

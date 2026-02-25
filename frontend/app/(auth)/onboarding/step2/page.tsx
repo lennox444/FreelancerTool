@@ -10,26 +10,28 @@ import { onboardingApi } from '@/lib/api/onboarding';
 import { CurrentWorkflow } from '@/lib/types';
 import toast from 'react-hot-toast';
 
+import { FileSpreadsheet, FileText, Monitor, HelpCircle } from 'lucide-react';
+
 const workflowOptions = [
   {
     value: CurrentWorkflow.EXCEL_SHEETS,
     label: 'Excel/Google Sheets',
-    icon: '📊',
+    icon: FileSpreadsheet,
   },
   {
     value: CurrentWorkflow.WORD_DOCUMENTS,
     label: 'Word/PDF Dokumente',
-    icon: '📄',
+    icon: FileText,
   },
   {
     value: CurrentWorkflow.OTHER_SOFTWARE,
     label: 'Andere Software',
-    icon: '💼',
+    icon: Monitor,
   },
   {
     value: CurrentWorkflow.UNORGANIZED,
     label: 'Noch unorganisiert',
-    icon: '🔄',
+    icon: HelpCircle,
   },
 ];
 
@@ -81,11 +83,11 @@ export default function Step2Page() {
   return (
     <OnboardingLayout currentStep={2}>
       <div className="space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold text-white">
+        <div className="text-center space-y-1.5">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
             Wie organisierst du aktuell deine Rechnungen?
           </h2>
-          <p className="text-gray-400">
+          <p className="text-slate-500 font-medium">
             Das hilft uns, den Import-Prozess zu optimieren
           </p>
         </div>

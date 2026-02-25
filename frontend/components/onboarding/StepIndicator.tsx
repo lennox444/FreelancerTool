@@ -1,5 +1,7 @@
 'use client';
 
+import { cn } from '@/lib/utils';
+
 interface StepIndicatorProps {
   currentStep: number;
   totalSteps: number;
@@ -7,18 +9,21 @@ interface StepIndicatorProps {
 
 export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
   return (
-    <div className="flex items-center justify-center gap-3 mb-8">
-      {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
-        <div
-          key={step}
-          className={`h-2 rounded-full transition-all duration-500 shadow-sm ${step === currentStep
-              ? 'w-10 bg-[#800040]'
-              : step < currentStep
-                ? 'w-3 bg-[#800040]/60'
-                : 'w-3 bg-white/10'
-            }`}
-        />
-      ))}
+    <div className="flex items-center justify-center gap-2 mb-8">
+      {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => {
+        const isActive = step === currentStep;
+        const isCompleted = step < currentStep;
+
+        return (
+          <div
+            key={step}
+            className={cn(
+              "h-1.5 rounded-full transition-all duration-500",
+              isActive ? "w-8 bg-[#800040]" : isCompleted ? "w-2 bg-[#800040]/30" : "w-2 bg-slate-200"
+            )}
+          />
+        );
+      })}
     </div>
   );
 }

@@ -20,17 +20,17 @@ export function NavigationButtons({
   loading = false,
 }: NavigationButtonsProps) {
   return (
-    <div className="flex items-center justify-between gap-6 pt-10">
+    <div className="flex items-center justify-between gap-6 pt-8 border-t border-slate-100 mt-10">
       {/* Back Button */}
       {onBack ? (
         <button
           type="button"
           onClick={onBack}
           disabled={loading}
-          className="flex items-center gap-2 px-8 py-4 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-all font-bold disabled:opacity-20 text-sm group"
+          className="flex items-center gap-2 px-6 py-3 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all font-semibold disabled:opacity-20 text-sm group border border-slate-200"
         >
-          <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-          Zurück
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          <span>Zurück</span>
         </button>
       ) : (
         <div />
@@ -42,32 +42,30 @@ export function NavigationButtons({
           type="button"
           onClick={onSkip}
           disabled={loading}
-          className="px-8 py-4 rounded-full text-slate-500 hover:text-slate-300 transition-all font-bold disabled:opacity-20 text-sm"
+          className="px-6 py-3 rounded-xl text-slate-400 hover:text-slate-600 transition-all font-semibold disabled:opacity-20 text-sm"
         >
           Überspringen
         </button>
 
         {/* Next Button */}
-        <StarBorder as="div" color="#FF3366" speed="3s" thickness={2} className="rounded-full overflow-hidden">
-          <button
-            type="button"
-            onClick={onNext}
-            disabled={nextDisabled || loading}
-            className={cn(
-              "px-10 h-14 rounded-full bg-[#800040] text-white font-black tracking-tight hover:bg-[#600030] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-base shadow-xl shadow-pink-900/20 group",
-              loading && "cursor-wait"
-            )}
-          >
-            {loading ? (
-              <Loader2 className="w-6 h-6 animate-spin" />
-            ) : (
-              <>
-                <span>Weiter</span>
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </>
-            )}
-          </button>
-        </StarBorder>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={nextDisabled || loading}
+          className={cn(
+            "px-8 h-12 rounded-xl bg-[#800040] text-white font-bold tracking-tight hover:bg-[#600030] transition-all disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm shadow-lg shadow-[#800040]/20 group",
+            loading && "cursor-wait"
+          )}
+        >
+          {loading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <span>Weiter</span>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

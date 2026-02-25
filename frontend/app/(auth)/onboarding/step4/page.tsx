@@ -10,21 +10,23 @@ import { onboardingApi } from '@/lib/api/onboarding';
 import { AcquisitionChannel } from '@/lib/types';
 import toast from 'react-hot-toast';
 
+import { Linkedin, MessageSquare, Users, Handshake, Search, Sparkles } from 'lucide-react';
+
 const channelOptions = [
-  { value: AcquisitionChannel.LINKEDIN, label: 'LinkedIn', icon: '💼' },
-  { value: AcquisitionChannel.REDDIT, label: 'Reddit', icon: '🤖' },
+  { value: AcquisitionChannel.LINKEDIN, label: 'LinkedIn', icon: Linkedin },
+  { value: AcquisitionChannel.REDDIT, label: 'Reddit', icon: MessageSquare },
   {
     value: AcquisitionChannel.FACEBOOK_GROUP,
     label: 'Facebook Gruppe',
-    icon: '👥',
+    icon: Users,
   },
-  { value: AcquisitionChannel.REFERRAL, label: 'Empfehlung', icon: '🤝' },
+  { value: AcquisitionChannel.REFERRAL, label: 'Empfehlung', icon: Handshake },
   {
     value: AcquisitionChannel.GOOGLE_SEARCH,
     label: 'Google Suche',
-    icon: '🔍',
+    icon: Search,
   },
-  { value: AcquisitionChannel.OTHER, label: 'Andere', icon: '✨' },
+  { value: AcquisitionChannel.OTHER, label: 'Andere', icon: Sparkles },
 ];
 
 export default function Step4Page() {
@@ -75,11 +77,11 @@ export default function Step4Page() {
   return (
     <OnboardingLayout currentStep={4}>
       <div className="space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold text-white">
+        <div className="text-center space-y-1.5">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
             Wie hast du von FreelanceFlow erfahren?
           </h2>
-          <p className="text-gray-400">
+          <p className="text-slate-500 font-medium">
             Hilf uns zu verstehen, wo unsere Community ist
           </p>
         </div>

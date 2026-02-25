@@ -8,6 +8,7 @@ import { useOnboardingStore } from '@/lib/stores/onboardingStore';
 import { onboardingApi } from '@/lib/api/onboarding';
 import toast from 'react-hot-toast';
 import { CheckCircle2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function Step5Page() {
   const router = useRouter();
@@ -48,48 +49,65 @@ export default function Step5Page() {
 
   return (
     <OnboardingLayout currentStep={5}>
-      <div className="space-y-8">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-12 h-12 text-white" />
-            </div>
+      <div className="space-y-6">
+        <div className="text-center space-y-3">
+          <div className="flex justify-center relative">
+            {/* Animated Celebration Circles */}
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1.5, opacity: 0 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "easeOut" }}
+              className="absolute inset-0 bg-[#800040]/20 rounded-full"
+            />
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 2, opacity: 0 }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
+              className="absolute inset-0 bg-[#800040]/10 rounded-full"
+            />
+
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 260, damping: 20 }}
+              className="w-16 h-16 bg-gradient-to-br from-[#800040] to-[#A00055] rounded-full flex items-center justify-center shadow-lg shadow-[#800040]/30 relative z-10"
+            >
+              <CheckCircle2 className="w-8 h-8 text-white" />
+            </motion.div>
           </div>
-          <h2 className="text-3xl font-bold text-white">Fast geschafft!</h2>
-          <p className="text-gray-400 text-lg">
-            Du bist bereit, mit FreelanceFlow durchzustarten
-          </p>
+
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Fast geschafft!</h2>
+            <p className="text-slate-500 font-medium">
+              Du bist bereit, mit FreelanceFlow durchzustarten
+            </p>
+          </motion.div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl p-6 space-y-4">
-          <h3 className="text-xl font-semibold text-white">
+        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 md:p-8 space-y-4 relative overflow-hidden">
+          <h3 className="text-lg font-bold text-slate-900 relative z-10">
             Was dich erwartet:
           </h3>
-          <ul className="space-y-3">
-            <li className="flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
-              <span className="text-gray-300">
-                Kunden und Projekte verwalten
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
-              <span className="text-gray-300">
-                Professionelle Rechnungen erstellen
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
-              <span className="text-gray-300">
-                Zahlungen nachverfolgen
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
-              <span className="text-gray-300">
-                Übersicht über dein Business behalten
-              </span>
-            </li>
+          <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+            {[
+              'Kunden und Projekte verwalten',
+              'Professionelle Rechnungen erstellen',
+              'Zahlungen nachverfolgen',
+              'Übersicht über dein Business behalten',
+            ].map((item, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <div className="mt-1 w-5 h-5 rounded-full bg-[#800040]/10 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="w-3 h-3 text-[#800040]" />
+                </div>
+                <span className="text-sm text-slate-600 font-medium">
+                  {item}
+                </span>
+              </li>
+            ))}
           </ul>
         </div>
 
