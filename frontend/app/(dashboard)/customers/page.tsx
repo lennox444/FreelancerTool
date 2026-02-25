@@ -119,7 +119,7 @@ export default function CustomersPage() {
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Kunden</h1>
-          <div className="hidden md:block h-8 w-[2px] bg-slate-200 rounded-full"></div>
+          <div className="hidden md:block h-8 w-0.5 bg-slate-200 rounded-full"></div>
           <p className="text-slate-500 font-medium">
             Verwalte deine Kontakte und Geschäftsbeziehungen an einem Ort.
           </p>
@@ -200,7 +200,7 @@ export default function CustomersPage() {
       </div>
 
       {/* List Container */}
-      <div className="relative min-h-[400px]">
+      <div className="relative min-h-100">
         {isLoading ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
             <Loader2 className="w-10 h-10 animate-spin text-[#800040] mb-3" />

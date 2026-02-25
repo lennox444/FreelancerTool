@@ -7,7 +7,7 @@ import { TaxAssistantResult } from '@/lib/types';
 import {
   Calculator, AlertTriangle, TrendingUp, PiggyBank, Info, Percent, Euro,
   FileText, Calendar, Wallet, ExternalLink, CheckCircle2, ChevronDown,
-  TrendingDown, Receipt, Sparkles,
+  TrendingDown, Receipt, Sparkles, X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PixelBlast from '@/components/landing/PixelBlast';
@@ -68,7 +68,7 @@ function StatTile({
 }) {
   return (
     <motion.div {...fadeUp(delay)} className={cn('flex items-center gap-4 p-4 rounded-2xl border', bg, border)}>
-      <div className={cn('p-2.5 rounded-xl bg-white/80 flex-shrink-0', color)}>
+      <div className={cn('p-2.5 rounded-xl bg-white/80 shrink-0', color)}>
         <Icon className="w-5 h-5" />
       </div>
       <div className="min-w-0">
@@ -107,7 +107,7 @@ function ScenarioCard({
         )}
       >
         {recommended && (
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#800040] to-[#E60045] text-white px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg whitespace-nowrap">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-linear-to-r from-[#800040] to-[#E60045] text-white px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg whitespace-nowrap">
             Empfohlen
           </div>
         )}
@@ -171,7 +171,7 @@ function QuarterlyCalendar({
           className={cn(
             'rounded-2xl border p-4 relative transition-all',
             isNext
-              ? 'border-[#800040]/40 bg-gradient-to-br from-[#800040]/5 to-[#800040]/10 shadow-md'
+              ? 'border-[#800040]/40 bg-linear-to-br from-[#800040]/5 to-[#800040]/10 shadow-md'
               : 'border-slate-200 bg-white/80 hover:border-slate-300 hover:shadow-sm',
           )}
         >
@@ -212,6 +212,7 @@ export default function TaxAssistantPage() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedScenario, setSelectedScenario] = useState<'conservative' | 'realistic' | 'optimistic'>('realistic');
+  const [disclaimerVisible, setDisclaimerVisible] = useState(true);
   const years = Array.from({ length: 3 }, (_, i) => currentYear - i);
 
   const { data: resp, isLoading, isError } = useQuery({
@@ -234,14 +235,14 @@ export default function TaxAssistantPage() {
             patternDensity={0.3} pixelSizeJitter={0.5} enableRipples rippleSpeed={0.2}
             rippleThickness={0.1} speed={0.1} transparent />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white/80 to-slate-50/50" />
+        <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white/80 to-slate-50/50" />
       </div>
 
       {/* ── Header ── */}
       <motion.div {...fadeUp(0)} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-100 pb-4">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2.5 mb-0.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
+            <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
               <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
                 <Calculator className="w-4 h-4 text-[#800040]" />
               </div>
@@ -267,28 +268,44 @@ export default function TaxAssistantPage() {
       </motion.div>
 
       {/* ── Disclaimer ── */}
-      <motion.div {...fadeUp(0.05)}>
-        <div className="flex items-start gap-4 bg-amber-50/80 backdrop-blur-sm border border-amber-200 rounded-[1.4rem] p-5 shadow-sm">
-          <div className="p-2 bg-amber-100 rounded-xl flex-shrink-0">
-            <AlertTriangle className="w-5 h-5 text-amber-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-amber-900 text-sm font-black mb-1">Kein Ersatz für Steuerberatung</p>
-            <p className="text-amber-800 text-sm leading-relaxed font-medium">
-              Diese Berechnung dient nur als Orientierungshilfe und kann von deiner tatsächlichen Steuerlast abweichen.
-              Für verbindliche Angaben empfehlen wir einen Steuerberater.
-            </p>
-            <a
-              href="https://www.steuerberater.de/suche"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 mt-2 text-amber-700 text-xs font-black hover:text-amber-900 transition-colors uppercase tracking-wide"
-            >
-              Steuerberater finden <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-        </div>
-      </motion.div>
+      <AnimatePresence>
+        {disclaimerVisible && (
+          <motion.div
+            {...fadeUp(0.05)}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-start gap-4 bg-amber-50/80 backdrop-blur-sm border border-amber-200 rounded-[1.4rem] p-5 shadow-sm">
+              <div className="p-2 bg-amber-100 rounded-xl shrink-0">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-amber-900 text-sm font-black mb-1">Kein Ersatz für Steuerberatung</p>
+                <p className="text-amber-800 text-sm leading-relaxed font-medium">
+                  Diese Berechnung dient nur als Orientierungshilfe und kann von deiner tatsächlichen Steuerlast abweichen.
+                  Für verbindliche Angaben empfehlen wir einen Steuerberater.
+                </p>
+                <a
+                  href="https://www.steuerberater.de/suche"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 mt-2 text-amber-700 text-xs font-black hover:text-amber-900 transition-colors uppercase tracking-wide"
+                >
+                  Steuerberater finden <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <button
+                onClick={() => setDisclaimerVisible(false)}
+                className="shrink-0 p-1.5 rounded-lg text-amber-500 hover:text-amber-700 hover:bg-amber-100 transition-colors"
+                title="Hinweis ausblenden"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Loading ── */}
       {isLoading && (
@@ -438,7 +455,7 @@ export default function TaxAssistantPage() {
               <div className="absolute top-0 right-0 w-64 h-64 bg-[#800040]/5 rounded-full blur-3xl pointer-events-none" />
 
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow flex-shrink-0">
+                <div className="w-7 h-7 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow shrink-0">
                   <div className="w-full h-full bg-white rounded-[9px] flex items-center justify-center">
                     <PiggyBank className="w-3.5 h-3.5 text-[#800040]" />
                   </div>
@@ -475,7 +492,7 @@ export default function TaxAssistantPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.18 }}
-                  className="bg-gradient-to-br from-[#800040]/5 to-[#800040]/10 border border-[#800040]/20 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  className="bg-linear-to-br from-[#800040]/5 to-[#800040]/10 border border-[#800040]/20 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                 >
                   <div>
                     <p className="text-[10px] font-black text-[#800040] uppercase tracking-widest mb-1">
@@ -486,7 +503,7 @@ export default function TaxAssistantPage() {
                       <span className="text-sm font-normal text-slate-400">/Monat zur Seite legen</span>
                     </p>
                   </div>
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right shrink-0">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Jahresrücklage</p>
                     <p className="text-2xl font-black text-[#800040]">{formatCurrency(result.recommendations[selectedScenario] * 12)}</p>
                   </div>
