@@ -1,7 +1,12 @@
 import apiClient from './client';
-import type { ApiResponse } from '../types';
+import type { ApiResponse, DashboardOverview } from '../types';
 
 export const dashboardApi = {
+  getOverview: async (): Promise<DashboardOverview> => {
+    const response = await apiClient.get<ApiResponse<DashboardOverview>>('/dashboard/overview');
+    return response.data.data;
+  },
+
   getStats: async () => {
     const response = await apiClient.get<ApiResponse<any>>('/dashboard/stats');
     return response.data.data;

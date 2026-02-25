@@ -1,10 +1,183 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service';
 import { InvoiceStatus } from '@prisma/client';
+import { TaxAssistantService } from '../tax-assistant/tax-assistant.service';
+
+export interface WarningSignal {
+  type: string;
+  severity: 'error' | 'warning';
+  message: string;
+  link?: string;
+}
+
+export interface RevenueTrendPoint {
+  month: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+  payments: number;
+}
 
 @Injectable()
 export class DashboardService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private taxAssistant: TaxAssistantService,
+  ) {}
+
+  /**
+   * Single aggregated call for the Business Cockpit overview page
+   */
+  async getOverview(ownerId: string) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const startOfMonth = new Date(year, now.getMonth(), 1);
+    const startOfPrevMonth = new Date(year, now.getMonth() - 1, 1);
+    const endOfPrevMonth = new Date(year, now.getMonth(), 0, 23, 59, 59, 999);
+    const startOfYear = new Date(year, 0, 1);
+    // 12-month window for bulk queries
+    const twelveMonthsAgo = new Date(year, now.getMonth() - 11, 1);
+
+    const [
+      monthRevenue,
+      prevMonthRevenue,
+      yearRevenue,
+      openInvoices,
+      overdueInvoices,
+      totalCustomers,
+      bankAccountCount,
+      expensesMTDAgg,
+      bulkPayments,
+      bulkExpenses,
+    ] = await Promise.all([
+      this.prisma.payment.aggregate({
+        where: { ownerId, paymentDate: { gte: startOfMonth } },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      this.prisma.payment.aggregate({
+        where: { ownerId, paymentDate: { gte: startOfPrevMonth, lte: endOfPrevMonth } },
+        _sum: { amount: true },
+      }),
+      this.prisma.payment.aggregate({
+        where: { ownerId, paymentDate: { gte: startOfYear } },
+        _sum: { amount: true },
+      }),
+      this.prisma.invoice.aggregate({
+        where: {
+          ownerId,
+          status: { in: [InvoiceStatus.SENT, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.OVERDUE] },
+        },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      this.prisma.invoice.aggregate({
+        where: { ownerId, status: InvoiceStatus.OVERDUE },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      this.prisma.customer.count({ where: { ownerId } }),
+      this.prisma.bankAccount.count({ where: { ownerId } }).catch(() => -1),
+      this.prisma.expense.aggregate({
+        where: { ownerId, date: { gte: startOfMonth }, isRecurring: false },
+        _sum: { amount: true },
+      }),
+      // All payments last 12 months for bucketing
+      this.prisma.payment.findMany({
+        where: { ownerId, paymentDate: { gte: twelveMonthsAgo } },
+        select: { paymentDate: true, amount: true },
+      }),
+      // All expenses last 12 months for bucketing
+      this.prisma.expense.findMany({
+        where: { ownerId, date: { gte: twelveMonthsAgo } },
+        select: { date: true, amount: true },
+      }),
+    ]);
+
+    // ── 12-month trend bucketing ────────────────────────────────────────────
+    const revenueTrend: RevenueTrendPoint[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const mStart = new Date(year, now.getMonth() - i, 1);
+      const mEnd = new Date(year, now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+      const monthLabel = mStart.toLocaleString('de-DE', { month: 'short', year: '2-digit' });
+
+      const revenue = bulkPayments
+        .filter((p) => p.paymentDate >= mStart && p.paymentDate <= mEnd)
+        .reduce((s, p) => s + Number(p.amount), 0);
+
+      const expenses = bulkExpenses
+        .filter((e) => e.date >= mStart && e.date <= mEnd)
+        .reduce((s, e) => s + Number(e.amount), 0);
+
+      revenueTrend.push({
+        month: monthLabel,
+        revenue: Math.round(revenue * 100) / 100,
+        expenses: Math.round(expenses * 100) / 100,
+        profit: Math.round((revenue - expenses) * 100) / 100,
+        payments: bulkPayments.filter((p) => p.paymentDate >= mStart && p.paymentDate <= mEnd).length,
+      });
+    }
+
+    // ── Tax savings ─────────────────────────────────────────────────────────
+    let taxSavings = { monthlySavings: 0, setAsidePercentage: 0, quarterlyVat: 0, quarterlyIncomeTax: 0 };
+    try {
+      const tax = await this.taxAssistant.calculate(ownerId, year);
+      taxSavings = {
+        monthlySavings: tax.recommendations.monthlySavings,
+        setAsidePercentage: tax.recommendations.setAsidePercentage,
+        quarterlyVat: tax.prepayments.quarterlyVat,
+        quarterlyIncomeTax: tax.prepayments.quarterlyIncomeTax,
+      };
+    } catch {
+      // dashboard must never crash due to tax calc
+    }
+
+    // ── Derived figures ─────────────────────────────────────────────────────
+    const monthRevenueAmt = Number(monthRevenue._sum.amount || 0);
+    const expensesMTD = Number(expensesMTDAgg._sum.amount || 0);
+    const netProfitMTD = monthRevenueAmt - expensesMTD;
+
+    // ── Server-side warnings ────────────────────────────────────────────────
+    const warnings: WarningSignal[] = [];
+    if ((overdueInvoices._count ?? 0) > 0) {
+      warnings.push({
+        type: 'overdue',
+        severity: 'error',
+        message: `${overdueInvoices._count} überfällige Rechnung(en) — ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(Number(overdueInvoices._sum.amount || 0))} ausstehend`,
+        link: '/invoices?status=OVERDUE',
+      });
+    }
+    if (bankAccountCount === 0) {
+      warnings.push({
+        type: 'no_bank_account',
+        severity: 'warning',
+        message: 'Kein Bankkonto hinterlegt — füge dein Konto in den Einstellungen hinzu',
+        link: '/settings',
+      });
+    }
+    if (Number(yearRevenue._sum.amount || 0) > 0 && taxSavings.setAsidePercentage === 0) {
+      warnings.push({
+        type: 'tax_not_configured',
+        severity: 'warning',
+        message: 'Steuer-Rücklage nicht konfiguriert — prüfe deinen Steuer-Assistenten',
+        link: '/tax-assistant',
+      });
+    }
+
+    return {
+      monthRevenue: { amount: monthRevenueAmt, count: monthRevenue._count },
+      prevMonthRevenue: { amount: Number(prevMonthRevenue._sum.amount || 0) },
+      yearRevenue: { amount: Number(yearRevenue._sum.amount || 0) },
+      openInvoices: { amount: Number(openInvoices._sum.amount || 0), count: openInvoices._count },
+      overdueInvoices: { amount: Number(overdueInvoices._sum.amount || 0), count: overdueInvoices._count },
+      totalCustomers,
+      expensesMTD,
+      netProfitMTD,
+      revenueTrend,
+      taxSavings,
+      warnings,
+    };
+  }
 
   /**
    * Get comprehensive dashboard statistics

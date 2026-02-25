@@ -64,6 +64,7 @@ export default function AppointmentsPage() {
             }
         }
         if (projectParam) setFilterProjectId(projectParam);
+        if (searchParams.get('new') === '1') setShowForm(true);
     }, [searchParams]);
 
     const { data: appointments, isLoading } = useAppointments({

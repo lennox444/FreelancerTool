@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { expensesApi } from '@/lib/api/expenses';
 import { Expense, ExpenseCategory, ExpenseSummary, RecurringInterval } from '@/lib/types';
@@ -128,10 +129,16 @@ export default function ExpensesPage() {
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1); // 1–12
 
+  const searchParams = useSearchParams();
+
   // ── Ausgaben state ──
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<ExpenseCategory | ''>('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') setShowCreateForm(true);
+  }, [searchParams]);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [datevExporting, setDatevExporting] = useState(false);
 

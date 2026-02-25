@@ -430,6 +430,43 @@ export interface ProjectProfitabilityHistoryItem {
 }
 
 // ========================================
+// DASHBOARD2 / BUSINESS COCKPIT
+// ========================================
+export interface WarningSignal {
+  type: string;
+  severity: 'error' | 'warning';
+  message: string;
+  link?: string;
+}
+
+export interface RevenueTrendPoint {
+  month: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+  payments: number;
+}
+
+export interface DashboardOverview {
+  monthRevenue: { amount: number; count: number };
+  prevMonthRevenue: { amount: number };
+  yearRevenue: { amount: number };
+  openInvoices: { amount: number; count: number };
+  overdueInvoices: { amount: number; count: number };
+  totalCustomers: number;
+  expensesMTD: number;
+  netProfitMTD: number;
+  revenueTrend: RevenueTrendPoint[];
+  taxSavings: {
+    monthlySavings: number;
+    setAsidePercentage: number;
+    quarterlyVat: number;
+    quarterlyIncomeTax: number;
+  };
+  warnings: WarningSignal[];
+}
+
+// ========================================
 // APPOINTMENTS
 // ========================================
 export interface Appointment {

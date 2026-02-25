@@ -190,6 +190,7 @@ export default function InvoicesPage() {
       setStatusFilter(statusParam as InvoiceStatus);
     const projectParam = searchParams.get('projectId');
     if (projectParam) setProjectFilter(projectParam);
+    if (searchParams.get('new') === '1') setShowForm(true);
   }, [searchParams]);
 
   const { data: invoices, isLoading } = useInvoices({

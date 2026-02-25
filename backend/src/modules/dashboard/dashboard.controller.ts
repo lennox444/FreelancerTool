@@ -15,6 +15,12 @@ import { OwnershipGuard } from '../../core/guards/ownership.guard';
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
+  @Get('overview')
+  async getOverview(@Request() req) {
+    const data = await this.dashboardService.getOverview(req.ownerId);
+    return { data, meta: { timestamp: new Date().toISOString() } };
+  }
+
   @Get('stats')
   async getStats(@Request() req) {
     const stats = await this.dashboardService.getStats(req.ownerId);

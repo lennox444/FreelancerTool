@@ -167,6 +167,7 @@ export default function QuotesPage() {
   useEffect(() => {
     const p = searchParams.get('projectId');
     if (p) setFilterProjectId(p);
+    if (searchParams.get('new') === '1') setShowCreateForm(true);
   }, [searchParams]);
 
   const { data: quotesResp, isLoading } = useQuery({
