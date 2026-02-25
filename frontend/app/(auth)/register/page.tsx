@@ -50,8 +50,7 @@ export default function RegisterPage() {
   };
 
   const handleGoogleLogin = () => {
-    // Implement Google Login logic here
-    console.log("Google Login clicked");
+    window.location.href = 'http://localhost:3001/api/auth/google';
   };
 
   return (

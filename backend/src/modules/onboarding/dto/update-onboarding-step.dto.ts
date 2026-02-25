@@ -40,6 +40,7 @@ export enum AcquisitionChannel {
 }
 
 export class UpdateOnboardingStepDto {
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(5)

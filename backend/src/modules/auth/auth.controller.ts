@@ -1,4 +1,6 @@
-import { Controller, Post, Patch, Body, Get, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Patch, Body, Get, Delete, UseGuards, Request, Res } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -56,6 +58,26 @@ export class AuthController {
     };
   }
 
+  @Post('set-password')
+  @UseGuards(JwtAuthGuard)
+  async setPassword(@Request() req, @Body() body: { newPassword: string }) {
+    await this.authService.setPassword(req.user.id, body.newPassword);
+    return {
+      data: { success: true },
+      meta: { timestamp: new Date().toISOString() },
+    };
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(@Request() req, @Body() body: { currentPassword: string; newPassword: string }) {
+    await this.authService.changePassword(req.user.id, body.currentPassword, body.newPassword);
+    return {
+      data: { success: true },
+      meta: { timestamp: new Date().toISOString() },
+    };
+  }
+
   @Delete('account')
   @UseGuards(JwtAuthGuard)
   async deleteAccount(@Request() req) {
@@ -64,5 +86,25 @@ export class AuthController {
       data: { message: 'Account successfully deleted' },
       meta: { timestamp: new Date().toISOString() },
     };
+  }
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  googleAuth() {
+    // Passport redirects to Google — no body needed
+  }
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleCallback(@Request() req, @Res() res: Response) {
+    const { user, isNew } = req.user as { user: any; isNew: boolean };
+    const { accessToken, refreshToken } = await this.authService.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+    );
+    res.redirect(
+      `http://localhost:3000/google/callback?token=${accessToken}&refreshToken=${refreshToken}&isNew=${isNew}`,
+    );
   }
 }

@@ -26,23 +26,28 @@ export class AllExceptionsFilter implements ExceptionFilter {
                 ? exception.getResponse()
                 : exception;
 
-        const logMessage = `[${new Date().toISOString()}] Path: ${request.url}\nStatus: ${status}\nError: ${JSON.stringify(message)}\nStack: ${exception instanceof Error ? exception.stack : 'No stack trace'}\n\n`;
-
-        try {
-            fs.appendFileSync(path.join(process.cwd(), 'error.log'), logMessage);
-        } catch (e) {
-            console.error('Failed to write to error log file', e);
+        // Only log and hide details for unexpected server errors (5xx)
+        if (!(exception instanceof HttpException)) {
+            const logMessage = `[${new Date().toISOString()}] Path: ${request.url}\nStatus: ${status}\nError: ${JSON.stringify(message)}\nStack: ${exception instanceof Error ? exception.stack : 'No stack trace'}\n\n`;
+            try {
+                fs.appendFileSync(path.join(process.cwd(), 'error.log'), logMessage);
+            } catch (e) {
+                console.error('Failed to write to error log file', e);
+            }
+            console.error('Exception caught by global filter:', exception);
         }
 
-        console.error('Exception caught by global filter:', exception);
+        // For HttpExceptions (4xx), pass through the original message
+        const responseBody = exception instanceof HttpException
+            ? exception.getResponse()
+            : { statusCode: status, message: 'Ein unerwarteter Fehler ist aufgetreten' };
 
         response
             .status(status)
-            .json({
-                statusCode: status,
-                timestamp: new Date().toISOString(),
-                path: request.url,
-                message: 'Internal Server Error (logged)',
-            });
+            .json(
+                typeof responseBody === 'object'
+                    ? { ...responseBody as object, timestamp: new Date().toISOString(), path: request.url }
+                    : { statusCode: status, message: responseBody, timestamp: new Date().toISOString(), path: request.url }
+            );
     }
 }

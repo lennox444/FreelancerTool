@@ -28,6 +28,7 @@ export interface User {
   isKleinunternehmer?: boolean;
   stripeConnectAccountId?: string;
   stripeConnectEnabled?: boolean;
+  hasPassword?: boolean;
 }
 
 export interface AuthResponse {

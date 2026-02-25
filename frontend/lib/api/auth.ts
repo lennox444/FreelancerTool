@@ -50,4 +50,12 @@ export const authApi = {
     );
     return response.data.data;
   },
+
+  setPassword: async (newPassword: string): Promise<void> => {
+    await apiClient.post('/auth/set-password', { newPassword });
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await apiClient.post('/auth/change-password', { currentPassword, newPassword });
+  },
 };

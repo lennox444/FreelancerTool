@@ -24,6 +24,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // Return full user object (excluding sensitive fields)
     const { passwordHash, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return { ...userWithoutPassword, hasPassword: !!passwordHash };
   }
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { CreditCard, Trash2, AlertTriangle, X, Loader2, ShieldAlert, Landmark, Target, Euro, Calculator, ChevronDown, ChevronUp, Check, Zap, CheckCircle, Link, Unlink, ArrowRight } from 'lucide-react';
+import { CreditCard, Trash2, AlertTriangle, X, Loader2, ShieldAlert, Landmark, Target, Euro, Calculator, ChevronDown, ChevronUp, Check, Zap, CheckCircle, Link, Unlink, ArrowRight, User, Lock, Eye, EyeOff } from 'lucide-react';
 import apiClient from '@/lib/api/client';
 import { authApi } from '@/lib/api/auth';
 import { billingApi, ConnectStatus } from '@/lib/api/billing';
@@ -17,6 +17,59 @@ export default function SettingsPage() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
+
+    // ── Konto / Profil ───────────────────────────────────────────────────────
+    const [firstName, setFirstName] = useState(user?.firstName ?? '');
+    const [lastName, setLastName] = useState(user?.lastName ?? '');
+
+    useEffect(() => {
+        if (user?.firstName) setFirstName(user.firstName);
+        if (user?.lastName) setLastName(user.lastName);
+    }, [user?.firstName, user?.lastName]);
+    const [savingName, setSavingName] = useState(false);
+
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [showCurrentPw, setShowCurrentPw] = useState(false);
+    const [showNewPw, setShowNewPw] = useState(false);
+    const [savingPassword, setSavingPassword] = useState(false);
+
+    const handleSaveName = async () => {
+        if (!firstName.trim() || !lastName.trim()) { toast.error('Vor- und Nachname dürfen nicht leer sein.'); return; }
+        setSavingName(true);
+        try {
+            const updated = await authApi.updateProfile({ firstName: firstName.trim(), lastName: lastName.trim() });
+            updateUser({ firstName: updated.firstName, lastName: updated.lastName });
+            toast.success('Name gespeichert!');
+        } catch {
+            toast.error('Fehler beim Speichern.');
+        } finally {
+            setSavingName(false);
+        }
+    };
+
+    const handleSavePassword = async () => {
+        if (newPassword.length < 8) { toast.error('Passwort muss mindestens 8 Zeichen haben.'); return; }
+        if (user?.hasPassword && currentPassword === newPassword) { toast.error('Das neue Passwort muss sich vom aktuellen unterscheiden.'); return; }
+        setSavingPassword(true);
+        try {
+            if (user?.hasPassword) {
+                if (!currentPassword) { toast.error('Bitte aktuelles Passwort eingeben.'); setSavingPassword(false); return; }
+                await authApi.changePassword(currentPassword, newPassword);
+            } else {
+                await authApi.setPassword(newPassword);
+                updateUser({ hasPassword: true });
+            }
+            setCurrentPassword('');
+            setNewPassword('');
+            toast.success(user?.hasPassword ? 'Passwort geändert!' : 'Passwort gesetzt! Du kannst dich jetzt auch mit E-Mail + Passwort anmelden.');
+        } catch (err: any) {
+            const msg = err.response?.data?.message;
+            toast.error(Array.isArray(msg) ? msg.join(' · ') : (msg || 'Passwort konnte nicht gespeichert werden.'));
+        } finally {
+            setSavingPassword(false);
+        }
+    };
 
     // ── Freelancer settings ──────────────────────────────────────────────────
     const [targetRate, setTargetRate] = useState<string>(
@@ -186,7 +239,103 @@ export default function SettingsPage() {
                     {/* Settings Cards */}
                     <div className="grid gap-6">
 
-                        {/* Freelancer Settings */}
+                        {/* Konto Card */}
+                        <div className="bg-white rounded-3xl shadow-lg border border-slate-200 p-6">
+                            <div className="flex items-start gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-2xl bg-sky-100 flex items-center justify-center flex-shrink-0">
+                                    <User className="w-6 h-6 text-sky-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900 mb-1">Konto</h2>
+                                    <p className="text-slate-600 text-sm">Name und Passwort verwalten</p>
+                                </div>
+                            </div>
+
+                            <div className="pl-16 space-y-6">
+                                {/* Name */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-3">Name</label>
+                                    <div className="flex gap-3 flex-wrap">
+                                        <input
+                                            type="text"
+                                            value={firstName}
+                                            onChange={(e) => setFirstName(e.target.value)}
+                                            placeholder="Vorname"
+                                            className="flex-1 min-w-[120px] px-4 h-11 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={lastName}
+                                            onChange={(e) => setLastName(e.target.value)}
+                                            placeholder="Nachname"
+                                            className="flex-1 min-w-[120px] px-4 h-11 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                                        />
+                                        <button
+                                            onClick={handleSaveName}
+                                            disabled={savingName}
+                                            className="h-11 px-5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
+                                        >
+                                            {savingName ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Speichern'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Divider */}
+                                <div className="border-t border-slate-100" />
+
+                                {/* Passwort */}
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Lock className="w-4 h-4 text-slate-500" />
+                                        <label className="text-sm font-semibold text-slate-700">
+                                            {user?.hasPassword ? 'Passwort ändern' : 'Passwort setzen'}
+                                        </label>
+                                    </div>
+                                    {!user?.hasPassword && (
+                                        <p className="text-xs text-slate-500 mb-3">
+                                            Du hast dich über Google registriert. Wenn du ein Passwort setzt, kannst du dich auch direkt mit E-Mail + Passwort anmelden.
+                                        </p>
+                                    )}
+                                    <div className="space-y-3 mt-3">
+                                        {user?.hasPassword && (
+                                            <div className="relative">
+                                                <input
+                                                    type={showCurrentPw ? 'text' : 'password'}
+                                                    value={currentPassword}
+                                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                                    placeholder="Aktuelles Passwort"
+                                                    className="w-full pr-10 px-4 h-11 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                                                />
+                                                <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)} className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600">
+                                                    {showCurrentPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                </button>
+                                            </div>
+                                        )}
+                                        <div className="relative">
+                                            <input
+                                                type={showNewPw ? 'text' : 'password'}
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                placeholder="Neues Passwort (min. 8 Zeichen)"
+                                                className="w-full pr-10 px-4 h-11 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                                            />
+                                            <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600">
+                                                {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                        <button
+                                            onClick={handleSavePassword}
+                                            disabled={savingPassword || !newPassword}
+                                            className="h-11 px-5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
+                                        >
+                                            {savingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : (user?.hasPassword ? 'Passwort ändern' : 'Passwort setzen')}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    {/* Freelancer Settings */}
                         <div className="bg-white rounded-3xl shadow-lg border border-slate-200 p-6">
                             <div className="flex items-start gap-4 mb-6">
                                 <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">

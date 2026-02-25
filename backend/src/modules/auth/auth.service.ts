@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../core/database/prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -56,6 +56,7 @@ export class AuthService {
         subscriptionStatus: user.subscriptionStatus,
         subscriptionPlan: user.subscriptionPlan,
         trialEndsAt: user.trialEndsAt,
+        hasPassword: !!user.passwordHash,
       },
       ...tokens,
     };
@@ -69,6 +70,11 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Google-only accounts have no password
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('Please use Google login for this account');
     }
 
     // Verify password
@@ -94,6 +100,7 @@ export class AuthService {
         subscriptionStatus: user.subscriptionStatus,
         subscriptionPlan: user.subscriptionPlan,
         trialEndsAt: user.trialEndsAt,
+        hasPassword: !!user.passwordHash,
       },
       ...tokens,
     };
@@ -153,6 +160,7 @@ export class AuthService {
       isKleinunternehmer: user.isKleinunternehmer,
       stripeConnectAccountId: user.stripeConnectAccountId,
       stripeConnectEnabled: user.stripeConnectEnabled,
+      hasPassword: !!user.passwordHash,
     };
   }
 
@@ -189,9 +197,35 @@ export class AuthService {
       isKleinunternehmer: user.isKleinunternehmer,
       stripeConnectAccountId: user.stripeConnectAccountId,
       stripeConnectEnabled: user.stripeConnectEnabled,
+      hasPassword: !!user.passwordHash,
     };
   }
 
+  async setPassword(userId: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+    if (user.passwordHash) throw new BadRequestException('Account hat bereits ein Passwort. Bitte "Passwort ändern" verwenden.');
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    return { success: true };
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+    if (!user.passwordHash) throw new BadRequestException('Kein Passwort gesetzt. Bitte "Passwort setzen" verwenden.');
+
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) throw new UnauthorizedException('Aktuelles Passwort ist falsch');
+
+    const isSame = await bcrypt.compare(newPassword, user.passwordHash);
+    if (isSame) throw new BadRequestException('Das neue Passwort muss sich vom aktuellen unterscheiden');
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    return { success: true };
+  }
 
   async deleteAccount(userId: string) {
     // 1. Get user data (to check for Stripe subscription)
@@ -242,7 +276,51 @@ export class AuthService {
     return { success: true };
   }
 
-  private async generateTokens(userId: string, email: string, role: UserRole) {
+  async findOrCreateGoogleUser(profile: any): Promise<{ user: any; isNew: boolean }> {
+    const googleId: string = profile.id;
+    const email: string = profile.emails?.[0]?.value;
+    const firstName: string = profile.name?.givenName || profile.displayName?.split(' ')[0] || 'User';
+    const lastName: string = profile.name?.familyName || profile.displayName?.split(' ').slice(1).join(' ') || '';
+
+    // 1. Try to find by googleId first
+    let user = await this.prisma.user.findUnique({ where: { googleId } });
+    if (user) {
+      return { user, isNew: false };
+    }
+
+    // 2. Try to find by email (existing password account)
+    if (email) {
+      const existingByEmail = await this.prisma.user.findUnique({ where: { email } });
+      if (existingByEmail) {
+        // Link Google account to existing user
+        user = await this.prisma.user.update({
+          where: { id: existingByEmail.id },
+          data: { googleId },
+        });
+        return { user, isNew: false };
+      }
+    }
+
+    // 3. Create new user
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
+    user = await this.prisma.user.create({
+      data: {
+        email,
+        googleId,
+        firstName,
+        lastName,
+        subscriptionStatus: SubscriptionStatus.TRIAL,
+        subscriptionPlan: SubscriptionPlan.FREE_TRIAL,
+        trialEndsAt,
+      },
+    });
+
+    return { user, isNew: true };
+  }
+
+  async generateTokens(userId: string, email: string, role: UserRole) {
     const payload = { sub: userId, email, role };
 
     const accessToken = this.jwtService.sign(payload, {
