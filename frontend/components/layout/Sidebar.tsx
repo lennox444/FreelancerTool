@@ -26,7 +26,7 @@ export default function Sidebar({ className, onLinkClick }: SidebarProps) {
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/appointments', label: 'Termine', icon: Calendar },
+    { href: '/appointments', label: 'Kalender', icon: Calendar },
     { href: '/customers', label: 'Kunden', icon: Users },
     { href: '/projects', label: 'Projekte', icon: Folder },
     { href: '/time-tracking', label: 'Zeiterfassung', icon: Clock },
