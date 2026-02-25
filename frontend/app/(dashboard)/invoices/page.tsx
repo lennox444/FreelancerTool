@@ -29,8 +29,8 @@ import { cn } from '@/lib/utils';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-function fmt(n: number) {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n);
+function fmt(n: number | string) {
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(Number(n));
 }
 function fmtDate(s: string) {
   return new Intl.DateTimeFormat('de-DE').format(new Date(s));
@@ -46,11 +46,11 @@ function isThisMonth(d: Date) {
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const INVOICE_STATUS_CONFIG: Record<InvoiceStatus, { label: string; color: string; dot: string; Icon: any }> = {
-  [InvoiceStatus.DRAFT]:          { label: 'Entwurf',        color: 'bg-slate-100 text-slate-600 border-slate-200',       dot: 'bg-slate-400',   Icon: FileText     },
-  [InvoiceStatus.SENT]:           { label: 'Versendet',      color: 'bg-blue-50 text-blue-700 border-blue-200',           dot: 'bg-blue-500',    Icon: Send         },
-  [InvoiceStatus.PARTIALLY_PAID]: { label: 'Teilw. bezahlt', color: 'bg-amber-50 text-amber-700 border-amber-200',        dot: 'bg-amber-500',   Icon: Wallet       },
-  [InvoiceStatus.PAID]:           { label: 'Bezahlt',        color: 'bg-emerald-50 text-emerald-700 border-emerald-200',  dot: 'bg-emerald-500', Icon: CheckCircle2 },
-  [InvoiceStatus.OVERDUE]:        { label: 'Überfällig',     color: 'bg-red-50 text-red-700 border-red-200',              dot: 'bg-red-500',     Icon: AlertTriangle },
+  [InvoiceStatus.DRAFT]: { label: 'Entwurf', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400', Icon: FileText },
+  [InvoiceStatus.SENT]: { label: 'Versendet', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500', Icon: Send },
+  [InvoiceStatus.PARTIALLY_PAID]: { label: 'Teilw. bezahlt', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500', Icon: Wallet },
+  [InvoiceStatus.PAID]: { label: 'Bezahlt', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500', Icon: CheckCircle2 },
+  [InvoiceStatus.OVERDUE]: { label: 'Überfällig', color: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-500', Icon: AlertTriangle },
 };
 
 function InvoiceStatusPicker({ status, onSelect, loading }: {
@@ -113,12 +113,12 @@ function InvoiceStatusPicker({ status, onSelect, loading }: {
 function StatsBar({ invoices }: { invoices: Invoice[] }) {
   const totalOpen = invoices
     .filter(i => i.status !== InvoiceStatus.PAID)
-    .reduce((s, i) => s + (i.amount - (i.totalPaid ?? 0)), 0);
+    .reduce((s, i) => s + (Number(i.amount) - Number(i.totalPaid ?? 0)), 0);
   const overdueCount = invoices.filter(i => isOverdue(i)).length;
   const paidThisMonth = invoices
     .filter(i => i.status === InvoiceStatus.PAID && isThisMonth(new Date(i.updatedAt ?? i.dueDate)))
-    .reduce((s, i) => s + i.amount, 0);
-  const totalAll = invoices.reduce((s, i) => s + i.amount, 0);
+    .reduce((s, i) => s + Number(i.amount), 0);
+  const totalAll = invoices.reduce((s, i) => s + Number(i.amount), 0);
 
   const tiles = [
     { label: 'Offen', value: fmt(totalOpen), icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
@@ -527,13 +527,15 @@ export default function InvoicesPage() {
             className="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] transition-all text-slate-700 shadow-sm" />
         </div>
         {[
-          { value: statusFilter, onChange: (v: string) => setStatusFilter(v as any), placeholder: 'Alle Status', options: [
-            { value: InvoiceStatus.DRAFT, label: 'Entwurf' },
-            { value: InvoiceStatus.SENT, label: 'Versendet' },
-            { value: InvoiceStatus.PARTIALLY_PAID, label: 'Teilweise bezahlt' },
-            { value: InvoiceStatus.PAID, label: 'Bezahlt' },
-            { value: InvoiceStatus.OVERDUE, label: 'Überfällig' },
-          ]},
+          {
+            value: statusFilter, onChange: (v: string) => setStatusFilter(v as any), placeholder: 'Alle Status', options: [
+              { value: InvoiceStatus.DRAFT, label: 'Entwurf' },
+              { value: InvoiceStatus.SENT, label: 'Versendet' },
+              { value: InvoiceStatus.PARTIALLY_PAID, label: 'Teilweise bezahlt' },
+              { value: InvoiceStatus.PAID, label: 'Bezahlt' },
+              { value: InvoiceStatus.OVERDUE, label: 'Überfällig' },
+            ]
+          },
         ].map((sel, i) => (
           <select key={i} value={sel.value} onChange={e => sel.onChange(e.target.value)}
             className="px-6 h-12 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#800040]/10 focus:border-[#800040] transition-all shadow-sm appearance-none min-w-[180px]">
