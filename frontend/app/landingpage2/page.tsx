@@ -1,436 +1,508 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
     Menu, X, Check, Clock, Users, Zap, Shield, Star, Search, Layout,
     BarChart3, FileText, CreditCard, Target, Send, Download, Briefcase,
     Wallet, PieChart, TrendingUp, TrendingDown, ShieldCheck, Calendar, ArrowRight,
-    Fingerprint, Lock, ShieldAlert, BadgeEuro, Sparkles
+    Fingerprint, Lock, ShieldAlert, BadgeEuro, Sparkles, ChevronRight
 } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
+import {
+    motion,
+    AnimatePresence,
+    useScroll,
+    useTransform,
+    useInView,
+    useSpring,
+    useVelocity,
+    useMotionValue,
+    useMotionTemplate
+} from 'framer-motion';
 import PixelBlast from '@/components/landing/PixelBlast';
 
-// --- Reusable Animation Wrapper ---
+// --- ADVANCED COMPONENTS ---
+
+const GlowCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => {
+    const mouseX = useMotionValue(0);
+    const mouseY = useMotionValue(0);
+
+    function onMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
+        const { left, top } = currentTarget.getBoundingClientRect();
+        mouseX.set(clientX - left);
+        mouseY.set(clientY - top);
+    }
+
+    return (
+        <div
+            onMouseMove={onMouseMove}
+            className={`group relative rounded-[2.5rem] border border-slate-200 bg-white p-8 overflow-hidden shadow-sm transition-all duration-500 hover:shadow-2xl hover:border-[#800040]/20 ${className}`}
+        >
+            <motion.div
+                className="pointer-events-none absolute -inset-px rounded-[2.5rem] opacity-0 transition duration-300 group-hover:opacity-100"
+                style={{
+                    background: useMotionTemplate`
+                        radial-gradient(
+                            600px circle at ${mouseX}px ${mouseY}px,
+                            rgba(128, 0, 64, 0.06),
+                            transparent 80%
+                        )
+                    `,
+                }}
+            />
+            <div className="relative z-10">{children}</div>
+        </div>
+    );
+};
+
+const MagneticButton = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+
+    const handleMouse = (e: React.MouseEvent) => {
+        const { clientX, clientY } = e;
+        const { height, width, left, top } = ref.current!.getBoundingClientRect();
+        const middleX = clientX - (left + width / 2);
+        const middleY = clientY - (top + height / 2);
+        setPosition({ x: middleX * 0.2, y: middleY * 0.2 });
+    };
+
+    const reset = () => setPosition({ x: 0, y: 0 });
+
+    const { x, y } = position;
+
+    return (
+        <motion.div
+            ref={ref}
+            onMouseMove={handleMouse}
+            onMouseLeave={reset}
+            animate={{ x, y }}
+            transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
+            className={className}
+        >
+            {children}
+        </motion.div>
+    );
+};
 
 const Reveal = ({ children, delay = 0, y = 20, x = 0 }: { children: React.ReactNode, delay?: number, y?: number, x?: number }) => (
     <motion.div
         initial={{ opacity: 0, y, x }}
         whileInView={{ opacity: 1, y: 0, x: 0 }}
         viewport={{ once: true, margin: "-50px" }}
-        transition={{ duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
     >
         {children}
     </motion.div>
 );
 
-// --- Components ---
+// --- MAIN LANDING PAGE ---
 
-const Navbar = () => {
+export default function LandingPage2() {
+    const { scrollYProgress } = useScroll();
+    const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+
+    // Parallax values
+    const heroContentY = useTransform(smoothProgress, [0, 0.3], [0, 150]);
+    const heroOpacity = useTransform(smoothProgress, [0, 0.2], [1, 0]);
+    const bgScale = useTransform(smoothProgress, [0, 0.5], [1, 1.1]);
+
     const [isScrolled, setIsScrolled] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
     useEffect(() => {
-        const handleScroll = () => setIsScrolled(window.scrollY > 20);
+        const handleScroll = () => setIsScrolled(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     return (
-        <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200/50 py-3 shadow-sm' : 'bg-transparent py-6'
-            }`}>
-            <div className="container mx-auto px-6 flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-2 transition-transform hover:scale-[1.02]">
-                    <Image
-                        src="/logo.svg"
-                        alt="FreelancerTool Logo"
-                        width={150}
-                        height={30}
-                        className="h-8 w-auto"
-                        priority
-                    />
-                </Link>
+        <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-[#800040] selection:text-white overflow-x-hidden antialiased">
 
-                <div className="hidden lg:flex items-center gap-8">
-                    <Link href="#loesung" className="text-[13px] font-bold text-slate-600 hover:text-[#800040] transition-colors">Funktionen</Link>
-                    <Link href="#steuern" className="text-[13px] font-bold text-slate-600 hover:text-[#800040] transition-colors">Steuern</Link>
-                    <Link href="#preise" className="text-[13px] font-bold text-slate-600 hover:text-[#800040] transition-colors">Preise</Link>
-                </div>
-
-                <div className="hidden md:flex items-center gap-6">
-                    <Link href="/login" className="text-[13px] font-bold text-slate-600 hover:text-slate-900 transition-colors uppercase tracking-tight">Login</Link>
-                    <Link href="/register">
-                        <button className="bg-[#800040] text-white text-[12px] font-black px-6 py-2.5 rounded-full hover:bg-slate-900 transition-all shadow-xl shadow-[#800040]/10 active:scale-95 uppercase tracking-tight">
-                            Gratis Starten
-                        </button>
-                    </Link>
-                </div>
-
-                <button className="lg:hidden p-2 text-slate-600" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-                    {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                </button>
+            {/* Custom Cursor-glow effect in background */}
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+                <motion.div
+                    style={{ scale: bgScale }}
+                    className="absolute inset-0 transition-opacity duration-1000"
+                >
+                    <div className="absolute top-[-10%] left-[-10%] w-[1200px] h-[1200px] bg-[#800040]/5 rounded-full blur-[200px] animate-pulse" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[1000px] h-[1000px] bg-blue-500/[0.03] rounded-full blur-[180px]" />
+                </motion.div>
             </div>
 
-            <AnimatePresence>
-                {isMobileMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 right-0 bg-white border-b border-slate-200 p-8 lg:hidden shadow-2xl text-center"
-                    >
-                        <div className="flex flex-col gap-6">
-                            <Link href="#loesung" className="text-lg font-black text-slate-900" onClick={() => setIsMobileMenuOpen(false)}>Funktionen</Link>
-                            <Link href="#steuern" className="text-lg font-black text-slate-900" onClick={() => setIsMobileMenuOpen(false)}>Steuern</Link>
-                            <div className="pt-4 flex flex-col gap-3">
-                                <Link href="/register" className="w-full py-4 bg-[#800040] text-white rounded-2xl font-black text-sm uppercase">14 Tage kostenlos testen</Link>
-                            </div>
+            {/* --- NAV BAR --- */}
+            <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-700 ${isScrolled ? 'py-4' : 'py-8'
+                }`}>
+                <div className="container mx-auto px-6">
+                    <div className={`mx-auto max-w-7xl flex items-center justify-between px-8 py-3 rounded-full transition-all duration-700 ${isScrolled ? 'bg-white/80 backdrop-blur-2xl border border-slate-200/50 shadow-[0_8px_32px_rgba(0,0,0,0.05)]' : 'bg-transparent'
+                        }`}>
+                        <Link href="/" className="group flex items-center gap-2">
+                            <Image
+                                src="/logo.svg"
+                                alt="Logo"
+                                width={140}
+                                height={30}
+                                className="h-7 w-auto transition-transform group-hover:scale-105"
+                                priority
+                            />
+                        </Link>
+
+                        <div className="hidden lg:flex items-center gap-10">
+                            {['Funktionen', 'Steuern', 'Preise'].map((item) => (
+                                <Link
+                                    key={item}
+                                    href={`#${item.toLowerCase()}`}
+                                    className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-[#800040] transition-colors"
+                                >
+                                    {item}
+                                </Link>
+                            ))}
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </nav>
-    );
-};
 
-const FloatingCard = ({ children, className, delay = 0, rotate = 0 }: { children: React.ReactNode, className: string, delay?: number, rotate?: number }) => (
-    <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.9, rotate }}
-        animate={{ opacity: 1, y: 0, scale: 1, rotate }}
-        transition={{ duration: 1, delay, ease: [0.16, 1, 0.3, 1] }}
-        className={`absolute shadow-2xl rounded-3xl bg-white border border-slate-100 z-20 ${className}`}
-    >
-        {children}
-    </motion.div>
-);
-
-export default function LandingPage2() {
-    const { scrollYProgress } = useScroll();
-    const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-    const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
-
-    return (
-        <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-[#800040]/10 selection:text-[#800040] overflow-x-hidden antialiased">
-            <Navbar />
+                        <div className="flex items-center gap-8">
+                            <Link href="/login" className="hidden md:block text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-slate-900 transition-colors">Login</Link>
+                            <MagneticButton>
+                                <Link href="/register">
+                                    <button className="bg-[#800040] text-white text-[10px] font-black px-8 py-3 rounded-full shadow-[0_10px_30px_rgba(128,0,64,0.3)] hover:bg-slate-950 transition-all uppercase tracking-widest active:scale-95">
+                                        Gratis Starten
+                                    </button>
+                                </Link>
+                            </MagneticButton>
+                        </div>
+                    </div>
+                </div>
+            </nav>
 
             {/* --- HERO SECTION --- */}
-            <motion.section
-                style={{ opacity: heroOpacity, scale: heroScale }}
-                className="relative min-h-screen flex items-center justify-center pt-32 pb-20 overflow-visible isolate"
-            >
-
-                {/* HERO BACKGROUND - LIMITED TO HERO */}
-                <div className="absolute inset-0 -z-10 bg-white shadow-[0_50px_100px_rgba(0,0,0,0.02)]">
-                    <div className="absolute inset-0 w-full h-full opacity-30 pointer-events-none">
-                        <PixelBlast variant="square" pixelSize={3} color="#800040" patternScale={5} patternDensity={0.5} speed={0.3} transparent />
+            <section className="relative min-h-[110vh] flex items-center justify-center pt-20 overflow-visible isolate">
+                <div className="absolute inset-0 -z-10 bg-white">
+                    <div className="absolute inset-0 w-full h-full opacity-20 pointer-events-none">
+                        <PixelBlast variant="square" pixelSize={2} color="#800040" patternScale={4} patternDensity={0.4} speed={0.2} transparent />
                     </div>
-                    {/* Soft Bordeaux Gradient Orb */}
-                    <div className="absolute top-[5%] left-[-10%] w-[1000px] h-[1000px] bg-[#800040]/10 rounded-full blur-[160px] animate-pulse" />
-                    <div className="absolute bottom-[-10%] right-[-10%] w-[900px] h-[900px] bg-blue-500/5 rounded-full blur-[140px]" />
                 </div>
 
-                <div className="container mx-auto px-6 relative text-center">
-
-                    {/* --- VISUAL WOW ELEMENTS --- */}
-
-                    {/* Left Stock Image */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -100, rotate: -12 }}
-                        animate={{ opacity: 1, x: 0, rotate: -6 }}
-                        transition={{ duration: 1.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                        className="absolute top-[15%] left-[-80px] hidden 2xl:block z-10"
-                    >
-                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400" className="w-56 h-72 object-cover rounded-[3.5rem] shadow-2xl border-4 border-white" alt="Freelancer Success" />
-                    </motion.div>
-
-                    {/* Right Stock Image */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 100, rotate: 12 }}
-                        animate={{ opacity: 1, x: 0, rotate: 6 }}
-                        transition={{ duration: 1.5, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                        className="absolute bottom-[20%] right-[-100px] hidden 2xl:block z-10"
-                    >
-                        <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&q=80&w=400" className="w-60 h-80 object-cover rounded-[3.8rem] shadow-2xl border-4 border-white" alt="Work In Flow" />
-                    </motion.div>
-
-                    {/* Profit Card Mockup */}
-                    <FloatingCard className="top-[45%] right-[5%] hidden xl:block p-6 w-64 rotate-[-3deg]" delay={0.8}>
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center"><TrendingUp size={16} /></div>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rentabilität</span>
-                        </div>
-                        <div className="text-3xl font-black text-slate-900 tracking-tighter">€84,50/h</div>
-                        <div className="h-1.5 w-full bg-slate-50 rounded-full mt-4"><div className="h-full bg-[#800040] w-[85%] rounded-full" /></div>
-                    </FloatingCard>
-
-                    {/* Invoice Badge Mockup */}
-                    <FloatingCard className="bottom-[15%] left-[5%] hidden xl:block p-5 w-60 rotate-[4deg]" delay={1}>
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><Check size={16} /></div>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status</span>
-                        </div>
-                        <div className="text-xl font-black text-slate-900 tracking-tight">Rechnung bezahlt</div>
-                        <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter italic">Automatisch erfasst</p>
-                        <div className="mt-4 flex justify-end"><div className="px-2 py-0.5 bg-blue-600 text-white rounded-[4px] text-[8px] font-black">STRIPE</div></div>
-                    </FloatingCard>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2.5 px-6 py-2 rounded-full border border-slate-200 bg-white/50 text-[#800040] text-[10px] font-black uppercase tracking-[0.25em] mb-12 shadow-sm backdrop-blur-md"
-                    >
-                        <Sparkles className="w-3.5 h-3.5 fill-current animate-pulse" />
-                        Deutschlands Business-Cockpit
-                    </motion.div>
-
-                    <motion.h1
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                        className="text-[54px] md:text-[100px] lg:text-[140px] font-black tracking-[-0.07em] leading-[0.82] text-slate-950 mb-10 max-w-6xl mx-auto drop-shadow-sm"
-                    >
-                        Arbeite im <br /> <span className="text-[#800040]">Flow.</span>
-                    </motion.h1>
-
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                        className="text-xl md:text-3xl text-slate-500 font-bold max-w-2xl mx-auto mb-16 leading-tight"
-                    >
-                        Projekte, Rechnungen & Finanzen <br className="hidden md:block" />
-                        in einer Hand. 100% für Freelancer.
-                    </motion.p>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.3 }}
-                        className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full max-w-2xl mx-auto mb-20 md:mb-32 px-4"
-                    >
-                        <div className="flex-1 w-full bg-white p-1 rounded-[2rem] border-2 border-slate-100 shadow-2xl flex items-center group transition-all focus-within:border-[#800040]/30">
-                            <input
-                                type="email"
-                                placeholder="Deine E-Mail Adresse"
-                                className="bg-transparent border-none focus:ring-0 w-full px-6 py-4 text-[16px] font-bold placeholder:text-slate-300"
-                            />
-                            <button className="whitespace-nowrap bg-slate-950 text-white px-10 py-4 rounded-2xl font-black text-sm uppercase shadow-xl hover:bg-[#800040] transition-all hover:scale-[1.03] active:scale-95 m-1">
-                                Gratis Starten
-                            </button>
-                        </div>
-                    </motion.div>
-
-                    {/* Target Audience Tags */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 0.4 }}
-                        transition={{ delay: 0.6 }}
-                        className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 border-t border-slate-100 pt-16"
-                    >
-                        <span className="hover:text-[#800040] transition-colors cursor-default">IT-Freelancer</span>
-                        <span className="hover:text-[#800040] transition-colors cursor-default">Designer</span>
-                        <span className="hover:text-[#800040] transition-colors cursor-default">Entwickler</span>
-                        <span className="hover:text-[#800040] transition-colors cursor-default">Berater</span>
-                        <span className="hover:text-[#800040] transition-colors cursor-default">Kreative</span>
-                    </motion.div>
-                </div>
-            </motion.section>
-
-            {/* --- SOLUTION SECTION --- */}
-            <section id="loesung" className="py-20 md:py-32 bg-white relative">
-                <div className="container mx-auto px-6">
-                    <div className="flex flex-col lg:flex-row items-center gap-24">
-                        <div className="flex-1">
-                            <Reveal x={-30}>
-                                <span className="text-[#800040] font-black text-[11px] uppercase tracking-[0.3em] mb-10 block">Die Lösung: FreelancerTool</span>
-                                <h2 className="text-4xl md:text-7xl font-black mb-12 tracking-tight text-slate-950 leading-[1.1]">Klarheit für dein <br /> gesamtes Business.</h2>
-                                <p className="text-slate-500 text-lg md:text-xl font-bold mb-16 leading-relaxed">FreelancerTool wurde speziell für die Anforderungen der deutschen Solo-Selbstständigkeit entwickelt. Keine überladene Agentur-Software, sondern Präzision für Einzelunternehmer.</p>
-                            </Reveal>
-
-                            <div className="grid sm:grid-cols-2 gap-x-12 gap-y-10">
-                                {[
-                                    { label: "Projektverwaltung", desc: "Alle Details, Budgets und Status an einem Ort." },
-                                    { label: "Rechnungsstellung", desc: "Professionelle PDFs inkl. Kleinunternehmer-Modus." },
-                                    { label: "DATEV-Export", desc: "EXTF-Format für SKR03 standardmäßig integriert." },
-                                    { label: "Mahnwesen", desc: "4-stufige Automation für pünktliche Zahlungen." },
-                                    { label: "Online-Zahlung", desc: "Via Stripe direkt im Rechnungs-Link bezahlen." },
-                                    { label: "Rentabilitätsanalyse", desc: "Stundensatz-Auswertung nach jedem Projekt." }
-                                ].map((f, i) => (
-                                    <Reveal key={i} delay={i * 0.1} y={20}>
-                                        <div className="flex gap-4 items-start">
-                                            <div className="w-5 h-5 rounded-full bg-[#800040] flex items-center justify-center text-white shrink-0 mt-1">
-                                                <Check size={12} />
-                                            </div>
-                                            <div>
-                                                <h5 className="font-black text-slate-900 mb-1">{f.label}</h5>
-                                                <p className="text-xs font-bold text-slate-400">{f.desc}</p>
-                                            </div>
-                                        </div>
-                                    </Reveal>
-                                ))}
-                            </div>
-                        </div>
-
-                        <Reveal x={30} className="flex-1 w-full">
-                            <div className="bg-slate-50 p-6 rounded-[4rem] border border-slate-100 flex flex-col gap-6 relative overflow-hidden group shadow-sm hover:shadow-2xl transition-all duration-700">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-[#800040]/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-
-                                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <div className="px-3 py-1 bg-white rounded-lg text-[10px] font-black text-slate-400 tracking-widest uppercase border border-slate-100 shadow-sm">RE-2024-042</div>
-                                        <div className="px-2 py-0.5 rounded bg-[#800040]/10 text-[#800040] text-[9px] font-black uppercase tracking-widest">Wartet auf Zahlung</div>
-                                    </div>
-                                    <div className="text-4xl font-black text-slate-900 tracking-tighter">€4.840,00</div>
-                                    <p className="text-[10px] font-black text-slate-400 mt-2 italic flex items-center gap-2">Gemäß §19 UStG wird keine Umsatzsteuer berechnet.</p>
-                                </div>
-
-                                <div className="p-8 bg-[#800040] rounded-[2.5rem] text-white">
-                                    <div className="flex justify-between items-center mb-10">
-                                        <h5 className="text-[10px] font-black uppercase tracking-widest text-white/40 leading-none">Netto-Rentabilität</h5>
-                                        <TrendingUp size={16} />
-                                    </div>
-                                    <div className="text-5xl font-black tracking-tighter mb-4">€84,50/h</div>
-                                    <p className="text-xs font-bold text-white/50 italic text-left">Echter Stundensatz nach Ausgaben & Steuerrücklage.</p>
+                <motion.div
+                    style={{ y: heroContentY, opacity: heroOpacity }}
+                    className="container mx-auto px-6 relative"
+                >
+                    {/* Floating elements with deep parallax */}
+                    <div className="absolute inset-0 pointer-events-none overflow-visible">
+                        {/* 3D Looking UI Card 1 */}
+                        <motion.div
+                            animate={{ y: [0, -20, 0], rotate: [-2, 2, -2] }}
+                            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                            className="absolute top-[10%] left-[2%] hidden 2xl:block p-6 rounded-[2.5rem] bg-white shadow-3xl border border-slate-100 z-20 backdrop-blur-sm"
+                        >
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-10 h-10 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center"><TrendingUp size={20} /></div>
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Netto-Gewinn</p>
+                                    <p className="text-xl font-black text-slate-950 mt-1">€8.420,00</p>
                                 </div>
                             </div>
+                            <div className="h-1.5 w-32 bg-slate-50 rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: "75%" }}
+                                    transition={{ duration: 2, delay: 1 }}
+                                    className="h-full bg-green-500 rounded-full"
+                                />
+                            </div>
+                        </motion.div>
+
+                        {/* Interactive Invoicing Card 2 */}
+                        <motion.div
+                            animate={{ y: [0, 20, 0], rotate: [2, -2, 2] }}
+                            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                            className="absolute bottom-[20%] right-[5%] hidden 2xl:block p-8 rounded-[3rem] bg-slate-950 text-white shadow-wow z-20"
+                        >
+                            <div className="flex justify-between items-center mb-10">
+                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"><Check size={20} className="text-[#800040]" /></div>
+                                <Sparkles className="text-white/20" size={16} />
+                            </div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-2">Rechnung bezahlt</p>
+                            <p className="text-3xl font-black tracking-tighter">€4.250,00</p>
+                            <div className="mt-6 flex items-center justify-between">
+                                <div className="flex -space-x-2">
+                                    {[1, 2, 3].map(i => <div key={i} className="w-6 h-6 rounded-full border-2 border-slate-950 bg-slate-800" />)}
+                                </div>
+                                <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">Stripe Sync</span>
+                            </div>
+                        </motion.div>
+                    </div>
+
+                    <div className="max-w-[1200px] mx-auto text-center">
+                        <Reveal delay={0.1}>
+                            <motion.div
+                                whileHover={{ scale: 1.05 }}
+                                className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-slate-200 bg-white/50 text-[#800040] text-[10px] font-black uppercase tracking-[0.3em] mb-12 shadow-sm backdrop-blur-md cursor-default transition-all hover:border-[#800040]/30"
+                            >
+                                <div className="w-2 h-2 rounded-full bg-[#800040] animate-ping" />
+                                Dein Business in einer Hand
+                            </motion.div>
                         </Reveal>
-                    </div>
-                </div>
-            </section>
 
-            {/* --- STEUR-TRANSPARENZ --- */}
-            <section id="steuern" className="py-20 md:py-32 bg-white">
-                <div className="container mx-auto px-6">
-                    <div className="flex flex-col lg:flex-row items-center gap-20">
-                        <Reveal x={-30} className="flex-1 relative order-2 lg:order-1">
-                            <div className="absolute inset-0 bg-blue-500/5 blur-[120px] rounded-full" />
-                            <div className="p-10 rounded-[4rem] bg-slate-50 border border-slate-100 shadow-sm relative z-10 transition-transform hover:scale-[1.02] duration-700">
-                                <div className="flex items-center gap-4 mb-10">
-                                    <div className="w-12 h-12 rounded-2xl bg-[#800040]/5 flex items-center justify-center text-[#800040]"><PieChart size={24} /></div>
-                                    <div>
-                                        <h4 className="font-black text-slate-900 leading-none">Steuer-Assistent</h4>
-                                        <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest">Planung 2024</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-6">
-                                    <div className="flex justify-between items-end">
-                                        <span className="text-xs font-bold text-slate-500">Einkommensteuer</span>
-                                        <span className="text-2xl font-black text-slate-900">€6.420</span>
-                                    </div>
-                                    <div className="flex justify-between items-end">
-                                        <span className="text-xs font-bold text-slate-500">Umsatzsteuer (19%)</span>
-                                        <span className="text-xl font-black text-[#800040]">€3.120</span>
-                                    </div>
-                                    <div className="h-1 bg-slate-200 rounded-full overflow-hidden mt-6">
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            whileInView={{ width: "35%" }}
-                                            transition={{ duration: 1, delay: 0.5 }}
-                                            className="h-full bg-[#800040]"
-                                        />
-                                    </div>
-                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest text-center mt-2">Empfohlene Rücklage: 35% vom Gewinn</p>
+                        <Reveal delay={0.2} y={30}>
+                            <h1 className="text-[60px] md:text-[120px] lg:text-[180px] font-black tracking-[-0.08em] leading-[0.78] text-slate-950 mb-12 py-4">
+                                Arbeite im <br />
+                                <span className="relative inline-block">
+                                    <span className="text-[#800040] relative z-10 italic">Flow.</span>
+                                    <motion.div
+                                        initial={{ scaleX: 0 }}
+                                        animate={{ scaleX: 1 }}
+                                        transition={{ duration: 1.5, delay: 1, ease: [0.16, 1, 0.3, 1] }}
+                                        className="absolute bottom-[10%] left-0 w-full h-[15%] bg-[#800040]/5 -z-10 origin-left"
+                                    />
+                                </span>
+                            </h1>
+                        </Reveal>
+
+                        <Reveal delay={0.4}>
+                            <p className="text-xl md:text-4xl text-slate-400 font-bold max-w-3xl mx-auto mb-20 leading-tight">
+                                Projekte & Rechnungen steuern. <br className="hidden md:block" />
+                                <span className="text-slate-900">Ohne Reibungsverluste. 100% Freelancer.</span>
+                            </p>
+                        </Reveal>
+
+                        <Reveal delay={0.5}>
+                            <div className="flex flex-col sm:flex-row gap-6 items-center justify-center max-w-3xl mx-auto mb-24">
+                                <div className="flex-1 w-full bg-white p-2 rounded-[2.5rem] shadow-[0_20px_80px_rgba(0,0,0,0.1)] border border-slate-100 flex items-center group transition-all focus-within:ring-4 focus-within:ring-[#800040]/5 overflow-hidden">
+                                    <input
+                                        type="email"
+                                        placeholder="Deine E-Mail Adresse"
+                                        className="bg-transparent border-none focus:ring-0 w-full px-8 py-4 text-lg font-bold placeholder:text-slate-300"
+                                    />
+                                    <button className="whitespace-nowrap bg-slate-950 text-white px-12 py-5 rounded-[1.8rem] font-black text-sm uppercase shadow-xl hover:bg-[#800040] transition-all hover:scale-[1.02] active:scale-95 m-1 tracking-widest">
+                                        LOSLEGEN
+                                    </button>
                                 </div>
                             </div>
                         </Reveal>
 
-                        <div className="flex-1 order-1 lg:order-2">
-                            <Reveal x={30}>
-                                <span className="text-[#800040] font-black text-[11px] uppercase tracking-[0.3em] mb-10 block">Finanzielle Sicherheit</span>
-                                <h2 className="text-4xl md:text-6xl font-black mb-10 tracking-tight text-slate-950">Intelligente Steuer-Vorschau.</h2>
-                                <p className="text-slate-500 text-lg md:text-xl font-bold mb-10 leading-relaxed">Keine bösen Überraschungen bei der Vorauszahlung. Das FreelancerTool berechnet voraussichtliche Beträge basierend auf dem deutschen Einkommensteuer-Grundtarif.</p>
-
-                                <ul className="space-y-4 mb-12 text-slate-600 font-bold text-sm">
-                                    <li className="flex items-start gap-3"><Check size={18} className="text-[#800040] shrink-0 mt-0.5" /> Berechnung nach deutschem Grundtarif</li>
-                                    <li className="flex items-start gap-3"><Check size={18} className="text-[#800040] shrink-0 mt-0.5" /> Umsatzsteuer-Überwachung (Normal & §19)</li>
-                                    <li className="flex items-start gap-3"><Check size={18} className="text-[#800040] shrink-0 mt-0.5" /> Vierteljährliche Planungsunterstützung</li>
-                                </ul>
-
-                                <p className="text-[10px] font-bold text-slate-300 leading-relaxed max-w-md mt-12 italic border-l border-slate-100 pl-4">
-                                    * Die Berechnungen stellen keine steuerliche Beratung dar und ersetzen nicht die Prüfung durch einen Steuerberater.
-                                </p>
-                            </Reveal>
+                        {/* Scrolling tags */}
+                        <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 text-[11px] font-black uppercase tracking-[0.4em] text-slate-300 pb-20">
+                            {['IT-Experten', 'Kreative', 'Consultants', 'Entwickler', 'Designer'].map((tag, i) => (
+                                <motion.span
+                                    key={tag}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 0.3 }}
+                                    transition={{ delay: 1 + i * 0.1 }}
+                                    className="hover:text-[#800040] hover:opacity-100 transition-all cursor-default"
+                                >
+                                    {tag}
+                                </motion.span>
+                            ))}
                         </div>
                     </div>
-                </div>
+                </motion.div>
             </section>
 
-            {/* --- SECURITY SECTION --- */}
-            <section className="py-20 md:py-24 bg-white overflow-hidden relative isolate">
-                <div className="container mx-auto px-6 text-center">
-                    <Reveal y={20}>
-                        <h2 className="text-4xl md:text-6xl font-black mb-16 tracking-tight text-slate-950 leading-none py-1">Deine Daten. Deine Freiheit.</h2>
-                    </Reveal>
+            {/* --- SOLUTIONS: THE "INFINITY" GRID --- */}
+            <section id="funktionen" className="py-32 relative bg-white overflow-hidden">
+                <div className="container mx-auto px-6">
+                    <div className="max-w-4xl mb-32">
+                        <Reveal x={-30}>
+                            <h2 className="text-[12px] font-black uppercase tracking-[0.4em] text-[#800040] mb-12">Systemkomponenten</h2>
+                            <p className="text-5xl md:text-8xl font-black text-slate-950 tracking-tighter leading-none mb-12">
+                                Dein gesamtes Business, <br /> perfekt synchronisiert.
+                            </p>
+                            <p className="text-2xl text-slate-400 font-bold max-w-2xl">
+                                Keine überladene Software für Agenturen. Wir haben FreelancerTool für die Präzision der Solo-Selbstständigkeit entworfen.
+                            </p>
+                        </Reveal>
+                    </div>
 
-                    <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {[
-                            { icon: Fingerprint, title: "Vollständige Datenisolierung", desc: "Deine geschäftlichen Daten sind strikt isoliert und jederzeit unter deiner Kontrolle.", color: "text-[#800040]" },
-                            { icon: Lock, title: "Höchste Auth-Standards", desc: "Sicherer Zugriff via JWT-Authentifizierung mit regelmäßigen Token-Refreshes.", color: "text-blue-600" },
-                            { icon: BadgeEuro, title: "Valide Zahlungsabwickung", desc: "Stripe-Webhook-Validierung garantiert eine sichere und automatisierte Abrechnung.", color: "text-black" }
-                        ].map((s, i) => (
-                            <Reveal key={i} delay={i * 0.2} y={30}>
-                                <div className="text-center group p-8 rounded-[2.5rem] hover:bg-slate-50 transition-colors duration-500">
-                                    <div className="w-16 h-16 rounded-3xl bg-white shadow-lg flex items-center justify-center mx-auto mb-8 group-hover:scale-110 transition-transform"><s.icon size={32} className={s.color} /></div>
-                                    <h4 className="text-xl font-black mb-4 tracking-tight">{s.title}</h4>
-                                    <p className="text-slate-400 font-bold text-sm leading-relaxed">{s.desc}</p>
-                                </div>
+                            { icon: Layout, title: "Projekt-Dashboard", desc: "Zentraler Überblick über alle aktiven Mandate, Budgets und Deadlines in Echtzeit.", delay: 0 },
+                            { icon: FileText, title: "Rechnungs-Engine", desc: "Professionelle Rechnungen inkl. Kleinunternehmer-Status und automatischem Versand.", delay: 0.1 },
+                            { icon: Search, title: "DATEV-Schnittstelle", desc: "Vollständiger EXTF-Export für deinen Steuerberater. Kompatibel mit allen Kanzlei-Systemen.", delay: 0.2 },
+                            { icon: PieChart, title: "Gewinn-Fokus", desc: "Berechnung deiner tatsächlichen Rentabilität pro Stunde nach Abzug aller Kosten.", delay: 0.3 },
+                            { icon: Lock, title: "Mahn-Automation", desc: "Dezent, aber konsequent: Automatisierte Zahlungserinnerungen für pünktliche Cashflows.", delay: 0.4 },
+                            { icon: ShieldCheck, title: "DSGVO-Sicherheit", desc: "Hosting in Deutschland, Ende-zu-Ende verschlüsselt und 100% datenschutzkonform.", delay: 0.5 },
+                        ].map((item, i) => (
+                            <Reveal key={i} delay={item.delay} y={40}>
+                                <GlowCard className="h-full">
+                                    <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-[#800040] mb-8 group-hover:scale-110 group-hover:bg-[#800040] group-hover:text-white transition-all duration-500">
+                                        <item.icon size={28} />
+                                    </div>
+                                    <h4 className="text-2xl font-black text-slate-950 mb-4 tracking-tight">{item.title}</h4>
+                                    <p className="text-slate-400 font-bold leading-relaxed">{item.desc}</p>
+                                    <div className="mt-8 pt-8 border-t border-slate-50 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#800040]">Mehr Erfahren</span>
+                                        <ChevronRight size={16} className="text-[#800040]" />
+                                    </div>
+                                </GlowCard>
                             </Reveal>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* --- FINAL COMBINED SECTION (Pricing & CTA) --- */}
-            <section id="preise" className="py-20 md:py-32 bg-white overflow-visible relative">
-                <div className="container mx-auto px-6 max-w-4xl text-center">
+            {/* --- THE TAX ENGINE: IMMERSIVE STATS --- */}
+            <section id="steuern" className="py-40 relative bg-slate-50/50">
+                <div className="container mx-auto px-6">
+                    <div className="flex flex-col lg:flex-row items-center gap-32">
+                        <div className="flex-1">
+                            <Reveal x={-30}>
+                                <h3 className="text-[12px] font-black uppercase tracking-[0.4em] text-[#800040] mb-12">Intelligenz Kern</h3>
+                                <h2 className="text-5xl md:text-8xl font-black text-slate-950 tracking-tighter leading-none mb-12">
+                                    Nie wieder Angst vorm Finanzamt.
+                                </h2>
+                                <p className="text-xl text-slate-500 font-bold mb-16 max-w-xl">
+                                    Das FreelancerTool berechnet deine voraussichtliche Einkommen- und Umsatzsteuerbelastung in Echtzeit auf Basis des deutschen Steuertarifs.
+                                </p>
+
+                                <div className="space-y-8">
+                                    {[
+                                        "Automatisierte Steuerrücklagen-Berechnung",
+                                        "Umsatzsteuer-Voranmeldung im Blick",
+                                        "Berücksichtigung der Kleinunternehmer-Regel",
+                                        "Finanzamts-konforme Archivierung"
+                                    ].map((text, i) => (
+                                        <div key={i} className="flex items-center gap-6">
+                                            <div className="w-6 h-6 rounded-full bg-white border-2 border-[#800040]/20 flex items-center justify-center text-[#800040]">
+                                                <Check size={14} strokeWidth={4} />
+                                            </div>
+                                            <span className="text-lg font-black text-slate-950">{text}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <p className="text-[10px] font-bold text-slate-300 leading-relaxed max-w-md mt-16 italic border-l border-slate-200 pl-6">
+                                    * Die Berechnungen stellen keine steuerliche Beratung dar und ersetzen nicht die fachliche Prüfung durch einen qualifizierten Steuerberater.
+                                </p>
+                            </Reveal>
+                        </div>
+
+                        <div className="flex-1 w-full perspective-1000">
+                            <Reveal x={30}>
+                                <motion.div
+                                    whileHover={{ rotateY: -5, rotateX: 5 }}
+                                    className="relative p-12 rounded-[5rem] bg-white border border-slate-200 shadow-wow overflow-hidden group"
+                                >
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#800040]/5 rounded-full blur-[100px] group-hover:scale-150 transition-transform duration-1000" />
+
+                                    <div className="flex items-center gap-6 mb-16">
+                                        <div className="w-16 h-16 rounded-[2rem] bg-slate-950 text-white flex items-center justify-center shadow-xl"><PieChart size={32} /></div>
+                                        <div>
+                                            <h4 className="text-2xl font-black text-slate-950">Steuer-Cockpit</h4>
+                                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">Status: Aktuelles Quartal</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-12">
+                                        <div>
+                                            <div className="flex justify-between items-end mb-4">
+                                                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Einkommensteuer</span>
+                                                <span className="text-4xl font-black text-slate-950">€6.420</span>
+                                            </div>
+                                            <div className="h-3 w-full bg-slate-50 rounded-full overflow-hidden">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    whileInView={{ width: "65%" }}
+                                                    transition={{ duration: 1.5, ease: "easeOut" }}
+                                                    className="h-full bg-slate-950 rounded-full"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex justify-between items-end mb-4">
+                                                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Umsatzsteuer (19%)</span>
+                                                <span className="text-4xl font-black text-[#800040]">€4.120</span>
+                                            </div>
+                                            <div className="h-3 w-full bg-slate-50 rounded-full overflow-hidden">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    whileInView={{ width: "40%" }}
+                                                    transition={{ duration: 1.5, delay: 0.2, ease: "easeOut" }}
+                                                    className="h-full bg-[#800040] rounded-full"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-20 p-8 rounded-3xl bg-slate-50 border border-slate-100 text-center">
+                                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Empfohlene Rücklage</p>
+                                        <p className="text-4xl font-black text-slate-950 tracking-tighter">€10.540,00</p>
+                                    </div>
+                                </motion.div>
+                            </Reveal>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* --- PRICING & FINAL CTA: THE "GLASS" FINALE --- */}
+            <section id="preise" className="py-40 relative overflow-visible">
+                <div className="container mx-auto px-6 max-w-5xl text-center">
                     <Reveal y={20}>
-                        <h2 className="text-5xl md:text-8xl font-black mb-20 tracking-[-0.05em] leading-none text-slate-950">
-                            Finde heute deinen <br /> <span className="text-[#800040]">Flow.</span>
+                        <h2 className="text-6xl md:text-[140px] font-black mb-32 tracking-[-0.08em] leading-none text-slate-950 py-4">
+                            Komm in den <br /> <span className="text-[#800040] italic">Flow.</span>
                         </h2>
                     </Reveal>
 
                     <Reveal y={40} delay={0.2}>
-                        <div className="relative p-12 md:p-20 rounded-[4rem] bg-[#800040] text-white shadow-[0_50px_100px_rgba(128,0,64,0.3)] overflow-hidden text-left flex flex-col md:flex-row items-center gap-12 md:gap-20">
-                            {/* Background Reflective Patterns (Blobs from old Landing Page) */}
-                            <div className="absolute top-0 left-0 w-64 h-64 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob pointer-events-none" />
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-2000 pointer-events-none" />
-                            <div className="absolute -bottom-8 left-20 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-4000 pointer-events-none" />
+                        <div className="relative p-12 md:p-24 rounded-[5rem] bg-[#800040] text-white shadow-[0_60px_120px_rgba(128,0,64,0.4)] overflow-hidden text-left flex flex-col lg:flex-row items-center gap-20">
 
-                            {/* Shine Reflection Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none opacity-50" />
+                            {/* Reflective Blobs (Advanced CSS & Motion) */}
+                            <motion.div
+                                animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0], x: [0, 50, 0] }}
+                                transition={{ duration: 20, repeat: Infinity }}
+                                className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-pink-400 rounded-full mix-blend-screen filter blur-[120px] opacity-20 pointer-events-none"
+                            />
+                            <motion.div
+                                animate={{ scale: [1.2, 1, 1.2], rotate: [0, -90, 0], y: [0, -50, 0] }}
+                                transition={{ duration: 15, repeat: Infinity }}
+                                className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-500 rounded-full mix-blend-screen filter blur-[120px] opacity-20 pointer-events-none"
+                            />
+
+                            {/* Moving Shine Layer */}
+                            <motion.div
+                                animate={{ x: ['-100%', '200%'] }}
+                                transition={{ duration: 5, repeat: Infinity, repeatDelay: 3 }}
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 pointer-events-none"
+                            />
 
                             <div className="flex-1 text-center md:text-left relative z-10">
-                                <h3 className="text-[12px] font-black uppercase text-pink-200/60 tracking-[0.4em] mb-4">Faire Konditionen</h3>
-                                <div className="text-8xl font-black leading-none tracking-tighter mb-4">25€</div>
-                                <p className="text-white/60 font-black uppercase tracking-widest text-[10px] mb-8">pro Monat · Inkl. PRO Funktionsumfang</p>
-                                <Link href="/register" className="block transform transition-transform hover:scale-[1.03] active:scale-[0.98]">
-                                    <button className="w-full bg-white text-[#800040] py-5 rounded-2xl font-black text-lg uppercase tracking-wider hover:bg-pink-50 transition-all shadow-2xl shadow-pink-900/40">
-                                        Probeszeit starten
-                                    </button>
-                                </Link>
-                                <p className="text-white/40 text-[10px] font-bold mt-4">14 Tage kostenlos · Keine Kreditkarte nötig</p>
+                                <h3 className="text-[12px] font-black uppercase text-pink-200/50 tracking-[0.6em] mb-8">Voller Leistungsumfang</h3>
+                                <div className="text-[100px] font-black leading-none tracking-tighter mb-6">25€</div>
+                                <p className="text-white/40 font-black uppercase tracking-widest text-[11px] mb-12">pro Monat · Professionelle Steuerung inklusive</p>
+
+                                <MagneticButton className="w-full">
+                                    <Link href="/register" className="block transform">
+                                        <button className="w-full bg-white text-[#800040] py-7 rounded-[2.5rem] font-black text-2xl uppercase tracking-widest hover:bg-pink-50 transition-all shadow-4xl active:scale-95">
+                                            GRATIS TESTEN
+                                        </button>
+                                    </Link>
+                                </MagneticButton>
+
+                                <div className="mt-8 flex items-center justify-center md:justify-start gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                                    <p className="text-white/30 text-[11px] font-black uppercase tracking-widest">Keine Kreditkarte nötig · 14 Tage Proberunde</p>
+                                </div>
                             </div>
 
-                            <div className="flex-1 w-full border-t md:border-t-0 md:border-l border-white/20 pt-12 md:pt-0 md:pl-16 relative z-10">
-                                <ul className="space-y-6 font-bold text-sm">
+                            <div className="flex-1 w-full lg:border-l border-white/10 pt-20 lg:pt-0 lg:pl-24 relative z-10">
+                                <ul className="space-y-8">
                                     {[
-                                        "Alle CRM & Projekt-Features",
-                                        "DATEV & Steuer-Software EXTF",
-                                        "Unbegrenzte Rechnungen & Kunden",
-                                        "Keine Kündigungsfrist"
+                                        "Alle Management-Module aktiv",
+                                        "Unbegrenzte Rechnungen (PDF)",
+                                        "Voller DATEV-Export Support",
+                                        "Deutsches Hosting & DSGVO",
+                                        "Jederzeit monatlich kündbar"
                                     ].map((item, i) => (
                                         <motion.li
-                                            key={i}
-                                            initial={{ opacity: 0, x: 20 }}
+                                            key={item}
+                                            initial={{ opacity: 0, x: 30 }}
                                             whileInView={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.5 + (i * 0.1) }}
-                                            className="flex items-center gap-4"
+                                            transition={{ delay: 0.5 + (i * 0.1), duration: 0.8 }}
+                                            className="flex items-center gap-6"
                                         >
-                                            <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
-                                                <Check size={12} className="text-white" />
+                                            <div className="w-8 h-8 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md">
+                                                <Check size={18} className="text-white" strokeWidth={3} />
                                             </div>
-                                            {item}
+                                            <span className="text-xl font-black tracking-tight">{item}</span>
                                         </motion.li>
                                     ))}
                                 </ul>
@@ -440,64 +512,85 @@ export default function LandingPage2() {
                 </div>
             </section>
 
-            {/* --- FOOTER --- */}
-            <footer className="pt-20 pb-12 bg-white border-t border-slate-100">
+            {/* --- FOOTER: FINAL IMPACT --- */}
+            <footer className="pt-40 pb-20 bg-white">
                 <div className="container mx-auto px-6">
-                    <div className="flex flex-col md:flex-row items-start justify-between gap-20 mb-32">
-                        <div className="max-w-sm">
-                            <Link href="/" className="mb-10 block transition-transform hover:scale-105">
-                                <Image src="/logo.svg" alt="Logo" width={140} height={30} className="h-7 w-auto" />
+                    <div className="flex flex-col lg:flex-row items-start justify-between gap-32 mb-40">
+                        <div className="max-w-md">
+                            <Link href="/" className="mb-12 block group">
+                                <Image src="/logo.svg" alt="Logo" width={160} height={40} className="h-10 w-auto transition-transform group-hover:scale-105" />
                             </Link>
-                            <p className="text-slate-400 font-bold leading-relaxed text-sm">
-                                Die intuitive Lösung für Freelancer, die ihr Business lieben und ihr Management hassen. Entwickelt für Deutschland. 100% DSGVO-konform.
+                            <p className="text-2xl text-slate-400 font-bold leading-relaxed">
+                                Wir bauen Software für Freelancer, die ihre Arbeit lieben und ihren Verwaltungsaufwand minimieren wollen.
                             </p>
+                            <div className="flex gap-6 mt-12 opacity-30 hover:opacity-100 transition-opacity">
+                                <div className="w-10 h-10 rounded-full bg-slate-100" />
+                                <div className="w-10 h-10 rounded-full bg-slate-100" />
+                                <div className="w-10 h-10 rounded-full bg-slate-100" />
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-20">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-24">
                             {[
-                                { title: 'Plattform', links: ['Funktionen', 'Dashboard', 'Preise'] },
-                                { title: 'Rechtliches', links: ['Impressum', 'Datenschutz', 'AGB'] },
-                                { title: 'Kontakt', links: ['Support', 'Twitter', 'LinkedIn'] }
+                                { title: 'Produkt', links: ['Funktionen', 'Dashboard', 'Preise', 'DATEV Integration'] },
+                                { title: 'Sicherheit', links: ['Impressum', 'Datenschutz', 'AGB', 'Server-Status'] },
+                                { title: 'Netzwerk', links: ['Support', 'Twitter (X)', 'LinkedIn', 'Partner'] }
                             ].map((col, i) => (
                                 <div key={i}>
-                                    <h5 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900 mb-8">{col.title}</h5>
-                                    <ul className="space-y-4">
+                                    <h5 className="font-black text-[11px] uppercase tracking-[0.4em] text-slate-900 mb-10">{col.title}</h5>
+                                    <ul className="space-y-5">
                                         {col.links.map(l => (
-                                            <li key={l}><Link href="#" className="text-slate-400 hover:text-[#800040] text-[13px] font-bold transition-all">{l}</Link></li>
+                                            <li key={l}><Link href="#" className="text-slate-400 hover:text-[#800040] text-sm font-bold transition-all block">{l}</Link></li>
                                         ))}
                                     </ul>
                                 </div>
                             ))}
                         </div>
                     </div>
-                    <p className="text-slate-300 text-[10px] font-black uppercase tracking-widest text-center border-t border-slate-50 pt-16">
-                        © {new Date().getFullYear()} FREELANCERTOOL. ALLE RECHTE VORBEHALTEN. GEFERTIGT IN DEUTSCHLAND.
-                    </p>
+                    <div className="pt-20 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-10">
+                        <p className="text-slate-300 text-[11px] font-black uppercase tracking-[0.5em]">
+                            © {new Date().getFullYear()} FREELANCERTOOL. GEFERTIGT IN DEUTSCHLAND.
+                        </p>
+                        <div className="flex items-center gap-6">
+                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">DSGVO Konform</span>
+                            <div className="w-px h-4 bg-slate-100" />
+                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Keine Datenauswertung</span>
+                        </div>
+                    </div>
                 </div>
             </footer>
 
             <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&display=swap');
-        
-        body {
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          letter-spacing: -0.01em;
-          background: white;
-        }
+                @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&display=swap');
+                
+                body {
+                    font-family: 'Plus Jakarta Sans', sans-serif;
+                    letter-spacing: -0.01em;
+                    background: white;
+                    color: #0f172a;
+                }
 
-        html {
-          scroll-behavior: smooth;
-        }
+                html {
+                    scroll-behavior: smooth;
+                }
 
-        .shadow-wow {
-            box-shadow: 0 40px 100px -20px rgba(128,0,64,0.3), 0 20px 40px -10px rgba(0,0,0,0.1);
-        }
+                .shadow-wow {
+                    box-shadow: 0 40px 100px -20px rgba(128,0,64,0.3), 0 20px 40px -10px rgba(0,0,0,0.1);
+                }
 
-        ::selection {
-            background-color: #800040;
-            color: white;
-        }
-      `}</style>
+                .shadow-3xl {
+                    box-shadow: 0 50px 100px -20px rgba(0,0,0,0.08);
+                }
+
+                ::selection {
+                    background-color: #800040;
+                    color: white;
+                }
+
+                .perspective-1000 {
+                    perspective: 1000px;
+                }
+            `}</style>
         </div>
     );
 }
