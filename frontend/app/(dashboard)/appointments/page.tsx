@@ -155,52 +155,6 @@ export default function AppointmentsPage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white/80 to-slate-50/50" />
             </div>
 
-            {/* — Header — */}
-            <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-100 pb-4">
-                <div className="space-y-0.5">
-                    <div className="flex items-center gap-2.5 mb-0.5">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
-                            <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
-                                <CalendarDays className="w-4 h-4 text-[#800040]" />
-                            </div>
-                        </div>
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">Kalender</h1>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                            {format(new Date(), 'EEEE, d. MMMM yyyy', { locale: de })}
-                        </p>
-                        {filterProjectId && (
-                            <span className="inline-flex items-center ml-2 gap-1.5 px-2.5 py-1 bg-[#800040]/10 text-[#800040] rounded-full text-[10px] font-black uppercase tracking-widest border border-[#800040]/20">
-                                <Sparkles className="w-3 h-3" />
-                                Projektfilter
-                                <button onClick={() => setFilterProjectId('')} className="hover:opacity-70 transition-opacity ml-0.5">
-                                    <X className="w-3 h-3" />
-                                </button>
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                <StarBorder
-                    onClick={() => { setEditingAppointment(null); setShowForm(!showForm); }}
-                    className="rounded-full group"
-                    color={showForm ? '#94a3b8' : '#ff3366'}
-                    speed="4s"
-                    thickness={3}
-                >
-                    <div className={cn(
-                        'px-6 h-11 flex items-center justify-center rounded-full transition-all font-black text-[11px] uppercase tracking-widest shadow-lg gap-2',
-                        showForm
-                            ? 'bg-white hover:bg-slate-50 text-slate-600 border border-slate-200'
-                            : 'bg-[#800040] hover:bg-[#600030] text-white shadow-rose-900/25'
-                    )}>
-                        {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                        <span>{showForm ? 'Abbrechen' : 'Neuer Termin'}</span>
-                    </div>
-                </StarBorder>
-            </motion.div>
-
             {/* — Main Grid — */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 h-full">
 

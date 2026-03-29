@@ -351,45 +351,6 @@ export default function InvoicesPage() {
         <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white/80 to-slate-50/50" />
       </div>
 
-      {/* Header */}
-      <motion.div {...fadeUp(0)} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-100">
-        <div>
-          <div className="flex items-center gap-2.5 mb-0.5 flex-wrap">
-            <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
-              <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
-                <Receipt className="w-4 h-4 text-[#800040]" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">RECHNUNGEN</h1>
-            {projectFilter && (
-              <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#800040]/10 text-[#800040] rounded-full text-xs font-black uppercase tracking-widest border border-[#800040]/20">
-                Projektfilter aktiv
-                <button onClick={() => setProjectFilter('')} className="hover:opacity-70"><X className="w-3 h-3" /></button>
-              </span>
-            )}
-          </div>
-          <p className="text-slate-500 text-sm mt-0.5">Erstelle, verwalte und versende deine Rechnungen.</p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            onClick={handleDatevExport}
-            disabled={datevExporting}
-            title={`DATEV-Export ${new Date().getFullYear()}`}
-            className="h-11 px-4 flex items-center gap-2 bg-white/80 border border-slate-200 rounded-full text-slate-600 font-black text-[11px] uppercase tracking-widest hover:border-[#800040]/40 hover:text-[#800040] transition-all shadow-sm disabled:opacity-50"
-          >
-            {datevExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            DATEV {new Date().getFullYear()}
-          </button>
-          <StarBorder onClick={() => setShowForm(!showForm)} color={showForm ? '#94a3b8' : '#ff3366'} speed="4s" thickness={2}>
-            <div className={cn('px-5 h-11 flex items-center gap-2 rounded-full transition-all font-black text-[11px] uppercase tracking-widest shadow-lg',
-              showForm ? 'bg-white hover:bg-slate-50 text-slate-600 border border-slate-200' : 'bg-[#800040] hover:bg-[#600030] text-white shadow-rose-900/20')}>
-              {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-              <span>{showForm ? 'Abbrechen' : 'Neue Rechnung'}</span>
-            </div>
-          </StarBorder>
-        </div>
-      </motion.div>
-
       {/* Stats tiles */}
       {invoices && invoices.length > 0 && (
         <motion.div {...fadeUp(0.05)} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -563,6 +524,15 @@ export default function InvoicesPage() {
           <option value="">Alle Kunden</option>
           {customers?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
+        <button
+          onClick={handleDatevExport}
+          disabled={datevExporting}
+          title={`DATEV-Export ${new Date().getFullYear()}`}
+          className="h-12 px-4 flex items-center gap-2 border border-slate-200 bg-white/80 backdrop-blur-sm rounded-2xl text-slate-500 text-sm font-medium hover:bg-white hover:text-slate-800 transition-colors disabled:opacity-50 shadow-sm shrink-0"
+        >
+          {datevExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          <span className="hidden sm:block">DATEV</span>
+        </button>
       </motion.div>
 
       {/* Invoice grid */}

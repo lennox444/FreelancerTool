@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { taxAssistantApi } from '@/lib/api/tax-assistant';
 import { TaxAssistantResult } from '@/lib/types';
@@ -210,10 +211,15 @@ function QuarterlyCalendar({
 
 export default function TaxAssistantPage() {
   const currentYear = new Date().getFullYear();
+  const searchParams = useSearchParams();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedScenario, setSelectedScenario] = useState<'conservative' | 'realistic' | 'optimistic'>('realistic');
   const [disclaimerVisible, setDisclaimerVisible] = useState(true);
-  const years = Array.from({ length: 3 }, (_, i) => currentYear - i);
+
+  useEffect(() => {
+    const y = parseInt(searchParams.get('year') ?? String(currentYear));
+    if (!isNaN(y)) setSelectedYear(y);
+  }, [searchParams, currentYear]);
 
   const { data: resp, isLoading, isError } = useQuery({
     queryKey: ['tax-assistant', selectedYear],
@@ -237,35 +243,6 @@ export default function TaxAssistantPage() {
         </div>
         <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white/80 to-slate-50/50" />
       </div>
-
-      {/* ── Header ── */}
-      <motion.div {...fadeUp(0)} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-100 pb-4">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2.5 mb-0.5">
-            <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
-              <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
-                <Calculator className="w-4 h-4 text-[#800040]" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">Steuer-Assistent</h1>
-          </div>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-            Berechnen · Planen · Rücklagen bilden
-          </p>
-        </div>
-
-        {/* Year selector */}
-        <div className="relative">
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="pl-4 pr-10 h-11 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-full text-slate-700 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-[#800040]/20 focus:border-[#800040] shadow-sm hover:bg-slate-50 appearance-none cursor-pointer transition-all"
-          >
-            {years.map((y) => <option key={y} value={y}>Steuerjahr {y}</option>)}
-          </select>
-          <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-        </div>
-      </motion.div>
 
       {/* ── Disclaimer ── */}
       <AnimatePresence>

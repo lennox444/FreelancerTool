@@ -89,7 +89,21 @@
       "Bash(cd E:/FreelancerTool/backend && rename \"node_modules/.prisma/client/query_engine-windows.dll.node\" \"query_engine-windows.dll.node.bak\" 2>&1 && npx prisma generate 2>&1)",
       "Bash(mv \"E:/FreelancerTool/backend/node_modules/.prisma/client/query_engine-windows.dll.node\" \"E:/FreelancerTool/backend/node_modules/.prisma/client/query_engine-windows.dll.node.bak\" 2>&1 && cd E:/FreelancerTool/backend && npx prisma generate 2>&1)",
       "Bash(done)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(ls e:/FreelancerTool/frontend/app/\\\\\\(dashboard\\\\\\)/)",
+      "Bash(ls e:/FreelancerTool/frontend/app/\\\\\\(dashboard\\\\\\)/dashboard/)",
+      "Bash(cat e:/FreelancerTool/frontend/app/\\\\\\(dashboard\\\\\\)/layout.tsx)",
+      "Bash(docker info:*)",
+      "Bash(grep '\"\"bin\"\"' -A5 e:/FreelancerTool/my-video/node_modules/@remotion/cli/package.json)",
+      "Bash(cmd //c \"taskkill /PID 13272 /F\")",
+      "Bash(cmd //c \"sc query postgresql*\")",
+      "Bash(cmd //c \"net start | grep -i postgres\")",
+      "Bash(cmd //c \"net start\")",
+      "Bash(cmd //c 'net start')",
+      "Bash(cmd //c \"docker ps\")",
+      "Bash(docker start:*)",
+      "Bash(npx skills:*)",
+      "Bash(powershell -File - <<'EOF'\n$WshShell = New-Object -ComObject WScript.Shell\n$Desktop = [System.Environment]::GetFolderPath\\('Desktop'\\)\n$LnkPath = Join-Path $Desktop 'FreelanceFlow Dev.lnk'\n$Shortcut = $WshShell.CreateShortcut\\($LnkPath\\)\n$Shortcut.TargetPath = 'E:\\\\FreelancerTool\\\\start-dev.bat'\n$Shortcut.WorkingDirectory = 'E:\\\\FreelancerTool'\n$Shortcut.Description = 'FreelanceFlow Entwicklungsumgebung starten'\n$Shortcut.IconLocation = 'C:\\\\Windows\\\\System32\\\\shell32.dll,23'\n$Shortcut.Save\\(\\)\nWrite-Host \"OK: $LnkPath\"\nEOF)"
     ]
   }
 }

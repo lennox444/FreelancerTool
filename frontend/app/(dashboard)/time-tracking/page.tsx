@@ -77,6 +77,7 @@ export default function TimeTrackingPage() {
     useEffect(() => {
         const p = searchParams.get('projectId');
         if (p) setFilterProjectId(p);
+        if (searchParams.get('new') === '1') setShowModal(true);
     }, [searchParams]);
 
     // Server data
@@ -255,39 +256,6 @@ export default function TimeTrackingPage() {
                 </div>
                 <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white/80 to-slate-50/50" />
             </div>
-
-            {/* ── Header ── */}
-            <motion.div {...fadeUp(0)} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-100">
-                <div>
-                    <div className="flex items-center gap-2.5 mb-0.5 flex-wrap">
-                        <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
-                            <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
-                                <Clock className="w-4 h-4 text-[#800040]" />
-                            </div>
-                        </div>
-                        <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">Zeiterfassung</h1>
-                        {filterProjectId && (
-                            <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#800040]/10 text-[#800040] rounded-full text-[11px] font-black border border-[#800040]/20 uppercase tracking-wide">
-                                Projektfilter aktiv
-                                <button
-                                    onClick={() => setFilterProjectId('')}
-                                    className="hover:opacity-70 transition-opacity"
-                                    title="Filter entfernen"
-                                >
-                                    <Square className="w-3 h-3 fill-current" />
-                                </button>
-                            </span>
-                        )}
-                    </div>
-                    <p className="text-slate-500 text-sm mt-0.5">Dokumentiere deine Arbeitszeit präzise</p>
-                </div>
-                <StarBorder onClick={() => setShowModal(true)} color="#ff3366" speed="4s" thickness={2}>
-                    <div className="px-5 h-11 flex items-center gap-2 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-900/20">
-                        <Plus className="w-4 h-4" />
-                        <span>Zeit erfassen</span>
-                    </div>
-                </StarBorder>
-            </motion.div>
 
             {/* ── Stat Tiles ── */}
             <motion.div {...fadeUp(0.05)} className="grid grid-cols-2 lg:grid-cols-4 gap-3">

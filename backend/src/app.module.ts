@@ -18,6 +18,7 @@ import { QuotesModule } from './modules/quotes/quotes.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { TaxAssistantModule } from './modules/tax-assistant/tax-assistant.module';
 import { BankAccountsModule } from './modules/bank-accounts/bank-accounts.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { BankAccountsModule } from './modules/bank-accounts/bank-accounts.module
     ExpensesModule,
     TaxAssistantModule,
     BankAccountsModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

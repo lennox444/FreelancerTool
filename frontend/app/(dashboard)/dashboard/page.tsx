@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-  LayoutDashboard, Receipt, BarChart2, TrendingUp,
-  Banknote, AlertCircle, Briefcase, Calculator, X,
+  Receipt, BarChart2, TrendingUp,
+  AlertCircle, Briefcase, Calculator, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import PixelBlast from '@/components/landing/PixelBlast';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import QuickActionsBar from '@/components/dashboard2/QuickActionsBar';
 import WarningsBar from '@/components/dashboard2/WarningsBar';
@@ -55,14 +54,6 @@ const itemVariants = {
   },
 };
 
-function SectionIcon({ icon: Icon, color }: { icon: React.ElementType; color: string }) {
-  return (
-    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${color}`}>
-      <Icon className="w-3.5 h-3.5" />
-    </span>
-  );
-}
-
 const fmt = (v: number) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
 
@@ -87,57 +78,8 @@ export default function DashboardPage() {
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="relative isolate min-h-screen p-4 md:p-8 flex flex-col gap-8"
+      className="flex flex-col gap-6 p-4 md:p-8"
     >
-      {/* ─── ENHANCED BACKGROUND ─── */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        {/* Deep Atmosphere Blobs */}
-        <div className="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] bg-[#800040]/10 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-5%] w-[50%] h-[50%] bg-indigo-500/5 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-[20%] left-[10%] w-[30%] h-[30%] bg-emerald-500/5 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '4s' }} />
-
-        <div className="absolute inset-0 w-full h-full opacity-[0.4]">
-          <PixelBlast
-            variant="square"
-            pixelSize={6}
-            color="#800040"
-            patternScale={4}
-            patternDensity={0.3}
-            pixelSizeJitter={0.5}
-            enableRipples
-            rippleSpeed={0.2}
-            rippleThickness={0.1}
-            speed={0.1}
-            transparent
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white/80 to-slate-50/50" />
-      </div>
-
-      {/* ─── PREMIUM HEADER ─────────────────────────────────────────────────── */}
-      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-end justify-between gap-3 border-b border-slate-100 pb-2">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2 mb-0.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10 transition-transform hover:scale-105 active:scale-95 cursor-pointer">
-              <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
-                <LayoutDashboard className="w-4 h-4 text-[#800040]" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-              {new Date().toLocaleDateString('de-DE', {
-                weekday: 'long', day: 'numeric', month: 'long'
-              })}
-            </p>
-            <div className="w-1 h-1 rounded-full bg-slate-300" />
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Zentrale Steuerung</p>
-          </div>
-        </div>
-        <QuickActionsBar />
-      </motion.div>
-
       {/* ─── WARNINGS & IMPORTANT ─────────────────────────────────────────── */}
       {allWarnings.length > 0 && (
         <motion.div variants={itemVariants} className="mb-0">
@@ -166,22 +108,22 @@ export default function DashboardPage() {
 
               <div className="flex items-center justify-between mb-4 relative z-10">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-[#800040]/10 text-[#800040] shadow-sm">
-                    <TrendingUp className="w-4.5 h-4.5" />
+                  <div className="p-2 rounded-xl bg-[#800040]/10 text-[#800040]">
+                    <TrendingUp className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="font-black text-slate-900 text-lg tracking-tight">Performance</h3>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Umsatz & Gewinn Trend</p>
+                    <h3 className="font-semibold text-zinc-900 text-base">Umsatz & Gewinn</h3>
+                    <p className="text-xs text-zinc-400 mt-0.5">letzte 12 Monate</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-5 text-[10px] font-black uppercase tracking-widest">
+                <div className="flex items-center gap-4 text-xs text-zinc-500">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#800040]" />
-                    <span className="text-slate-600">Umsatz</span>
+                    Umsatz
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-5 h-1 rounded-full bg-emerald-500" />
-                    <span className="text-slate-600">Gewinn</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Gewinn
                   </span>
                 </div>
               </div>

@@ -311,34 +311,6 @@ export default function QuotesPage() {
       </div>
 
       <div className="space-y-6">
-        {/* Header */}
-        <motion.div {...fadeUp(0)} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-100">
-          <div>
-            <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
-                <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
-                  <ClipboardList className="w-4 h-4 text-[#800040]" />
-                </div>
-              </div>
-              <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">Angebote</h1>
-            </div>
-            <p className="text-slate-500 text-sm mt-0.5">Erstelle und verwalte deine Angebote professionell.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {filterProjectId && (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#800040]/10 text-[#800040] rounded-full text-xs font-black uppercase tracking-widest border border-[#800040]/20">
-                Projektfilter aktiv
-                <button onClick={() => setFilterProjectId('')} className="hover:opacity-70"><X className="w-3.5 h-3.5" /></button>
-              </span>
-            )}
-            <StarBorder onClick={() => setShowCreateForm(true)} color="#ff3366" speed="4s" thickness={2}>
-              <div className="px-5 h-11 flex items-center gap-2 bg-[#800040] hover:bg-[#600030] text-white rounded-full transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-900/20">
-                <Plus className="w-4 h-4" /><span>Neues Angebot</span>
-              </div>
-            </StarBorder>
-          </div>
-        </motion.div>
-
         {/* Stats tiles */}
         {allQuotes.length > 0 && (
           <motion.div {...fadeUp(0.05)} className="grid grid-cols-2 lg:grid-cols-4 gap-3">

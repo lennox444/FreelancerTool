@@ -65,6 +65,7 @@ export default function CustomersPage() {
   useEffect(() => {
     const id = searchParams.get('id');
     if (id) setHighlightedId(id);
+    if (searchParams.get('new') === '1') setShowForm(true);
   }, [searchParams]);
 
   // Scroll to highlighted customer once loaded
@@ -142,32 +143,6 @@ export default function CustomersPage() {
         </div>
         <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white/80 to-slate-50/50" />
       </div>
-
-      {/* Header */}
-      <motion.div {...fadeUp(0)} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-100">
-        <div>
-          <div className="flex items-center gap-2.5 mb-0.5">
-            <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
-              <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
-                <Users className="w-4 h-4 text-[#800040]" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">KUNDEN</h1>
-          </div>
-          <p className="text-slate-500 text-sm mt-0.5">Verwalte deine Kontakte und Geschäftsbeziehungen an einem Ort.</p>
-        </div>
-        <StarBorder onClick={() => setShowForm(!showForm)} color={showForm ? '#94a3b8' : '#ff3366'} speed="4s" thickness={2}>
-          <div className={cn(
-            'px-5 h-11 flex items-center gap-2 rounded-full transition-all font-black text-[11px] uppercase tracking-widest shadow-lg',
-            showForm
-              ? 'bg-white hover:bg-slate-50 text-slate-600 border border-slate-200'
-              : 'bg-[#800040] hover:bg-[#600030] text-white shadow-rose-900/20'
-          )}>
-            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-            <span>{showForm ? 'Abbrechen' : 'Neuer Kunde'}</span>
-          </div>
-        </StarBorder>
-      </motion.div>
 
       {/* Stats tiles */}
       {customers && customers.length > 0 && (

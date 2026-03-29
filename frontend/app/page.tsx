@@ -369,16 +369,52 @@ export default function LandingPage() {
             {/* --- CORE FEATURES GRID --- */}
             <section id="funktionen" className="py-24 md:py-32 lg:py-44 relative bg-white overflow-hidden">
                 <div className="container mx-auto px-4 md:px-6">
-                    <div className="max-w-4xl mx-auto md:mx-0 mb-20 md:mb-32 text-center md:text-left">
-                        <Reveal x={-15}>
-                            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#800040] mb-8 md:mb-12">Die Infrastruktur</h2>
-                            <p className="text-4xl sm:text-5xl md:text-8xl font-black text-slate-950 tracking-tighter leading-[0.9] mb-10 md:mb-12">
-                                Alles synchron. <br /> Alles im Blick.
-                            </p>
-                            <p className="text-lg md:text-2xl text-slate-400 font-bold max-w-2xl">
-                                Keine Kompromisse bei der Verwaltung. Wir haben jedes Modul für die spezifischen Hürden deutscher Solo-Selbstständiger optimiert.
-                            </p>
-                        </Reveal>
+                    <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-20 mb-20 md:mb-32">
+                        {/* Left – Text */}
+                        <div className="flex-1 text-center md:text-left">
+                            <Reveal x={-15}>
+                                <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#800040] mb-8 md:mb-12">Die Infrastruktur</h2>
+                                <p className="text-4xl sm:text-5xl md:text-8xl font-black text-slate-950 tracking-tighter leading-[0.9] mb-10 md:mb-12">
+                                    Alles synchron. <br /> Alles im Blick.
+                                </p>
+                                <p className="text-lg md:text-2xl text-slate-400 font-bold max-w-2xl">
+                                    Keine Kompromisse bei der Verwaltung. Wir haben jedes Modul für die spezifischen Hürden deutscher Solo-Selbstständiger optimiert.
+                                </p>
+                            </Reveal>
+                        </div>
+
+                        {/* Right – Explainer Video */}
+                        <div className="w-full max-w-[600px] lg:w-[600px] flex-shrink-0">
+                            <motion.div
+                                initial={{ opacity: 0, x: 60, scale: 0.94 }}
+                                whileInView={{ opacity: 1, x: 0, scale: 1 }}
+                                viewport={{ once: true, margin: "-10%" }}
+                                transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+                                className="relative"
+                            >
+                                {/* Glow halo */}
+                                <motion.div
+                                    animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.04, 1] }}
+                                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                                    className="absolute -inset-6 rounded-[3rem] bg-[#800040]/10 blur-3xl pointer-events-none"
+                                />
+                                {/* Subtle float */}
+                                <motion.div
+                                    animate={{ y: [0, -10, 0] }}
+                                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                                    className="relative"
+                                >
+                                    <video
+                                        autoPlay
+                                        loop
+                                        muted
+                                        playsInline
+                                        className="w-full rounded-[2rem] shadow-[0_32px_80px_-8px_rgba(0,0,0,0.18),0_0_0_1px_rgba(0,0,0,0.05)] relative z-10"
+                                        src="/FreelancerVideo.mp4"
+                                    />
+                                </motion.div>
+                            </motion.div>
+                        </div>
                     </div>
 
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">

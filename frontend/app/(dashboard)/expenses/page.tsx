@@ -295,84 +295,60 @@ export default function ExpensesPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white/80 to-slate-50/50" />
       </div>
 
-      {/* ── Header ── */}
-      <motion.div {...fadeUp(0)} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-100 pb-4">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2.5 mb-0.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#800040] to-[#E60045] p-[1.5px] shadow-lg shadow-rose-900/10">
-              <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
-                <Receipt className="w-4 h-4 text-[#800040]" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">Ausgaben</h1>
-          </div>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-            Erfassen · Analysieren · Exportieren
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleDatevExport}
-            disabled={datevExporting}
-            className="flex items-center gap-2 px-4 h-11 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-full text-slate-600 font-semibold text-sm hover:border-[#800040]/40 hover:text-[#800040] transition-all shadow-sm disabled:opacity-50"
-          >
-            {datevExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            DATEV {new Date().getFullYear()}
+      {/* ── Controls Bar ── */}
+      <motion.div {...fadeUp(0.05)} className="flex items-center gap-2 flex-wrap">
+        {/* Month navigation */}
+        <div className="flex items-center gap-0.5 bg-white border border-zinc-200 rounded-lg p-0.5">
+          <button onClick={prevMonth} className="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-500 hover:text-zinc-900">
+            <ChevronLeft className="w-3.5 h-3.5" />
           </button>
-          <StarBorder
-            onClick={() => activeTab === 'abonnements' ? setShowSubForm(true) : setShowCreateForm(true)}
-            className="rounded-full" color="#ff3366" speed="4s" thickness={3}
-          >
-            <div className="px-6 h-11 flex items-center justify-center rounded-full font-black text-[11px] uppercase tracking-widest gap-2 bg-[#800040] hover:bg-[#600030] text-white transition-colors">
-              <Plus className="w-4 h-4" />
-              <span>{activeTab === 'abonnements' ? 'Abonnement' : 'Ausgabe erfassen'}</span>
-            </div>
-          </StarBorder>
-        </div>
-      </motion.div>
-
-      {/* ── Month Nav + Tabs ── */}
-      <motion.div {...fadeUp(0.05)} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-2xl px-2 py-1.5 shadow-sm">
-          <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500 hover:text-slate-800">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <span className="text-sm font-bold text-slate-900 min-w-[155px] text-center select-none capitalize px-1">
+          <span className="text-sm font-medium text-zinc-900 min-w-[130px] text-center select-none px-1 capitalize">
             {formatMonthYear(selectedYear, selectedMonth)}
           </span>
-          <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500 hover:text-slate-800">
-            <ChevronRight className="w-4 h-4" />
+          <button onClick={nextMonth} className="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-500 hover:text-zinc-900">
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="relative flex gap-1 bg-slate-100/80 backdrop-blur-sm rounded-2xl p-1.5">
+        {/* Ausgaben / Abonnements tabs */}
+        <div className="flex items-center bg-zinc-100 rounded-lg p-0.5">
           {(['ausgaben', 'abonnements'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                'relative px-5 py-2 rounded-xl font-semibold text-sm transition-colors z-10 flex items-center gap-2',
-                activeTab === tab ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700',
+                'relative px-3.5 py-1.5 rounded-md text-sm font-medium transition-colors z-10 flex items-center gap-1.5',
+                activeTab === tab ? 'text-zinc-900' : 'text-zinc-500 hover:text-zinc-700',
               )}
             >
               {activeTab === tab && (
                 <motion.div
                   layoutId="expense-tab-bg"
-                  className="absolute inset-0 bg-white rounded-xl shadow-sm"
+                  className="absolute inset-0 bg-white rounded-md shadow-sm"
                   style={{ zIndex: -1 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                 />
               )}
-              {tab === 'abonnements' && <RefreshCw className="w-4 h-4" />}
-              {tab === 'ausgaben' ? 'Ausgaben' : 'Abonnements'}
+              {tab === 'abonnements' && <RefreshCw className="w-3.5 h-3.5" />}
+              {tab === 'ausgaben' ? 'Ausgaben' : 'Abos'}
               {tab === 'abonnements' && subscriptions.length > 0 && (
-                <span className="bg-[#800040] text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-tight font-black">
+                <span className="bg-[#800040] text-white text-[10px] rounded-full px-1.5 min-w-[16px] text-center leading-[16px] font-bold">
                   {subscriptions.length}
                 </span>
               )}
             </button>
           ))}
         </div>
+
+        {/* DATEV export */}
+        <button
+          onClick={handleDatevExport}
+          disabled={datevExporting}
+          className="h-8 px-3 flex items-center gap-1.5 border border-zinc-200 bg-white rounded-lg text-zinc-500 text-xs font-medium hover:bg-zinc-50 hover:text-zinc-800 transition-colors disabled:opacity-50"
+        >
+          {datevExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+          DATEV
+        </button>
       </motion.div>
 
       {/* ══════════════════════════════════════════════════════ */}

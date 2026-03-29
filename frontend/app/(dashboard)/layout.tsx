@@ -7,6 +7,7 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import { useOnboardingStore } from '@/lib/stores/onboardingStore';
 import { onboardingApi } from '@/lib/api/onboarding';
 import Sidebar from '@/components/layout/Sidebar';
+import Topbar from '@/components/layout/Topbar';
 import { UserRole } from '@/lib/types';
 
 export default function DashboardLayout({
@@ -21,22 +22,30 @@ export default function DashboardLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const stored = localStorage.getItem('sidebar-collapsed');
+    if (stored === 'true') setIsCollapsed(true);
   }, []);
+
+  const handleToggle = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('sidebar-collapsed', String(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!mounted) return;
 
-    // Auth check
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
 
-    // Trial expiration check (soft-lock)
-    // Allow access ONLY to billing page if trial expired
     if (user && typeof window !== 'undefined') {
       const isTrialExpired =
         user.subscriptionPlan === 'FREE_TRIAL' &&
@@ -54,7 +63,6 @@ export default function DashboardLayout({
       }
     }
 
-    // Onboarding check (Skip for SUPER_ADMIN)
     if (user?.role === UserRole.SUPER_ADMIN) {
       setChecking(false);
       return;
@@ -65,7 +73,6 @@ export default function DashboardLayout({
         const profile = await onboardingApi.getStatus();
         setProfile(profile);
 
-        // Redirect to onboarding if not completed
         if (!profile.onboardingCompleted) {
           router.push(`/onboarding/step${profile.currentStep}`);
         }
@@ -81,22 +88,20 @@ export default function DashboardLayout({
 
   if (!mounted || !isAuthenticated || checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+        <div className="w-8 h-8 border-2 border-[#800040]/30 border-t-[#800040] rounded-full animate-spin" />
       </div>
     );
   }
 
-  // Check if trial is expired
   const isTrialExpired =
     user?.subscriptionPlan === 'FREE_TRIAL' &&
     user?.trialEndsAt &&
     new Date(user.trialEndsAt) < new Date();
 
-  // If trial expired, render without sidebar (only billing page accessible)
   if (isTrialExpired && typeof window !== 'undefined' && window.location.pathname.includes('/settings/billing')) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-zinc-50">
         <main className="p-4 md:p-8">
           {children}
         </main>
@@ -105,18 +110,21 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 flex-col md:flex-row">
+    <div className="flex min-h-screen bg-zinc-50 flex-col md:flex-row">
       {/* Desktop Sidebar */}
-      <Sidebar className="hidden md:flex" />
+      <Sidebar
+        className="hidden md:flex"
+        isCollapsed={isCollapsed}
+        onToggle={handleToggle}
+      />
 
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-30">
         <Link href="/dashboard" className="flex items-center gap-2">
-          {/* Using Next.js Image for optimization, mimicking Sidebar logo style */}
           <img
             src="/logo.svg"
             alt="FreelanceFlow Logo"
-            className="h-8 w-auto brightness-0 invert"
+            className="h-7 w-auto brightness-0 invert"
           />
         </Link>
         <button
@@ -124,9 +132,9 @@ export default function DashboardLayout({
           className="p-2 text-slate-400 hover:text-white transition-colors"
         >
           {isMobileMenuOpen ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" /></svg>
           )}
         </button>
       </div>
@@ -145,9 +153,18 @@ export default function DashboardLayout({
         onLinkClick={() => setIsMobileMenuOpen(false)}
       />
 
-      <main className="flex-1 p-4 md:p-8 overflow-x-hidden pt-6">
-        {children}
-      </main>
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Desktop Topbar */}
+        <div className="hidden md:block">
+          <Topbar />
+        </div>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-x-hidden">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
