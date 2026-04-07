@@ -31,8 +31,8 @@ RUN npm run build
 FROM node:20-alpine AS production
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install dumb-init and openssl
+RUN apk add --no-cache dumb-init openssl
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -42,12 +42,13 @@ COPY --from=deps /app/prisma ./prisma
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 
-# Generate Prisma Client in production
+# Generate Prisma Client and fix permissions (as root)
 RUN npx prisma generate
 
-# Create non-root user
+# Create non-root user and give ownership
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nestjs -u 1001
+    adduser -S nestjs -u 1001 && \
+    chown -R nestjs:nodejs /app
 
 USER nestjs
 
