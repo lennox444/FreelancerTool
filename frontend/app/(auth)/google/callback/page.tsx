@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { Loader2 } from 'lucide-react';
 import type { User } from '@/lib/types';
 
-export default function GoogleCallbackPage() {
+function GoogleCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -23,7 +25,7 @@ export default function GoogleCallbackPage() {
     }
 
     axios
-      .get<{ data: User }>('http://localhost:3001/api/auth/me', {
+      .get<{ data: User }>(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(({ data }) => {
@@ -42,5 +44,19 @@ export default function GoogleCallbackPage() {
         <p className="text-sm font-medium">Anmeldung wird abgeschlossen...</p>
       </div>
     </div>
+  );
+}
+
+export default function GoogleCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+          <Loader2 className="h-10 w-10 animate-spin text-[#800040]" />
+        </div>
+      }
+    >
+      <GoogleCallbackContent />
+    </Suspense>
   );
 }

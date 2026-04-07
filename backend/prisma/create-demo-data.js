@@ -5,7 +5,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') }
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const USER_ID = 'cmlqpyjll00007hcj3yc23lp4';
+const USER_ID = 'cmm25g6nr0000wqubdsn16yi2';
 const ownerId = USER_ID;
 
 // ─── Date helpers ──────────────────────────────────────────────────────────────

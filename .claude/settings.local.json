@@ -103,7 +103,9 @@
       "Bash(cmd //c \"docker ps\")",
       "Bash(docker start:*)",
       "Bash(npx skills:*)",
-      "Bash(powershell -File - <<'EOF'\n$WshShell = New-Object -ComObject WScript.Shell\n$Desktop = [System.Environment]::GetFolderPath\\('Desktop'\\)\n$LnkPath = Join-Path $Desktop 'FreelanceFlow Dev.lnk'\n$Shortcut = $WshShell.CreateShortcut\\($LnkPath\\)\n$Shortcut.TargetPath = 'E:\\\\FreelancerTool\\\\start-dev.bat'\n$Shortcut.WorkingDirectory = 'E:\\\\FreelancerTool'\n$Shortcut.Description = 'FreelanceFlow Entwicklungsumgebung starten'\n$Shortcut.IconLocation = 'C:\\\\Windows\\\\System32\\\\shell32.dll,23'\n$Shortcut.Save\\(\\)\nWrite-Host \"OK: $LnkPath\"\nEOF)"
+      "Bash(powershell -File - <<'EOF'\n$WshShell = New-Object -ComObject WScript.Shell\n$Desktop = [System.Environment]::GetFolderPath\\('Desktop'\\)\n$LnkPath = Join-Path $Desktop 'FreelanceFlow Dev.lnk'\n$Shortcut = $WshShell.CreateShortcut\\($LnkPath\\)\n$Shortcut.TargetPath = 'E:\\\\FreelancerTool\\\\start-dev.bat'\n$Shortcut.WorkingDirectory = 'E:\\\\FreelancerTool'\n$Shortcut.Description = 'FreelanceFlow Entwicklungsumgebung starten'\n$Shortcut.IconLocation = 'C:\\\\Windows\\\\System32\\\\shell32.dll,23'\n$Shortcut.Save\\(\\)\nWrite-Host \"OK: $LnkPath\"\nEOF)",
+      "Bash(bash start-dev.sh)",
+      "Bash(powershell -command \"Get-NetTCPConnection -LocalPort 3000,3001,3002 -ErrorAction SilentlyContinue | Select-Object LocalPort,State,OwningProcess | ForEach-Object { \\\\$proc = Get-Process -Id \\\\$_.OwningProcess -ErrorAction SilentlyContinue; [PSCustomObject]@{Port=\\\\$_.LocalPort; State=\\\\$_.State; PID=\\\\$_.OwningProcess; Name=\\\\$proc.Name; Path=\\\\$proc.Path} }\")"
     ]
   }
 }
