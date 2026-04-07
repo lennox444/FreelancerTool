@@ -49,10 +49,21 @@ services:
     container_name: freelancer-frontend
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
-    ports:
-      - "3000:3000"
     depends_on:
       - backend
+    networks:
+      - freelancer-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: freelancer-nginx
+    ports:
+      - "3010:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
     networks:
       - freelancer-network
     restart: unless-stopped
