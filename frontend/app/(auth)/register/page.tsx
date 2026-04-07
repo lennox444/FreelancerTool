@@ -1,8 +1,6 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -13,7 +11,7 @@ import PixelBlast from '@/components/landing/PixelBlast';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import StarBorder from '@/components/ui/StarBorder';
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -269,5 +267,17 @@ export default function RegisterPage() {
         © {new Date().getFullYear()} FreelanceFlow
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="h-10 w-10 animate-spin text-[#800040]" />
+      </div>
+    }>
+      <RegisterContent />
+    </Suspense>
   );
 }
