@@ -58,4 +58,4 @@ EXPOSE 3001
 ENTRYPOINT ["dumb-init", "--"]
 
 # Run migrations and start the application
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
